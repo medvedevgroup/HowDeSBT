@@ -1,0 +1,43 @@
+#ifndef cmd_query_H
+#define cmd_query_H
+
+#include <string>
+#include <cstdlib>
+#include <cstdint>
+#include <iostream>
+
+#include "query.h"
+#include "commands.h"
+
+class QueryCommand: public Command
+	{
+public:
+	static constexpr double defaultQueryThreshold = 0.9;
+
+public:
+	QueryCommand(const std::string& name): Command(name) {}
+	virtual ~QueryCommand();
+	virtual void short_description (std::ostream& s);
+	virtual void usage (std::ostream& s, const std::string& message="");
+	virtual void debug_help (std::ostream& s);
+	virtual void parse (int _argc, char** _argv);
+	virtual int execute (void);
+	virtual void read_queries (void);
+	virtual void print_matches(std::ostream& out) const;
+	virtual void print_kmer_hit_counts(std::ostream& out) const;
+
+	std::string treeFilename;
+	std::vector<std::string> queryFilenames;
+	std::string matchesFilename;
+	double queryThreshold;
+	bool onlyLeaves;
+	bool distinctKmers;
+	bool useFileManager;
+	bool checkConsistency;			// only meaningful if useFileManager is false
+	bool justReportKmerCounts;
+	bool countAllKmerHits;
+
+	std::vector<Query*> queries;
+	};
+
+#endif // cmd_query_H
