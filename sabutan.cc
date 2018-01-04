@@ -151,12 +151,6 @@ int main
 		std::vector<string> argS = quoted_tokenize(commandLine);
 		size_t argC = argS.size();
 
-//……
-		cerr << "todo: \"" << commandLine << "\"" << endl;
-		for (size_t ix=0 ; ix<argC; ix++)
-			cerr << "  argS[" << ix << "] = \"" << argS[ix] << "\"" << endl;
-//……
-
 		char* argV[argC];
 		for (size_t ix=0 ; ix<argC; ix++)
 			{
@@ -164,6 +158,14 @@ int main
 			argV[ix] = new char[arg.size()+1];
 			strcpy(/*to*/argV[ix],/*from*/arg.c_str());
 			}
+
+//……
+		cerr << "todo: \"" << commandLine << "\"" << endl;
+		for (size_t ix=0 ; ix<argC; ix++)
+			cerr << "  argS[" << ix << "] = \"" << argS[ix] << "\"" << endl;
+		for (size_t ix=0 ; ix<argC; ix++)
+			cerr << "  argV[" << ix << "] = \"" << argV[ix] << "\"" << endl;
+//……
 
 		cmd->parse(argC,argV);
 		for (size_t ix=0 ; ix<argC; ix++)
