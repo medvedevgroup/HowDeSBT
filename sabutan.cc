@@ -168,10 +168,9 @@ int main
 //……
 
 		cmd->parse(argC,argV);
+		int successCode = cmd->execute ();
 		for (size_t ix=0 ; ix<argC; ix++)
 			delete[] argV[ix];
-
-		int successCode = cmd->execute ();
 		if (successCode != EXIT_SUCCESS) break;
 
 		if (cmd->subCommand != nullptr)
