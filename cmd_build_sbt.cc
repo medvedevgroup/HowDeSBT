@@ -76,6 +76,12 @@ void BuildSBTCommand::parse
 	int		argc;
 	char**	argv;
 
+//……
+	cerr << "in BuildSBTCommand:" << endl;
+	for (size_t ix=0 ; ix<_argc; ix++)
+		cerr << "  _argv[" << ix << "] = \"" << _argv[ix] << "\"" << endl;
+//……
+
 	// defaults
 
 	bfKind = bfkind_simple;
