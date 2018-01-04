@@ -87,6 +87,7 @@ int main
 	char**	argv)
 	{
 	MainCommand* cmd = new MainCommand(programName);
+	string programExe(argv[0]);
 
 	// primary commands
 
@@ -134,7 +135,16 @@ int main
 	if ((successCode == EXIT_SUCCESS) and (cmd->subCommand != nullptr))
 		{
 		for (const auto& commandLine : cmd->subCommand->deferredCommands)
-			toDoList.emplace_back(commandLine);
+			{
+			string commandCopy = commandLine;
+			string field = "{" + programName + "}";
+			std::size_t fieldIx = commandCopy.find (field);
+			if (fieldIx != string::npos)
+				commandCopy.replace (fieldIx, field.length(), programExe);
+//………
+			cerr << "\"" << commandCopy << "\"" << endl;
+			toDoList.emplace_back(commandCopy);
+			}
 		cmd->subCommand->deferredCommands.clear();
 		}
 
