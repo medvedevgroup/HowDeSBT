@@ -135,16 +135,7 @@ int main
 	if ((successCode == EXIT_SUCCESS) and (cmd->subCommand != nullptr))
 		{
 		for (const auto& commandLine : cmd->subCommand->deferredCommands)
-			{
-			string commandCopy = commandLine;
-			string field = "{" + programName + "}";
-			std::size_t fieldIx = commandCopy.find (field);
-			if (fieldIx != string::npos)
-				commandCopy.replace (fieldIx, field.length(), programExe);
-//………
-			cerr << "\"" << commandCopy << "\"" << endl;
-			toDoList.emplace_back(commandCopy);
-			}
+			toDoList.emplace_back(commandLine);
 		cmd->subCommand->deferredCommands.clear();
 		}
 
@@ -159,6 +150,12 @@ int main
 		// $$$ move all this tokenization to a subroutine
 		std::vector<string> argS = quoted_tokenize(commandLine);
 		size_t argC = argS.size();
+
+//……
+		cerr << "todo: \"" << commandLine << "\"" << endl;
+		for (size_t ix=0 ; ix<argC; ix++)
+			cerr << "  argS[" << ix << "] = \"" << argS[ix] << "\"" << endl;
+//……
 
 		char* argV[argC];
 		for (size_t ix=0 ; ix<argC; ix++)
