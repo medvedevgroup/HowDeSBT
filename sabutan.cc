@@ -159,14 +159,6 @@ int main
 			strcpy(/*to*/argV[ix],/*from*/arg.c_str());
 			}
 
-//……
-		cerr << "todo: \"" << commandLine << "\"" << endl;
-		for (size_t ix=0 ; ix<argC; ix++)
-			cerr << "  argS[" << ix << "] = \"" << argS[ix] << "\"" << endl;
-		for (size_t ix=0 ; ix<argC; ix++)
-			cerr << "  argV[" << ix << "] = \"" << argV[ix] << "\"" << endl;
-//……
-
 		cmd->parse(argC,argV);
 		int successCode = cmd->execute ();
 		for (size_t ix=0 ; ix<argC; ix++)
