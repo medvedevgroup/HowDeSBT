@@ -30,25 +30,27 @@
 
 struct bfvectorinfo
 	{
-    std::uint32_t	compressor;	// compressor identifier for the bit vector;
-    							// .. the least significant byte is one of
-    							// .. bvcomp_xxx; some compressor types define
-    							// .. additional information in the other
-    							// .. bytes, as folows:
-    							// ..   bvcomp_rrr: the second byte is the RRR
-    							// ..               .. chunk size
-	std::uint32_t	name;		// offset (from start of file) to the name of
-								// .. of this bitvector; the name is a zero-
-								// .. terminated string; if this field is zero
-								// .. the bitvector has no name; note that the
-								// .. offset, if non-zero, is expected to
-								// .. be after bffileheader.info[]
-	std::uint64_t	offset;		// offset (from start of file) to data for the
-								// .. bit vector
-	std::uint64_t	numBytes;	// number of bytes of data occupied by the bit
-								// .. vector's data
-	std::uint64_t	filterInfo;	// filter-dependent info for this bit vector;
-								// .. typically zero
+    std::uint32_t	compressor;	// [x+00] compressor identifier for the bit
+    							//        .. vector; the least significant byte
+    							//        .. is one of bvcomp_xxx; some
+    							//        .. compressor types define additional
+    							//        .. information in the other bytes, as
+    							//        .. folows:
+    							//        ..   bvcomp_rrr: the second byte is
+    							//        ..               the RRR chunk size
+	std::uint32_t	name;		// [x+04] offset (from start of file) to the
+    							//        .. name of of this bitvector; the name
+    							//        .. is a zero-terminated string; if
+    							//        .. this field is zero the bitvector
+    							//        .. has no name; note that the offset,
+    							//        .. if non-zero, is expected to be
+    							//        .. after bffileheader.info[]
+	std::uint64_t	offset;		// [x+08] offset (from start of file) to data
+    							//        .. for the bit vector
+	std::uint64_t	numBytes;	// [x+10] number of bytes of data occupied by
+    							//        .. the bit vector's data
+	std::uint64_t	filterInfo;	// [x+18] filter-dependent info for this bit
+    							//        .. vector; typically zero
 	};
 
 enum
