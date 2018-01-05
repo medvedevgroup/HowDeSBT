@@ -392,6 +392,7 @@ void DumpBFCommand::dump_one_bloom_filter
 
 		u64 bvNumBits = numBits;
 		if (bv->isResident) bvNumBits = bv->bits->size();
+		u64 bvEndPos = std::min(endPos,bvNumBits);
 
 		string bfName = _bfName;
 		if (bf->numBitVectors > 1) bfName += "." + std::to_string(bvIx);
@@ -412,19 +413,19 @@ void DumpBFCommand::dump_one_bloom_filter
 		else if (showAs == "density")
 			{
 			u64 onesCount = 0;
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{ if ((*bv)[pos] == 1) onesCount++; }
 			cout << std::setfill(' ') << std::setw(nameWidth+1) << std::left << bfName
 				 << std::setw(onesCountWidth) << std::right << onesCount
-				 << "/" << std::setw(onesCountWidth) << std::left << (endPos-startPos)
-				 << " " << std::fixed << std::setprecision(6) << (onesCount/double(endPos-startPos)) << endl;
+				 << "/" << std::setw(onesCountWidth) << std::left << (bvEndPos-startPos)
+				 << " " << std::fixed << std::setprecision(6) << (onesCount/double(bvEndPos-startPos)) << endl;
 			}
 		else if (showAs == "crc")
 			{
 			u32 crc = 0;
 			u8  byte = 0;
 			int bitsInByte = 0;
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{
 				byte = (byte << 1) | (*bv)[pos];
 				if (++bitsInByte < 8) continue;
@@ -441,7 +442,7 @@ void DumpBFCommand::dump_one_bloom_filter
 			{
 			string intsStr = "";
 			u64 onesCount = 0;
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{
 				if ((*bv)[pos] == 1)
 					{
@@ -461,12 +462,12 @@ void DumpBFCommand::dump_one_bloom_filter
 			{
 			std::stringstream posSs;
 			if (startPos > 0) posSs << "...";
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				posSs << " " << std::setfill(' ') << std::setw(onesCountWidth) << std::to_string(pos);
 
 			std::stringstream bitsSs;
 			if (startPos > 0) bitsSs << "...";
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{
 				char bitCh = ((*bv)[pos] == 0)? alphabet[0] : alphabet[1];
 				bitsSs << " " << std::setfill(' ') << std::setw(onesCountWidth) << bitCh;
@@ -498,13 +499,13 @@ void DumpBFCommand::dump_one_bloom_filter
 				size_t numZeros = bvRanker0(bv->numBits);
 				size_t numOnes  = bvRanker1(bv->numBits);
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					u64 posRank = bvRanker0.rank(pos);
 					rank0Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << std::to_string(posRank);
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					if ((pos < 1) || (pos > numZeros))
 						select0Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << "*";
@@ -515,13 +516,13 @@ void DumpBFCommand::dump_one_bloom_filter
 						}
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					u64 posRank = bvRanker1.rank(pos);
 					rank1Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << std::to_string(posRank);
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					if ((pos < 1) || (pos > numOnes))
 						select1Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << "*";
@@ -545,13 +546,13 @@ void DumpBFCommand::dump_one_bloom_filter
 				size_t numZeros = bvRanker0(rrrBv->numBits);
 				size_t numOnes  = bvRanker1(rrrBv->numBits);
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					u64 posRank = bvRanker0.rank(pos);
 					rank0Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << std::to_string(posRank);
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					if ((pos < 1) || (pos > numZeros))
 						select0Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << "*";
@@ -562,13 +563,13 @@ void DumpBFCommand::dump_one_bloom_filter
 						}
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					u64 posRank = bvRanker1.rank(pos);
 					rank1Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << std::to_string(posRank);
 					}
 
-				for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+				for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 					{
 					if ((pos < 1) || (pos > numOnes))
 						select1Ss << " " << std::setfill(' ') << std::setw(onesCountWidth) << "*";
@@ -607,7 +608,7 @@ void DumpBFCommand::dump_one_bloom_filter
 			string bitsStr = "";
 			u64 onesCount = 0;
 			u64 bitsInLine = 0;
-			for (u64 pos=startPos ; (pos<endPos)&&(pos<bvNumBits) ; pos++)
+			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{
 				if (((pos % chunkSize) == 0) && (not bitsStr.empty()))
 					bitsStr += " ";
