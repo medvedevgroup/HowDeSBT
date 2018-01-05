@@ -1,5 +1,5 @@
-CXXFLAGS =  -Wall -std=c++11 -I/Users/rsharris/darwin-i386/include
-LDFLAGS  =  -L/Users/rsharris/darwin-i386/lib -lroaring -lsdsl -ljellyfish-2.0 -lpthread
+CXXFLAGS =  -Wall -std=c++11 -I~/include
+LDFLAGS  =  -L~/lib -lroaring -lsdsl -ljellyfish-2.0 -lpthread
 #CXXFLAGS += -DuseJellyHash
 
 CPP_FILES := $(wildcard *.cc)
