@@ -29,6 +29,7 @@ using std::endl;
 //
 //----------
 
+int BloomTree::reportUnload        = false;
 int BloomTree::dbgTraversalCounter = -1;
 
 //----------
@@ -85,6 +86,7 @@ void BloomTree::load()
 	if (bf == nullptr) bf = new BloomFilter(bfFilename);
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
+	bf->reportSave = reportSave;
 	bf->load();
 	}
 
@@ -97,7 +99,11 @@ void BloomTree::save()
 
 void BloomTree::unloadable()
 	{
-	// $$$ eventually we may want a more sophisticated caching mechanism
+	// $$$ eventually we will want a more sophisticated caching mechanism
+
+	if (reportUnload)
+		cerr << "marking " << name << " as unloadable" << endl;
+
 	if (bf != NULL)
 		{ delete bf;  bf = NULL; }
 	}
@@ -727,7 +733,7 @@ void BloomTree::construct_determined_brief_nodes ()
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
-			cerr << "loading " << child->name << endl;
+			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -742,7 +748,7 @@ void BloomTree::construct_determined_brief_nodes ()
 				 + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
-			cerr << "incorporating " << child->name << endl;
+			cerr << "incorporating " << child->name << " into parent" << endl;
 
 		if (bf == nullptr) // incorporate first child's filters
 			{
@@ -792,7 +798,7 @@ void BloomTree::construct_determined_brief_nodes ()
 		for (const auto& child : children)
 			{
 			if (dbgTraversal)
-				cerr << "loading " << child->name << endl;
+				cerr << "loading " << child->name << " for update and squeeze" << endl;
 			child->load();
 
 			sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;

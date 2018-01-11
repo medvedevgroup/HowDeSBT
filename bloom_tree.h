@@ -74,6 +74,7 @@ public:
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
+	static int reportUnload;
 	static int dbgTraversalCounter;
 
 public:
