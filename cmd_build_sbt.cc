@@ -61,6 +61,8 @@ void BuildSBTCommand::debug_help
 	s << "--debug= options" << endl;
 	s << "  bvcreation" << endl;
 	s << "  bvdestructor" << endl;
+	s << "  bvbits" << endl;
+	s << "  bvrankselect" << endl;
 	s << "  bfconstructor" << endl;
 	s << "  bfdestructor" << endl;
 	s << "  bfmanager" << endl;
@@ -228,6 +230,10 @@ int BuildSBTCommand::execute()
 		BitVector::reportCreation = true;
 	if (contains(debug,"bvdestructor"))
 		BitVector::reportDestructor = true;
+	if (contains(debug,"bvbits"))
+		BitVector::reportBits = true;
+	if (contains(debug,"bvrankselect"))
+		BitVector::reportRankSelect = true;
 	if (contains(debug,"bfconstructor"))
 		BloomFilter::reportConstructor = true;
 	if (contains(debug,"bfdestructor"))

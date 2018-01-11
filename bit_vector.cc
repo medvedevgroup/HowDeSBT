@@ -25,6 +25,8 @@ using std::endl;
 
 bool BitVector::reportCreation   = false;
 bool BitVector::reportDestructor = false;
+bool BitVector::reportBits       = false;
+bool BitVector::reportRankSelect = false;
 
 //----------
 //
@@ -94,6 +96,11 @@ BitVector::~BitVector()
 	{
 	if (reportDestructor)
 		cerr << "deconstructor BitVector(" << identity() << " " << this << ")" << endl;
+
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits != nullptr) delete bits;
 	discard_rank_select();
 	}
@@ -143,6 +150,10 @@ void BitVector::serialized_in
 		     + "; attempt to serialized_in onto non-null bit vector");
 
 	bits = new sdslbitvector();
+	if (reportBits)
+		cerr << "creating bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	auto startTime = get_wall_time();
 	sdsl::load (*bits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
 	fileLoadTime += elapsed_wall_time(startTime);
@@ -199,6 +210,10 @@ size_t BitVector::serialized_out
 
 void BitVector::discard_bits()
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits != nullptr)
 		{
 		delete bits;  bits = nullptr;
@@ -210,6 +225,10 @@ void BitVector::discard_bits()
 void BitVector::new_bits
    (u64 _numBits)
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits != nullptr)
 		{
 		delete bits;
@@ -217,6 +236,10 @@ void BitVector::new_bits
 		}
 
 	bits = new sdslbitvector (_numBits, 0);
+	if (reportBits)
+		cerr << "creating bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	numBits = _numBits;
 	isResident = true;
 	}
@@ -228,6 +251,14 @@ void BitVector::replace_bits
 		fatal ("internal error for " + identity()
 		     + "; attempt to replace null bit vector");
 
+	if (reportBits)
+		{
+		cerr << "replacing bits for BitVector(" << identity() << " " << this << ")"
+		     << " old=" << bits << " new=" << srcBits << endl;
+		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+		}
+
 	delete bits;
 	discard_rank_select();
 
@@ -238,6 +269,10 @@ void BitVector::replace_bits
 void BitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits != nullptr)
 		{
 		delete bits;
@@ -245,6 +280,10 @@ void BitVector::copy_from
 		}
 
 	bits = new sdslbitvector (*srcBits);
+	if (reportBits)
+		cerr << "creating bits for BitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	numBits = bits->size();
 	isResident = true;
 	}
@@ -357,6 +396,9 @@ void BitVector::squeeze_by
 	u64 commonNumBits = std::min(numBits,srcBits->size());
 	u64 expectedNumBits = bitwise_count(srcBits->data(),numBits);
 	sdslbitvector* resultBits = new sdslbitvector(expectedNumBits,0);
+	if (reportBits)
+		cerr << "creating squeezeBits for BitVector(" << identity() << " " << this << ")"
+		     << " squeezeBits=" << resultBits << endl;
 
 	u64 reportedNumBits = bitwise_squeeze
 	                        (/*src*/ bits->data(), /*spec*/ srcBits->data(), commonNumBits,
@@ -397,7 +439,15 @@ u64 BitVector::rank1
 		     + " in null bit vector");
 
 	if (ranker1 == nullptr)
+		{
 		ranker1 = new sdslrank1(bits);
+		if (reportRankSelect)
+			{
+			cerr << "creating ranker1 for BitVector(" << identity() << " " << this << ")"
+				 << " ranker1=" << ranker1 << endl;
+			}
+		}
+
 	return ranker1->rank(pos);
 	}
 
@@ -410,12 +460,30 @@ u64 BitVector::select0
 		     + " in null bit vector");
 
 	if (selector0 == nullptr)
+		{
 		selector0 = new sdslselect0(bits);
+		if (reportRankSelect)
+			{
+			cerr << "creating selector0 for BitVector(" << identity() << " " << this << ")"
+				 << " selector0=" << selector0 << endl;
+			}
+		}
+
 	return selector0->select(pos+1);  // (pos+1 compensates for SDSL API)
 	}
 
 void BitVector::discard_rank_select ()
 	{
+	if (reportRankSelect)
+		{
+		if (ranker1 != nullptr)
+			cerr << "discarding ranker1 for BitVector(" << identity() << " " << this << ")"
+			     << " ranker1=" << ranker1 << endl;
+		if (selector0 != nullptr)
+			cerr << "discarding selector0 for BitVector(" << identity() << " " << this << ")"
+			     << " selector0=" << selector0 << endl;
+		}
+
 	if (ranker1   != nullptr) { delete ranker1;    ranker1   = nullptr; }
 	if (selector0 != nullptr) { delete selector0;  selector0 = nullptr; }
 	}
@@ -571,6 +639,10 @@ size_t RrrBitVector::serialized_out
 
 void RrrBitVector::discard_bits()
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RrrBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if      (bits    != nullptr) { delete bits;     bits    = nullptr; }
 	else if (rrrBits != nullptr) { delete rrrBits;  rrrBits = nullptr; }
 	isResident = false;
@@ -591,6 +663,10 @@ void RrrBitVector::new_bits
 void RrrBitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RrrBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits != nullptr)
 		{
 		delete bits;  bits = nullptr;
@@ -610,7 +686,11 @@ void RrrBitVector::copy_from
 void RrrBitVector::copy_from
    (const rrrbitvector* srcRrrBits)
 	{
-	if (bits    != nullptr)
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RrrBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
+	if (bits != nullptr)
 		{
 		delete bits;  bits = nullptr;
 		discard_rank_select();
@@ -638,6 +718,11 @@ void RrrBitVector::compress
 
 	rrrBits = new rrrbitvector (*bits);
 	numBits = rrrBits->size();
+
+	if (reportBits)
+		cerr << "discarding bits for RrrBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	delete bits;  bits = nullptr;
 	discard_rank_select();
 	}
@@ -874,6 +959,10 @@ size_t RoarBitVector::serialized_out
 
 void RoarBitVector::discard_bits()
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RoarBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if      (bits     != nullptr) { delete bits;      bits     = nullptr; }
 	else if (roarBits != nullptr) { delete roarBits;  roarBits = nullptr; }
 	isResident = false;
@@ -891,10 +980,18 @@ void RoarBitVector::new_bits
 void RoarBitVector::copy_from
    (const sdslbitvector* srcBits)
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RoarBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits     != nullptr) { delete bits;  bits = nullptr; }
 	if (roarBits != nullptr) roaring_bitmap_free(roarBits);
 
 	bits = new sdslbitvector (*srcBits);
+	if (reportBits)
+		cerr << "creating bits for RoarBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	numBits = bits->size();
 	isResident = true;
 
@@ -904,6 +1001,10 @@ void RoarBitVector::copy_from
 void RoarBitVector::copy_from
    (const roaring_bitmap_t*	srcRoarBits)
 	{
+	if ((reportBits) && (bits != nullptr))
+		cerr << "discarding bits for RoarBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	if (bits     != nullptr) { delete bits;  bits = nullptr; }
 	if (roarBits != nullptr) roaring_bitmap_free(roarBits);
 
@@ -924,6 +1025,11 @@ void RoarBitVector::compress
 	roarBits = roaring_bitmap_create();
 	for (u64 pos=0 ; pos<numBits; pos++)
 		{ if ((*bits)[pos]) roaring_bitmap_add (roarBits, pos); }
+
+	if (reportBits)
+		cerr << "discarding bits for RoarBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	delete bits;  bits = nullptr;
 	// note that numBits does not change
 	}
@@ -1011,6 +1117,10 @@ void RawBitVector::serialized_in
 	assert (numBits != 0);
 
 	bits = new sdslbitvector(numBits,0);
+	if (reportBits)
+		cerr << "creating bits for RawBitVector(" << identity() << " " << this << ")"
+		     << " bits=" << bits << endl;
+
 	u64* rawBits = bits->data();
 	u64 numBytes = (numBits+7) / 8;
 

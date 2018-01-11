@@ -230,9 +230,9 @@ void BloomTree::construct_union_nodes ()
 	if (dbgTraversal)
 		{
 		if (is_dummy())
-			cerr << "constructing children of (dummy node)" << endl;
+			cerr << "\n=== constructing children of (dummy node) ===" << endl;
 		else
-			cerr << "constructing children of " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
 		}
 
 	for (const auto& child : children)
@@ -256,7 +256,7 @@ void BloomTree::construct_union_nodes ()
 	// children as unloadable
 
 	if (dbgTraversal)
-		cerr << "constructing " << name << endl;
+		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	bf = nullptr;
 	for (const auto& child : children)
@@ -326,7 +326,7 @@ void BloomTree::construct_allsome_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf (for allsome) " << name << endl;
+			cerr << "\n=== constructing leaf (for allsome) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);
@@ -353,9 +353,9 @@ void BloomTree::construct_allsome_nodes ()
 	if (dbgTraversal)
 		{
 		if (is_dummy())
-			cerr << "constructing children of (dummy node)" << endl;
+			cerr << "\n=== constructing children of (dummy node) ===" << endl;
 		else
-			cerr << "constructing children of " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
 		}
 
 	for (const auto& child : children)
@@ -375,7 +375,7 @@ void BloomTree::construct_allsome_nodes ()
 	// create the filter from the child filters
 
 	if (dbgTraversal)
-		cerr << "constructing " << name << endl;
+		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	bf = nullptr;
 	for (const auto& child : children)
@@ -482,7 +482,7 @@ void BloomTree::construct_determined_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf (for determined) " << name << endl;
+			cerr << "\n=== constructing leaf (for determined) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);
@@ -511,9 +511,9 @@ void BloomTree::construct_determined_nodes ()
 	if (dbgTraversal)
 		{
 		if (is_dummy())
-			cerr << "constructing children of (dummy node)" << endl;
+			cerr << "\n=== constructing children of (dummy node) ===" << endl;
 		else
-			cerr << "constructing children of " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
 		}
 
 	for (const auto& child : children)
@@ -538,7 +538,7 @@ void BloomTree::construct_determined_nodes ()
 	//            z       = intersection, over children c, of (Bdet(c) intersect complement of Bhow(c))
 
 	if (dbgTraversal)
-		cerr << "constructing " << name << endl;
+		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	bf = nullptr;
 	for (const auto& child : children)
@@ -663,7 +663,7 @@ void BloomTree::construct_determined_brief_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf (for determined,brief) " << name << endl;
+			cerr << "\n=== constructing leaf (for determined,brief) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);
@@ -694,9 +694,9 @@ void BloomTree::construct_determined_brief_nodes ()
 	if (dbgTraversal)
 		{
 		if (is_dummy())
-			cerr << "constructing children of (dummy node)" << endl;
+			cerr << "\n=== constructing children of (dummy node) ===" << endl;
 		else
-			cerr << "constructing children of " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
 		}
 
 	for (const auto& child : children)
@@ -721,7 +721,7 @@ void BloomTree::construct_determined_brief_nodes ()
 	//            z       = intersection, over children c, of (Bdet(c) intersect complement of Bhow(c))
 
 	if (dbgTraversal)
-		cerr << "constructing " << name << endl;
+		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	bf = nullptr;
 	for (const auto& child : children)
@@ -869,9 +869,9 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	if (dbgTraversal)
 		{
 		if (is_dummy())
-			cerr << "constructing children of (dummy node)" << endl;
+			cerr << "\n=== constructing children of (dummy node) ===" << endl;
 		else
-			cerr << "constructing children of " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			cerr << "\n=== constructing children of " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
 		}
 
 	for (const auto& child : children)
@@ -895,7 +895,7 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	// the children as unloadable
 
 	if (dbgTraversal)
-		cerr << "constructing " << name << endl;
+		cerr << "\n=== constructing " << name << " ===" << endl;
 
 	bf = nullptr;
 	for (const auto& child : children)

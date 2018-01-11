@@ -254,6 +254,8 @@ void BloomFilter::preload(bool bypassManager)
 
 	if ((manager != nullptr) and (not bypassManager))
 		{
+		if (reportManager)
+			cerr << "asking manager to preload " << identity() << " " << this << endl;
 		manager->preload_content (filename);
 		// manager will set ready = true
 		}
@@ -1644,14 +1646,20 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 		if (bfIx == 0)
 			{
+			if (reportConstructor)
+				cerr << "about to construct BloomFilter for " << filename << " content " << bfIx << endl;
 			bf = bloom_filter(header->bfKind,
 			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
+			if (reportConstructor)
+				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
 			bf->bvs[0] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
 			}
 		else
 			{
+			if (reportConstructor)
+				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
 			bf->bvs[bfIx] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
 			}
 

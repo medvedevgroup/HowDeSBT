@@ -104,6 +104,8 @@ public:
 	double fileLoadTime = 0.0;	// (internal use) time (in secs) of latest load
 	static bool reportCreation;
 	static bool reportDestructor;
+	static bool reportBits;
+	static bool reportRankSelect;
 
 public:
 	static bool       valid_filename (const std::string& filename);
