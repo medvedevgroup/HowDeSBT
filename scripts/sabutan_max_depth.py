@@ -19,7 +19,7 @@ def main():
 
 	# parse the command line
 
-	if (len(argv != 1)):
+	if (len(argv) != 1):
 		usage("give me no arguments")
 
 	# read the tree
