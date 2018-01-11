@@ -326,7 +326,7 @@ void BloomTree::construct_allsome_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf " << name << endl;
+			cerr << "constructing leaf (for allsome) " << name << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);
@@ -482,7 +482,7 @@ void BloomTree::construct_determined_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf " << name << endl;
+			cerr << "constructing leaf (for determined) " << name << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);
@@ -663,7 +663,7 @@ void BloomTree::construct_determined_brief_nodes ()
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "constructing leaf " << name << endl;
+			cerr << "constructing leaf (for determined,brief) " << name << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = new BloomFilter(bfFilename);

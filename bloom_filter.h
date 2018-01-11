@@ -106,6 +106,7 @@ public:
 	bool reportSave = false;
 	static bool reportConstructor;
 	static bool reportDestructor;
+	static bool reportManager;
 
 public:
 	static std::string strip_filter_suffix (const std::string& filename);

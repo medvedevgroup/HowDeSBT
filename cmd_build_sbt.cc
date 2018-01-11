@@ -63,6 +63,7 @@ void BuildSBTCommand::debug_help
 	s << "  bvdestructor" << endl;
 	s << "  bfconstructor" << endl;
 	s << "  bfdestructor" << endl;
+	s << "  bfmanager" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  traversal" << endl;
@@ -231,6 +232,8 @@ int BuildSBTCommand::execute()
 		BloomFilter::reportConstructor = true;
 	if (contains(debug,"bfdestructor"))
 		BloomFilter::reportDestructor = true;
+	if (contains(debug,"bfmanager"))
+		BloomFilter::reportManager = true;
 
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 

@@ -124,6 +124,7 @@ using std::endl;
 
 bool BloomFilter::reportConstructor = false;
 bool BloomFilter::reportDestructor  = false;
+bool BloomFilter::reportManager     = false;
 
 //----------
 //
@@ -152,7 +153,7 @@ BloomFilter::BloomFilter
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
 	if (reportConstructor)
-		cerr << "constructor BloomFilter(" << identity() << " " << this << ")" << endl;
+		cerr << "constructor BloomFilter(" << identity() << " " << this << "), variant 1" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -292,7 +293,11 @@ void BloomFilter::load(bool bypassManager)
 //		     + "; attempt to load() onto non-null bit vector");
 
 	if ((manager != nullptr) and (not bypassManager))
+		{
+		if (reportManager)
+			cerr << "asking manager to load " << identity() << " " << this << endl;
 		manager->load_content (filename);
+		}
 	else
 		{
 		if (not ready) preload ();
