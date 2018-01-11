@@ -6,12 +6,6 @@ Rename nodes an sabutan tree, so that higher nodes have lower node numbers.
 from sys                  import argv,stdin,stdout,stderr,exit
 from recover_sabutan_tree import read_sabutan_tree_file
 
-class DrawingControl: pass
-dc = DrawingControl()
-
-# $$$ http://ascii-table.com/unicode-index-i.php
-#     intersection character is U+2229
-#     union        character is U+222A
 
 def usage(s=None):
 	message = """
@@ -24,25 +18,13 @@ usage: cat sabutan_tree_file | rename_sabutan_nodes <template> [options]
 
 
 def main():
-	global debug
 
 	# parse the command line
 
 	nameTemplate = None
-	debug        = {}
 
 	for arg in argv[1:]:
-		if ("=" in arg):
-			argVal = arg.split("=",1)[1]
-
-		if (arg == "--debug"):
-			debug["debug"] = True
-		elif (arg.startswith("--debug=")):
-			for name in argVal.split(","):
-				debug[name] = True
-		elif (arg.startswith("--")):
-			usage("unrecognized option: %s" % arg)
-		elif ("{node}" in arg):
+		if ("{node}" in arg):
 			nameTemplate = arg
 		else:
 			usage("unrecognized option: %s" % arg)

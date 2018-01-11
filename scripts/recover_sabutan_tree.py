@@ -37,13 +37,11 @@ usage: cat sabutan_tree_file | recover_sabutan_tree [options]
 
 
 def main():
-	global debug
 
 	# parse the command line
 
 	showWhat = "pre order"
 	fileSpec = None
-	debug    = {}
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -62,11 +60,6 @@ def main():
 			if ("{name}" not in argVal):
 				usage("filespec MUST contain {name}\n(in \"%s\"" % arg)
 			fileSpec = argVal
-		elif (arg == "--debug"):
-			debug["debug"] = True
-		elif (arg.startswith("--debug=")):
-			for name in argVal.split(","):
-				debug[name] = True
 		elif (arg.startswith("--")):
 			usage("unrecognized option: %s" % arg)
 		else:
