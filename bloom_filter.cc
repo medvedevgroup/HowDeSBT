@@ -276,7 +276,9 @@ void BloomFilter::preload(bool bypassManager)
 		BloomFilter* templateBf = content[0].second;
 		if (templateBf->kind() != kind())
 			fatal ("(internal?) error: in " + identity() + ".preload()"
-			     + " file contains incompatible bloom filters");
+			     + " file contains incompatible"
+			     + "\n..bloom filter, expected kind=" + std::to_string(kind())
+			     + " but file has kind=" + std::to_string(templateBf->kind()));
 
 		copy_properties(templateBf);
 		steal_bits(templateBf);

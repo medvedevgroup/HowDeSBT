@@ -93,6 +93,7 @@ void BloomTree::preload()
 
 void BloomTree::load()
 	{
+øøø this needs to get the right class based on filename!  So do the others.
 	if (bf == nullptr) bf = new BloomFilter(bfFilename);
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
@@ -562,6 +563,7 @@ void BloomTree::construct_determined_nodes ()
 		if (dbgTraversal)
 			cerr << "loading " << child->name << endl;
 		child->load();
+øøø child has the wrong type unless it was a leaf?
 
 		if (child->bf == nullptr)
 			fatal ("internal error: failed to load " + child->bfFilename);
@@ -658,6 +660,8 @@ void BloomTree::construct_determined_nodes ()
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
 	save();
+	// $$$ øøø testing viability of this  ... if it works move it to detbrief also
+	unloadable();
 	}
 
 void BloomTree::construct_determined_brief_nodes ()
