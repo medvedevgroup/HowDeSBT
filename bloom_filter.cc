@@ -153,7 +153,7 @@ BloomFilter::BloomFilter
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
 	if (reportConstructor)
-		cerr << "constructor BloomFilter(" << identity() << " " << this << "), variant 1" << endl;
+		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -187,7 +187,7 @@ BloomFilter::BloomFilter
 	                  else hashModulus = _hashModulus;
 
 	if (reportConstructor)
-		cerr << "constructor BloomFilter(" << identity() << " " << this << "), variant 2" << endl;
+		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
 	}
 
 BloomFilter::BloomFilter
@@ -216,13 +216,13 @@ BloomFilter::BloomFilter
 		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed2);
 
 	if (reportConstructor)
-		cerr << "constructor BloomFilter(" << identity() << " " << this << "), variant 3" << endl;
+		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
 	}
 
 BloomFilter::~BloomFilter()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor BloomFilter(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
 	if (hasher1 != NULL) delete hasher1;
 	if (hasher2 != NULL) delete hasher2;
@@ -984,7 +984,7 @@ AllSomeFilter::AllSomeFilter
 AllSomeFilter::~AllSomeFilter()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor AllSomeFilter(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor AllSomeFilter(" << identity() << ")" << endl;
 	}
 
 // add--
@@ -1068,7 +1068,7 @@ DeterminedFilter::DeterminedFilter
 DeterminedFilter::~DeterminedFilter()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor DeterminedFilter(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor DeterminedFilter(" << identity() << ")" << endl;
 	}
 
 int DeterminedFilter::lookup
@@ -1126,7 +1126,7 @@ DeterminedBriefFilter::DeterminedBriefFilter
 DeterminedBriefFilter::~DeterminedBriefFilter()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor DeterminedBriefFilter(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor DeterminedBriefFilter(" << identity() << ")" << endl;
 	}
 
 int DeterminedBriefFilter::lookup

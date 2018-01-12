@@ -59,11 +59,14 @@ void BuildSBTCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
+	s << "  btconstructor" << endl;
+	s << "  btdestructor" << endl;
 	s << "  btunload" << endl;
 	s << "  bfconstructor" << endl;
 	s << "  bfdestructor" << endl;
 	s << "  bfmanager" << endl;
 	s << "  bvcreation" << endl;
+	s << "  bvconstructor" << endl;
 	s << "  bvdestructor" << endl;
 	s << "  bvbits" << endl;
 	s << "  bvrankselect" << endl;
@@ -227,6 +230,10 @@ void BuildSBTCommand::parse
 
 int BuildSBTCommand::execute()
 	{
+	if (contains(debug,"btconstructor"))
+		BloomTree::reportConstructor = true;
+	if (contains(debug,"btdestructor"))
+		BloomTree::reportDestructor = true;
 	if (contains(debug,"btunload"))
 		BloomTree::reportUnload = true;
 	if (contains(debug,"bfconstructor"))
@@ -237,6 +244,8 @@ int BuildSBTCommand::execute()
 		BloomFilter::reportManager = true;
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
+	if (contains(debug,"bvconstructor"))
+		BitVector::reportConstructor = true;
 	if (contains(debug,"bvdestructor"))
 		BitVector::reportDestructor = true;
 	if (contains(debug,"bvbits"))

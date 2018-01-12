@@ -24,6 +24,7 @@ using std::endl;
 //----------
 
 bool BitVector::reportCreation   = false;
+bool BitVector::reportConstructor = false;
 bool BitVector::reportDestructor = false;
 bool BitVector::reportBits       = false;
 bool BitVector::reportRankSelect = false;
@@ -49,6 +50,8 @@ BitVector::BitVector
 		selector0(nullptr),
 		filterInfo(0)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 1" << endl;
 	}
 
 BitVector::BitVector
@@ -76,6 +79,9 @@ BitVector::BitVector
 		if (srcBv->compressor() == bvcomp_ones)
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 2" << endl;
 	}
 
 BitVector::BitVector
@@ -90,12 +96,15 @@ BitVector::BitVector
 	bits = nullptr;
 	numBits = 0;
 	if (_numBits != 0) new_bits (_numBits);
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor BitVector(" << identity() << "), variant 3" << endl;
 	}
 
 BitVector::~BitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor BitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor BitVector(" << identity() << ")" << endl;
 
 	if ((reportBits) && (bits != nullptr))
 		cerr << "discarding bits for BitVector(" << identity() << " " << this << ")"
@@ -530,6 +539,8 @@ RrrBitVector::RrrBitVector
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 RrrBitVector::RrrBitVector
@@ -562,6 +573,9 @@ RrrBitVector::RrrBitVector
 		if (srcBv->compressor() == bvcomp_ones)
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 RrrBitVector::RrrBitVector
@@ -571,12 +585,14 @@ RrrBitVector::RrrBitVector
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RrrBitVector(" << identity() << "), variant 3" << endl;
 	}
 
 RrrBitVector::~RrrBitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor RrrBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor RrrBitVector(" << identity() << ")" << endl;
 	if (rrrBits != nullptr) delete rrrBits;
 	// bits will get deleted in BitVector's destructor
 	discard_rank_select();
@@ -816,6 +832,8 @@ RoarBitVector::RoarBitVector
 	  :	BitVector(_filename, _offset, _numBytes),
 		roarBits(nullptr)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 RoarBitVector::RoarBitVector
@@ -846,6 +864,9 @@ RoarBitVector::RoarBitVector
 		if (srcBv->compressor() == bvcomp_ones)
 			bitwise_complement (/*dst*/ bits->data(), numBits);
 		}
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 RoarBitVector::RoarBitVector
@@ -853,12 +874,14 @@ RoarBitVector::RoarBitVector
 	  :	BitVector(_numBits),
 		roarBits(nullptr)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RoarBitVector(" << identity() << "), variant 3" << endl;
 	}
 
 RoarBitVector::~RoarBitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor RoarBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor RoarBitVector(" << identity() << ")" << endl;
 	if (roarBits != nullptr) roaring_bitmap_free(roarBits);
 	// bits will get deleted in BitVector's destructor
 	}
@@ -1095,18 +1118,23 @@ RawBitVector::RawBitVector
 	  :	BitVector(_filename, _offset)
 	{
 	numBits = _numBits;
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RawBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 RawBitVector::RawBitVector
    (const u64 _numBits)
 	  :	BitVector(_numBits)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor RawBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 RawBitVector::~RawBitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor RawBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor RawBitVector(" << identity() << ")" << endl;
 	// bits will get deleted in BitVector's destructor
 	}
 
@@ -1149,6 +1177,8 @@ ZerosBitVector::ZerosBitVector
 	const size_t _numBytes)
 	  :	BitVector(_filename, _offset, _numBytes)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor ZerosBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 ZerosBitVector::ZerosBitVector
@@ -1161,12 +1191,15 @@ ZerosBitVector::ZerosBitVector
 	//   .. ZerosBitVector::new_bits()
 
 	if (_numBits != 0) new_bits (_numBits);
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor ZerosBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 ZerosBitVector::~ZerosBitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor ZerosBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor ZerosBitVector(" << identity() << ")" << endl;
 	if (bits != nullptr)
 		fatal ("internal error for " + identity()
 		     + "; destructor encountered non-null bit vector");
@@ -1318,18 +1351,22 @@ OnesBitVector::OnesBitVector
 	const size_t _numBytes)
 	  :	ZerosBitVector(_filename, _offset, _numBytes)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor OnesBitVector(" << identity() << "), variant 1" << endl;
 	}
 
 OnesBitVector::OnesBitVector
    (const u64 _numBits)
 	  :	ZerosBitVector(_numBits)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor OnesBitVector(" << identity() << "), variant 2" << endl;
 	}
 
 OnesBitVector::~OnesBitVector()
 	{
 	if (reportDestructor)
-		cerr << "deconstructor OnesBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << this << " destructor OnesBitVector(" << identity() << ")" << endl;
 	if (bits != nullptr)
 		fatal ("internal error for " + identity()
 		     + "; destructor encountered non-null bit vector");

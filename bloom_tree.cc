@@ -29,8 +29,10 @@ using std::endl;
 //
 //----------
 
-int BloomTree::reportUnload        = false;
-int BloomTree::dbgTraversalCounter = -1;
+bool BloomTree::reportConstructor   = false;
+bool BloomTree::reportDestructor    = false;
+bool BloomTree::reportUnload        = false;
+int  BloomTree::dbgTraversalCounter = -1;
 
 //----------
 //
@@ -48,6 +50,8 @@ BloomTree::BloomTree
 		isLeaf(true),
 		parent(nullptr)
 	{
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
 	}
 
 BloomTree::BloomTree
@@ -65,10 +69,16 @@ BloomTree::BloomTree
 	// …… can we do this using copy semantics?
 	for (const auto& child : root->children)
 		children.emplace_back (child);
+
+	if (reportConstructor)
+		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 2" << endl;
 	}
 
 BloomTree::~BloomTree()
 	{
+	if (reportDestructor)
+		cerr << "@-" << this << " destructor BloomTree(" << bfFilename << ")" << endl;
+
 	if (bf != nullptr) delete bf;
 	for (const auto& subtree : children)
 		delete subtree;

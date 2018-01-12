@@ -103,6 +103,7 @@ public:
 	bool reportSaveTime = false;
 	double fileLoadTime = 0.0;	// (internal use) time (in secs) of latest load
 	static bool reportCreation;
+	static bool reportConstructor;
 	static bool reportDestructor;
 	static bool reportBits;
 	static bool reportRankSelect;
