@@ -345,6 +345,9 @@ void BloomFilter::save()
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + filename + "\"");
 
+	if (reportConstructor)
+		cerr << "@+" << header << " malloc bf file header for BloomFilter(" << identity() << ")" << endl;
+
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
 	// the component offsets and sizes until after we've written them
@@ -407,6 +410,9 @@ void BloomFilter::save()
 	out.close();
 
 	// cleanup
+
+	if ((reportDestructor) && (header != nullptr))
+		cerr << "@-" << header << " free bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	if (header != nullptr) free (header);
 
@@ -1502,6 +1508,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		     + " for file header");
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
+	if (reportConstructor)
+		cerr << "@+" << header << " malloc bf file header for \"" << filename << "\"" << endl;
+
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
 	prevFilePos = currentFilePos;  currentFilePos += in.gcount();
@@ -1671,6 +1680,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			content.emplace_back(bfInfo.name,bf);
 			}
 		}
+
+	if ((reportDestructor) && (header != nullptr))
+		cerr << "@-" << header << " free bf file header for \"" << filename << "\"" << endl;
 
 	if (header != nullptr) free (header);
 

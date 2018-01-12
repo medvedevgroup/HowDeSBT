@@ -438,6 +438,8 @@ string CombineBFCommand::combine_bloom_filters ()
 		fatal ("error: header record for \"" + dstFilename + "\""
 		       " would be too large (" + std::to_string(headerSize) + " bytes)");
 
+	// $$$ change malloc/free to new/delete[]
+	// $$$ report memory allocation with @+ and @-
 	bffileheader* header = (bffileheader*) malloc (headerSize);
 	if (header == nullptr)
 		fatal ("error:"

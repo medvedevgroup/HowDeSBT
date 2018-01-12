@@ -496,6 +496,8 @@ void ClusterCommand::cluster_greedily()
 
 		// create a new node w = union of (u,v)
 
+		// $$$ change malloc/free to new/delete[]
+		// $$$ report memory allocation with @+ and @-
 		u64* wBits = (u64*) malloc (numBytes);
 		if (wBits == nullptr)
 			fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
