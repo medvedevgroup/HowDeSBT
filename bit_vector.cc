@@ -900,20 +900,19 @@ void RoarBitVector::serialized_in
 		     + " problem reading header from \"" + filename + "\"");
 	size_t roarBytes = header.roarBytes;
 
-	// $$$ change malloc/free to new/delete[]
-	char* serializedData = (char*) malloc (roarBytes);
+	char* serializedData = new char[roarBytes];
 	if (serializedData == nullptr)
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " failed to allocate " + std::to_string(roarBytes) + " bytes"
 		     + " for \"" + filename + "\"");
+	if (trackMemory)
+		cerr << "@+" << serializedData << " allocating serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	in.read (serializedData, roarBytes);
 	if (!in.good())
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading " + std::to_string(roarBytes) + " bytes"
 		     + " from \"" + filename + "\"");
-	if (trackMemory)
-		cerr << "@+" << serializedData << " malloc serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
     roarBits = roaring_bitmap_portable_deserialize(serializedData);
 	fileLoadTime = elapsed_wall_time(startTime);
@@ -921,9 +920,9 @@ void RoarBitVector::serialized_in
 	if (trackMemory)
 		cerr << "@+" << roarBits << " creating roarBits for RoarBitVector(" << identity() << " " << this << ")" << endl;
 	if (trackMemory)
-		cerr << "@-" << serializedData << " free serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << serializedData << " discarding serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
-	free(serializedData);
+	delete[] serializedData;
 	numBits = header.numBits;
 	isResident = true;
 	}
@@ -966,18 +965,17 @@ size_t RoarBitVector::serialized_out
 	if ((roarBits == nullptr) and (bits != nullptr))
 		compress();
 
-	// $$$ change malloc/free to new/delete[]
 	roarfile* serializedData;
 	size_t headerBytes = roarHeaderBytes;
 	size_t roarBytes   = roaring_bitmap_portable_size_in_bytes (roarBits);
 	size_t totalBytes  = headerBytes + roarBytes;
-	serializedData = (roarfile*) malloc (totalBytes);
+	serializedData = (roarfile*) new char[totalBytes];
 	if (serializedData == nullptr)
 		fatal ("error: " + class_identity() + "::serialized_out(" + identity() + ")"
 		     + " failed to allocate " + std::to_string(totalBytes) + " bytes"
 		     + " for \"" + filename + "\"");
 	if (trackMemory)
-		cerr << "@+" << serializedData << " malloc serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@+" << serializedData << " allocating serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
 	serializedData->roarBytes = roarBytes;
 	serializedData->numBits   = numBits;
@@ -987,9 +985,9 @@ size_t RoarBitVector::serialized_out
 	out.write ((char*) serializedData, totalBytes);
 
 	if (trackMemory)
-		cerr << "@-" << serializedData << " free serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@-" << serializedData << " discarding serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
-	free (serializedData);
+	delete[] serializedData;
 	return totalBytes;
 	}
 

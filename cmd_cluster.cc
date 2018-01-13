@@ -499,7 +499,7 @@ void ClusterCommand::cluster_greedily()
 			fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 			     + " for node " + std::to_string(w) + "'s bit array");
 		if (trackMemory)
-			cerr << "@+" << wBits << " allocate bits for node[" << w << "]"
+			cerr << "@+" << wBits << " allocating bits for node[" << w << "]"
 			     << " (merges node[" << u << " and node[" << v << "])" << endl;
 
 		bitwise_or (node[u]->bits, node[v]->bits, /*dst*/ wBits, numBits);
@@ -516,7 +516,7 @@ void ClusterCommand::cluster_greedily()
 		else
 			{
 			if (trackMemory)
-				cerr << "@-" << node[u]->bits << " discard bits for node[" << u << "]" << endl;
+				cerr << "@-" << node[u]->bits << " discarding bits for node[" << u << "]" << endl;
 			delete[] node[u]->bits;
 			}
 
@@ -525,7 +525,7 @@ void ClusterCommand::cluster_greedily()
 		else
 			{
 			if (trackMemory)
-				cerr << "@-" << node[v]->bits << " discard bits for node[" << v << "]" << endl;
+				cerr << "@-" << node[v]->bits << " discarding bits for node[" << v << "]" << endl;
 			delete[] node[v]->bits;
 			}
 
@@ -552,7 +552,7 @@ void ClusterCommand::cluster_greedily()
 
 	u32 root = numNodes-1;
 	if (trackMemory)
-		cerr << "@-" << node[root]->bits << " discard bits for node[" << root << "]" << endl;
+		cerr << "@-" << node[root]->bits << " discarding bits for node[" << root << "]" << endl;
 	delete[] node[root]->bits;
 	node[root]->bits = nullptr;
 
