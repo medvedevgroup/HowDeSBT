@@ -68,6 +68,7 @@ void CombineBFCommand::debug_help
 	{
 	s << "--debug= options" << endl;
 	s << "  topology" << endl;
+	s << "  trackmemory" << endl;
 	}
 
 void CombineBFCommand::parse
@@ -227,6 +228,13 @@ void CombineBFCommand::parse
 
 int CombineBFCommand::execute()
 	{
+	if (contains(debug,"trackmemory"))
+		{
+		trackMemory              = true;
+		BloomFilter::trackMemory = true;
+		BitVector::trackMemory   = true;
+		}
+
 	// if we're to make a single unity, do so
 
 	if (not bfFilenames.empty())
@@ -438,13 +446,13 @@ string CombineBFCommand::combine_bloom_filters ()
 		fatal ("error: header record for \"" + dstFilename + "\""
 		       " would be too large (" + std::to_string(headerSize) + " bytes)");
 
-	// $$$ change malloc/free to new/delete[]
-	// $$$ report memory allocation with @+ and @-
-	bffileheader* header = (bffileheader*) malloc (headerSize);
+	bffileheader* header = (bffileheader*) new char[headerSize];
 	if (header == nullptr)
 		fatal ("error:"
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + dstFilename + "\"");
+	if (trackMemory)
+		cerr << "@+" << header << " allocating bf file header])" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
@@ -521,6 +529,12 @@ string CombineBFCommand::combine_bloom_filters ()
 	for (const auto& bf : componentBfs)
 		delete bf;
 
-	if (header != nullptr) free (header);
+	if (header != nullptr)
+		{
+		if (trackMemory)
+			cerr << "@-" << header << " discarding bf file header])" << endl;
+		delete[] header;
+		}
+
 	return dstFilename;
 	}

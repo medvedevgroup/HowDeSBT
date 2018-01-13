@@ -26,6 +26,7 @@ public:
 	std::string outTreeFilename;
 	std::string unityFilename;
 	bool beQuiet;
+	bool trackMemory;
 	};
 
 #endif // cmd_combine_bf_H
