@@ -341,14 +341,14 @@ void BloomFilter::save()
 		fatal ("error: header record for \"" + filename + "\""
 		       " would be too large (" + std::to_string(headerSize) + " bytes)");
 
-	bffileheader* header = (bffileheader*) malloc (headerSize);
+	bffileheader* header = (bffileheader*) new char[headerSize];
 	if (header == nullptr)
 		fatal ("error:"
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + filename + "\"");
 
 	if (trackMemory)
-		cerr << "@+" << header << " malloc bf file header for BloomFilter(" << identity() << ")" << endl;
+		cerr << "@+" << header << " allocating bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
@@ -414,9 +414,9 @@ void BloomFilter::save()
 	// cleanup
 
 	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " free bf file header for BloomFilter(" << identity() << ")" << endl;
+		cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;
 
-	if (header != nullptr) free (header);
+	if (header != nullptr) delete[] header;
 
 	// now we're in the equivalent of the "ready" state; actually we're beyond
 	// that state, in the same state as the result of load()
@@ -1526,7 +1526,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	// read the rest of the header, and validate
 
-	bffileheader* header = (bffileheader*) malloc (prefix.headerSize);
+	bffileheader* header = (bffileheader*) new char[prefix.headerSize];
 	if (header == nullptr)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " failed to allocate " + std::to_string(prefix.headerSize) + " bytes"
@@ -1534,7 +1534,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
 	if (trackMemory)
-		cerr << "@+" << header << " malloc bf file header for \"" << filename << "\"" << endl;
+		cerr << "@+" << header << " allocating bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
@@ -1707,9 +1707,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		}
 
 	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " free bf file header for \"" << filename << "\"" << endl;
+		cerr << "@-" << header << " discarding bf file header for \"" << filename << "\"" << endl;
 
-	if (header != nullptr) free (header);
+	if (header != nullptr) delete[] header;
 
 	return content;
 	}
