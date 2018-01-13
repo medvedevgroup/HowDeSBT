@@ -86,8 +86,6 @@ BloomTree::~BloomTree()
 
 void BloomTree::preload()
 	{
-//øøø
-//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->preload();
@@ -95,8 +93,6 @@ void BloomTree::preload()
 
 void BloomTree::load()
 	{
-//øøø
-//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
@@ -106,8 +102,6 @@ void BloomTree::load()
 
 void BloomTree::save()
 	{
-//øøø
-//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->save();
@@ -167,8 +161,6 @@ BloomFilter* BloomTree::real_filter()
 
 	if (not is_dummy())
 		{
-//øøø
-//		if (bf == nullptr) bf = new BloomFilter(bfFilename);
 		if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 		return bf;
 		}
@@ -862,6 +854,8 @@ void BloomTree::construct_determined_brief_nodes ()
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
 	save();
+// $$$ øøø testing viability of this ... if it works move it to det also
+	unloadable();
 	}
 
 void BloomTree::construct_intersection_nodes () // to assist in debugging
