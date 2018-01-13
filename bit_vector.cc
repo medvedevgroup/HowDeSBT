@@ -912,7 +912,6 @@ void RoarBitVector::serialized_in
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading " + std::to_string(roarBytes) + " bytes"
 		     + " from \"" + filename + "\"");
-
 	if (trackMemory)
 		cerr << "@+" << serializedData << " malloc serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
@@ -977,7 +976,6 @@ size_t RoarBitVector::serialized_out
 		fatal ("error: " + class_identity() + "::serialized_out(" + identity() + ")"
 		     + " failed to allocate " + std::to_string(totalBytes) + " bytes"
 		     + " for \"" + filename + "\"");
-
 	if (trackMemory)
 		cerr << "@+" << serializedData << " malloc serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 

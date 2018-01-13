@@ -61,6 +61,7 @@ public:
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
 	bool inhibitBuild;
+	bool trackMemory;
 
 	std::vector<BitVector*> leafVectors;
 	BinaryTree* treeRoot;

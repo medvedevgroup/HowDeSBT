@@ -244,6 +244,7 @@ int ClusterCommand::execute()
 	{
 	if (contains(debug,"trackmemory"))
 		{
+		trackMemory              = true;
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
 		}
@@ -493,12 +494,13 @@ void ClusterCommand::cluster_greedily()
 
 		// create a new node w = union of (u,v)
 
-		// $$$ change malloc/free to new/delete[]
-		// $$$ report memory allocation with @+ and @-
-		u64* wBits = (u64*) malloc (numBytes);
+		u64* wBits = (u64*) new char[numBytes];
 		if (wBits == nullptr)
 			fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
 			     + " for node " + std::to_string(w) + "'s bit array");
+		if (trackMemory)
+			cerr << "@+" << wBits << " allocate bits for node[" << w << "]"
+			     << " (merges node[" << u << " and node[" << v << "])" << endl;
 
 		bitwise_or (node[u]->bits, node[v]->bits, /*dst*/ wBits, numBits);
 		node[w] = new BinaryTree(w,wBits,node[u],node[v]);
@@ -509,10 +511,23 @@ void ClusterCommand::cluster_greedily()
 		// deactivate u and v by removing their bit arrays; if either was a
 		// leaf tell the corresonding bit vector it can get rid of its bits
 
-		if (u < numLeaves) leafVectors[u]->discard_bits();
-		              else free(node[u]->bits);
-		if (v < numLeaves) leafVectors[v]->discard_bits();
-		              else free(node[v]->bits);
+		if (u < numLeaves)
+			leafVectors[u]->discard_bits();
+		else
+			{
+			if (trackMemory)
+				cerr << "@-" << node[u]->bits << " discard bits for node[" << u << "]" << endl;
+			delete[] node[u]->bits;
+			}
+
+		if (v < numLeaves)
+			leafVectors[v]->discard_bits();
+		else
+			{
+			if (trackMemory)
+				cerr << "@-" << node[v]->bits << " discard bits for node[" << v << "]" << endl;
+			delete[] node[v]->bits;
+			}
 
 		node[u]->bits = nullptr;
 		node[v]->bits = nullptr;
@@ -536,7 +551,9 @@ void ClusterCommand::cluster_greedily()
 	// get rid of the root
 
 	u32 root = numNodes-1;
-	free(node[root]->bits);
+	if (trackMemory)
+		cerr << "@-" << node[root]->bits << " discard bits for node[" << root << "]" << endl;
+	delete[] node[root]->bits;
 	node[root]->bits = nullptr;
 
 	// sanity check -- the only thing left in node list should be the root
