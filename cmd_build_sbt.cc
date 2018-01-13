@@ -59,17 +59,11 @@ void BuildSBTCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  btconstructor" << endl;
-	s << "  btdestructor" << endl;
+	s << "  trackmemory" << endl;
 	s << "  btunload" << endl;
-	s << "  bfconstructor" << endl;
-	s << "  bfdestructor" << endl;
+	s << "  bfcreation" << endl;
 	s << "  bfmanager" << endl;
 	s << "  bvcreation" << endl;
-	s << "  bvconstructor" << endl;
-	s << "  bvdestructor" << endl;
-	s << "  bvbits" << endl;
-	s << "  bvrankselect" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  traversal" << endl;
@@ -230,28 +224,20 @@ void BuildSBTCommand::parse
 
 int BuildSBTCommand::execute()
 	{
-	if (contains(debug,"btconstructor"))
-		BloomTree::reportConstructor = true;
-	if (contains(debug,"btdestructor"))
-		BloomTree::reportDestructor = true;
+	if (contains(debug,"trackmemory"))
+		{
+		BloomTree::trackMemory   = true;
+		BloomFilter::trackMemory = true;
+		BitVector::trackMemory   = true;
+		}
 	if (contains(debug,"btunload"))
 		BloomTree::reportUnload = true;
-	if (contains(debug,"bfconstructor"))
-		BloomFilter::reportConstructor = true;
-	if (contains(debug,"bfdestructor"))
-		BloomFilter::reportDestructor = true;
+	if (contains(debug,"bfcreation"))
+		BloomFilter::reportCreation = true;
 	if (contains(debug,"bfmanager"))
 		BloomFilter::reportManager = true;
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
-	if (contains(debug,"bvconstructor"))
-		BitVector::reportConstructor = true;
-	if (contains(debug,"bvdestructor"))
-		BitVector::reportDestructor = true;
-	if (contains(debug,"bvbits"))
-		BitVector::reportBits = true;
-	if (contains(debug,"bvrankselect"))
-		BitVector::reportRankSelect = true;
 
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 

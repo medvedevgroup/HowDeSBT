@@ -29,8 +29,7 @@ using std::endl;
 //
 //----------
 
-bool BloomTree::reportConstructor   = false;
-bool BloomTree::reportDestructor    = false;
+bool BloomTree::trackMemory         = false;
 bool BloomTree::reportUnload        = false;
 int  BloomTree::dbgTraversalCounter = -1;
 
@@ -50,7 +49,7 @@ BloomTree::BloomTree
 		isLeaf(true),
 		parent(nullptr)
 	{
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
 	}
 
@@ -70,13 +69,13 @@ BloomTree::BloomTree
 	for (const auto& child : root->children)
 		children.emplace_back (child);
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 2" << endl;
 	}
 
 BloomTree::~BloomTree()
 	{
-	if (reportDestructor)
+	if (trackMemory)
 		cerr << "@-" << this << " destructor BloomTree(" << bfFilename << ")" << endl;
 
 	if (bf != nullptr) delete bf;

@@ -73,10 +73,8 @@ void QueryCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
+	s << "  trackmemory" << endl;
 	s << "  bvcreation" << endl;
-	s << "  bvdestructor" << endl;
-	s << "  bfconstructor" << endl;
-	s << "  bfdestructor" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  names" << endl;
@@ -259,14 +257,13 @@ QueryCommand::~QueryCommand()
 
 int QueryCommand::execute()
 	{
+	if (contains(debug,"trackmemory"))
+		{
+		BloomFilter::trackMemory = true;
+		BitVector::trackMemory   = true;
+		}
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
-	if (contains(debug,"bvdestructor"))
-		BitVector::reportDestructor = true;
-	if (contains(debug,"bfconstructor"))
-		BloomFilter::reportConstructor = true;
-	if (contains(debug,"bfdestructor"))
-		BloomFilter::reportDestructor = true;
 
 	// read the tree
 

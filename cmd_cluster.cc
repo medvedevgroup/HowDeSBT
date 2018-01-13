@@ -62,10 +62,8 @@ void ClusterCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
+	s << "  trackmemory" << endl;
 	s << "  bvcreation" << endl;
-	s << "  bvdestructor" << endl;
-	s << "  bfconstructor" << endl;
-	s << "  bfdestructor" << endl;
 	s << "  interval" << endl;
 	s << "  offsets" << endl;
 	s << "  console" << endl;
@@ -244,14 +242,13 @@ ClusterCommand::~ClusterCommand()
 
 int ClusterCommand::execute()
 	{
+	if (contains(debug,"trackmemory"))
+		{
+		BloomFilter::trackMemory = true;
+		BitVector::trackMemory   = true;
+		}
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
-	if (contains(debug,"bvdestructor"))
-		BitVector::reportDestructor = true;
-	if (contains(debug,"bfconstructor"))
-		BloomFilter::reportConstructor = true;
-	if (contains(debug,"bfdestructor"))
-		BloomFilter::reportDestructor = true;
 
 	if (contains(debug,"interval"))
 		cerr << "interval is " << startPosition << ".." << endPosition << endl;

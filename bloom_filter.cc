@@ -122,9 +122,9 @@ using std::endl;
 //
 //----------
 
-bool BloomFilter::reportConstructor = false;
-bool BloomFilter::reportDestructor  = false;
-bool BloomFilter::reportManager     = false;
+bool BloomFilter::trackMemory    = false;
+bool BloomFilter::reportCreation = false;
+bool BloomFilter::reportManager  = false;
 
 //----------
 //
@@ -152,7 +152,7 @@ BloomFilter::BloomFilter
 	//            may increase numBitVectors
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 1" << endl;
 	}
 
@@ -186,7 +186,7 @@ BloomFilter::BloomFilter
 	if (_hashModulus == 0) hashModulus = _numBits;
 	                  else hashModulus = _hashModulus;
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 2" << endl;
 	}
 
@@ -215,13 +215,13 @@ BloomFilter::BloomFilter
 	if (numHashes > 1)
 		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed2);
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
 	}
 
 BloomFilter::~BloomFilter()
 	{
-	if (reportDestructor)
+	if (trackMemory)
 		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
 	if (hasher1 != NULL) delete hasher1;
@@ -347,7 +347,7 @@ void BloomFilter::save()
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + filename + "\"");
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << header << " malloc bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
@@ -413,7 +413,7 @@ void BloomFilter::save()
 
 	// cleanup
 
-	if ((reportDestructor) && (header != nullptr))
+	if ((trackMemory) && (header != nullptr))
 		cerr << "@-" << header << " free bf file header for BloomFilter(" << identity() << ")" << endl;
 
 	if (header != nullptr) free (header);
@@ -991,7 +991,7 @@ AllSomeFilter::AllSomeFilter
 
 AllSomeFilter::~AllSomeFilter()
 	{
-	if (reportDestructor)
+	if (trackMemory)
 		cerr << "@-" << this << " destructor AllSomeFilter(" << identity() << ")" << endl;
 	}
 
@@ -1075,7 +1075,7 @@ DeterminedFilter::DeterminedFilter
 
 DeterminedFilter::~DeterminedFilter()
 	{
-	if (reportDestructor)
+	if (trackMemory)
 		cerr << "@-" << this << " destructor DeterminedFilter(" << identity() << ")" << endl;
 	}
 
@@ -1133,7 +1133,7 @@ DeterminedBriefFilter::DeterminedBriefFilter
 
 DeterminedBriefFilter::~DeterminedBriefFilter()
 	{
-	if (reportDestructor)
+	if (trackMemory)
 		cerr << "@-" << this << " destructor DeterminedBriefFilter(" << identity() << ")" << endl;
 	}
 
@@ -1203,8 +1203,6 @@ string BloomFilter::strip_filter_suffix
    (const string&	filename)
 	{
 	string name = filename;
-
-//øøø are these in the correct order?
 
 	if (is_suffix_of (name, ".bf"))
 		name = strip_suffix(name,".bf");
@@ -1535,7 +1533,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		     + " for file header");
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
-	if (reportConstructor)
+	if (trackMemory)
 		cerr << "@+" << header << " malloc bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
@@ -1682,19 +1680,19 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 		if (bfIx == 0)
 			{
-			if (reportConstructor)
+			if (reportCreation)
 				cerr << "about to construct BloomFilter for " << filename << " content " << bfIx << endl;
 			bf = bloom_filter(header->bfKind,
 			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
-			if (reportConstructor)
+			if (reportCreation)
 				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
 			bf->bvs[0] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
 			}
 		else
 			{
-			if (reportConstructor)
+			if (reportCreation)
 				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
 			bf->bvs[bfIx] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
 			}
@@ -1708,7 +1706,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			}
 		}
 
-	if ((reportDestructor) && (header != nullptr))
+	if ((trackMemory) && (header != nullptr))
 		cerr << "@-" << header << " free bf file header for \"" << filename << "\"" << endl;
 
 	if (header != nullptr) free (header);

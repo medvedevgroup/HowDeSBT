@@ -102,11 +102,8 @@ public:
 	bool reportLoadTime = false;
 	bool reportSaveTime = false;
 	double fileLoadTime = 0.0;	// (internal use) time (in secs) of latest load
+	static bool trackMemory;
 	static bool reportCreation;
-	static bool reportConstructor;
-	static bool reportDestructor;
-	static bool reportBits;
-	static bool reportRankSelect;
 
 public:
 	static bool       valid_filename (const std::string& filename);

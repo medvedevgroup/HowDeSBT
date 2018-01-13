@@ -104,8 +104,8 @@ public:
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
-	static bool reportConstructor;
-	static bool reportDestructor;
+	static bool trackMemory;
+	static bool reportCreation;
 	static bool reportManager;
 
 public:
