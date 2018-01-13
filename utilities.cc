@@ -11,6 +11,7 @@
 #include "utilities.h"
 
 using std::string;
+using std::set;
 using std::cerr;
 using std::endl;
 #define u8  std::uint8_t

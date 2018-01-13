@@ -86,15 +86,18 @@ BloomTree::~BloomTree()
 
 void BloomTree::preload()
 	{
-	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+//øøø
+//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->preload();
 	}
 
 void BloomTree::load()
 	{
-øøø this needs to get the right class based on filename!  So do the others.
-	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+//øøø
+//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
 	bf->reportSave = reportSave;
@@ -103,7 +106,9 @@ void BloomTree::load()
 
 void BloomTree::save()
 	{
-	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+//øøø
+//	if (bf == nullptr) bf = new BloomFilter(bfFilename);
+	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 	relay_debug_settings();
 	bf->save();
 	}
@@ -162,7 +167,9 @@ BloomFilter* BloomTree::real_filter()
 
 	if (not is_dummy())
 		{
-		if (bf == nullptr) bf = new BloomFilter(bfFilename);
+//øøø
+//		if (bf == nullptr) bf = new BloomFilter(bfFilename);
+		if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
 		return bf;
 		}
 
@@ -563,7 +570,6 @@ void BloomTree::construct_determined_nodes ()
 		if (dbgTraversal)
 			cerr << "loading " << child->name << endl;
 		child->load();
-øøø child has the wrong type unless it was a leaf?
 
 		if (child->bf == nullptr)
 			fatal ("internal error: failed to load " + child->bfFilename);
@@ -660,7 +666,7 @@ void BloomTree::construct_determined_nodes ()
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
 	save();
-	// $$$ øøø testing viability of this  ... if it works move it to detbrief also
+// $$$ øøø testing viability of this  ... if it works move it to detbrief also
 	unloadable();
 	}
 

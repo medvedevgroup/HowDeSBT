@@ -1346,11 +1346,16 @@ int BloomFilter::vectors_per_filter
 //----------
 //
 // Arguments (variant 1):
+//	const std::string& filename:	A filename for the new bloom filter.  The
+//									.. type of the bloom filter is derived from
+//									.. the suffix.
+//
+// Arguments (variant 2):
 //	const u32 bfKind:				The type of bloom filter to create; one of
 //									.. bfkind_xxx.
 //	filename..hashModulus:			The same as for the BloomFilter constructors.
 //
-// Arguments (variant 2):
+// Arguments (variant 3):
 //	const BloomFilter* templateBf:	A bloom filter to mimic; only in the sense
 //									.. of its type and properties.
 //	const std::string& newFilename:	A different filename for the new bloom
@@ -1362,6 +1367,26 @@ int BloomFilter::vectors_per_filter
 //----------
 
 //=== variant 1 ===
+
+BloomFilter* BloomFilter::bloom_filter
+   (const string&	filename)
+	{
+	if (is_suffix_of (filename, ".detbrief.bf"))		// bfkind_determined_brief
+		return new DeterminedBriefFilter (filename);
+	if (is_suffix_of (filename, ".det.bf"))				// bfkind_determined
+		return new DeterminedFilter (filename);
+	if (is_suffix_of (filename, ".allsome.bf"))			// bfkind_allsome
+		return new AllSomeFilter (filename);
+	if (is_suffix_of (filename, ".bf"))					// bfkind_simple
+		return new BloomFilter (filename);
+
+	fatal ("error: BloomFilter::bloom_filter(\"" + filename + "\""
+	     + " is not implemented (file extension not recognized)");
+
+	return nullptr; // never reaches here
+	}
+
+//=== variant 2 ===
 
 BloomFilter* BloomFilter::bloom_filter
    (const u32		bfKind,
@@ -1401,7 +1426,7 @@ BloomFilter* BloomFilter::bloom_filter
 	return nullptr; // never reaches here
 	}
 
-//=== variant 2 ===
+//=== variant 3 ===
 
 BloomFilter* BloomFilter::bloom_filter
    (const BloomFilter* templateBf,

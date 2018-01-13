@@ -115,6 +115,8 @@ public:
 	static std::string filter_kind_to_string(std::uint32_t bfKind, bool shortString=true);
 	static int vectors_per_filter (const std::uint32_t bfKind);
 	static BloomFilter* bloom_filter
+	    (const std::string& filename);
+	static BloomFilter* bloom_filter
 	    (const std::uint32_t bfKind,
 	     const std::string& filename, uint32_t kmerSize,
 	     std::uint32_t numHashes, std::uint64_t hashSeed1, std::uint64_t hashSeed2,
