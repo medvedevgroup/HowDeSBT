@@ -28,12 +28,15 @@ public:
 		{
 		if (children[0] != nullptr) delete children[0];
 		if (children[1] != nullptr) delete children[1];
+		if (trackMemory)
+			std::cerr << "@-" << this << " discarding BinaryTree node" << std::endl;
 		}
 
 	std::uint32_t nodeNum;
 	std::uint32_t height;
 	std::uint64_t* bits;
 	BinaryTree* children[2];
+	bool trackMemory;
 	};
 
 
@@ -53,7 +56,6 @@ public:
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
 	virtual void print_topology (std::ostream& out, BinaryTree* root, int level);
-	virtual void delete_tree (BinaryTree* root);
 	virtual void dump_bits (std::ostream& out, const std::uint64_t* bits);
 
 	std::string listFilename;

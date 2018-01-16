@@ -272,8 +272,6 @@ int ClusterCommand::execute()
 		print_topology(out,treeRoot,0);
 		}
 
-	delete_tree(treeRoot);
-
 	// build the tree (we defer this to the "build" command)
 
 	string commandLine = "sabutan build \"" + treeFilename + "\"";
@@ -438,6 +436,8 @@ void ClusterCommand::cluster_greedily()
 			fatal ("error: failed to create BinaryTree for node[" + std::to_string(u) + "]");
 		if (trackMemory)
 			cerr << "@+" << node[u] << " creating BinaryTree for node[" << u << "]" << endl;
+		node[u]->trackMemory = trackMemory;
+
 		if (contains(debug,"bits"))
 			{ cerr << u << ": ";  dump_bits (cerr, node[u]->bits);  cerr << endl; }
 		}
@@ -515,6 +515,7 @@ void ClusterCommand::cluster_greedily()
 			fatal ("error: failed to create BinaryTree for node[" + std::to_string(w) + "]");
 		if (trackMemory)
 			cerr << "@+" << node[w] << " creating BinaryTree for node[" << w << "]" << endl;
+		node[w]->trackMemory = trackMemory;
 
 		if (contains(debug,"bits"))
 			{ cerr << w << ": ";  dump_bits (cerr, wBits);  cerr << endl; }
@@ -621,23 +622,6 @@ void ClusterCommand::print_topology
 
 	if (root->children[0] != nullptr) print_topology (out, root->children[0], level+1);
 	if (root->children[1] != nullptr) print_topology (out, root->children[1], level+1);
-	}
-
-//----------
-//
-// delete_tree--
-//	
-//----------
-
-void ClusterCommand::delete_tree
-   (BinaryTree*		root)
-	{
-	if (root->children[0] != nullptr) delete_tree(root->children[0]);
-	if (root->children[1] != nullptr) delete_tree(root->children[1]);
-
-	if (trackMemory)
-		cerr << "@-" << root << " discarding BinaryTree node" << endl;
-	delete root;
 	}
 
 //----------
