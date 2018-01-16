@@ -158,7 +158,10 @@ int ValidateTreeCommand::execute()
 		nameToFile[node->name] = node->bfFilename;
 
 		if (filenameToNames.count(node->bfFilename) == 0)
+			{
+			// !!! $$$ this looks like a memory leak
 			filenameToNames[node->bfFilename] = new vector<string>;
+			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
 		}
 

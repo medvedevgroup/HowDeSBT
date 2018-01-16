@@ -53,6 +53,7 @@ public:
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
 	virtual void print_topology (std::ostream& out, BinaryTree* root, int level);
+	virtual void delete_tree (BinaryTree* root);
 	virtual void dump_bits (std::ostream& out, const std::uint64_t* bits);
 
 	std::string listFilename;

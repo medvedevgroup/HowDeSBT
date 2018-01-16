@@ -273,7 +273,8 @@ void BloomTree::construct_union_nodes ()
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	bf = nullptr;
+	               // $$$ add sanity check, bf should already be nullptr
+	bf = nullptr;  // $$$ use bool isFirstChild instead
 	for (const auto& child : children)
 		{
 		if (child->isLeaf)
@@ -392,7 +393,8 @@ void BloomTree::construct_allsome_nodes ()
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	bf = nullptr;
+	               // $$$ add sanity check, bf should already be nullptr
+	bf = nullptr;  // $$$ use bool isFirstChild instead
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
@@ -555,7 +557,8 @@ void BloomTree::construct_determined_nodes ()
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	bf = nullptr;
+	               // $$$ add sanity check, bf should already be nullptr
+	bf = nullptr;  // $$$ use bool isFirstChild instead
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
@@ -703,6 +706,7 @@ void BloomTree::construct_determined_brief_nodes ()
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
 		save();
+// $$$ øøø we could do unloadable() here
 		return;
 		}
 
@@ -740,7 +744,8 @@ void BloomTree::construct_determined_brief_nodes ()
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	bf = nullptr;
+	               // $$$ add sanity check, bf should already be nullptr
+	bf = nullptr;  // $$$ use bool isFirstChild instead
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
@@ -804,6 +809,8 @@ void BloomTree::construct_determined_brief_nodes ()
 		{
 		sdslbitvector* bDetX = bf->get_bit_vector(0)->bits;
 		sdslbitvector* iDetC = new sdslbitvector(*bDetX);
+		if (trackMemory)
+			cerr << "@+" << iDetC << " creating iDetC sdslbitvector for parent " << bfFilename << endl;
 		bitwise_complement (/*dst*/ iDetC->data(), bf->numBits);
 
 		for (const auto& child : children)
@@ -814,7 +821,13 @@ void BloomTree::construct_determined_brief_nodes ()
 
 			sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;
 			sdslbitvector* iHowC = new sdslbitvector(*bHowC);
+			if (trackMemory)
+				cerr << "@+" << iDetC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
 			bitwise_and (/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
+
+			if (trackMemory)
+				cerr << "@-" << iHowC << " discarding iHowC sdslbitvector for child " << child->bfFilename << endl;
+			delete iHowC;
 
 			child->bf->squeeze_by(iDetC,0);
 			child->bf->squeeze_by(iHowC,1);
@@ -826,6 +839,10 @@ void BloomTree::construct_determined_brief_nodes ()
 			child->save();
 			child->unloadable();
 			}
+
+		if (trackMemory)
+			cerr << "@-" << iDetC << " discarding iDetC sdslbitvector for parent " << bfFilename << endl;
+		delete iDetC;
 		}
 
 	// if this node has no parent, we need to finish it now
@@ -916,7 +933,8 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	bf = nullptr;
+	               // $$$ add sanity check, bf should already be nullptr
+	bf = nullptr;  // $$$ use bool isFirstChild instead
 	for (const auto& child : children)
 		{
 		if (child->isLeaf)

@@ -310,6 +310,7 @@ MakeBVCommand::~MakeBVCommand()
 
 int MakeBVCommand::execute()
 	{
+	// $$$ add trackMemory to hash constructor/destructor
 	hasher = new HashCanonical(kmerSize,hashSeed);
 
 	// if we're to make a single vector, do so

@@ -184,6 +184,7 @@ SabuhashTestCommand::~SabuhashTestCommand()
 
 int SabuhashTestCommand::execute()
 	{
+	// $$$ add trackMemory to hash constructor/destructor
 	hasher = new HashCanonical(kmerSize,hashSeed);
 
 	// if the user gave us sequence files, process kmers from those files

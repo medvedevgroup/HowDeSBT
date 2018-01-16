@@ -62,7 +62,7 @@ void CompressBFCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
-	s << "  (none, yet)" << endl;
+	s << "  trackmemory" << endl;
 	}
 
 void CompressBFCommand::parse
@@ -211,6 +211,9 @@ void CompressBFCommand::parse
 
 int CompressBFCommand::execute()
 	{
+	if (contains(debug,"trackmemory"))
+		trackMemory = true;
+
 	if (not bfFilenames.empty())
 		{
 		for (const auto& bfFilename : bfFilenames)
@@ -237,7 +240,13 @@ int CompressBFCommand::execute()
 		{
 	    std::ofstream* treeOut = nullptr;
 		if (not outTreeFilename.empty())
+			{
 			treeOut = new std::ofstream(outTreeFilename);
+			if (treeOut == nullptr)
+				fatal ("error: failed to open ofstream \"" + outTreeFilename + "\"");
+			if (trackMemory)
+				cerr << "@+" << treeOut << " creating ofstream \"" << outTreeFilename << "\"" << endl;
+			}
 
 		std::string inTreePath;
 		string::size_type slashIx = inTreeFilename.find_last_of("/");
@@ -271,6 +280,8 @@ int CompressBFCommand::execute()
 		if (treeOut != nullptr)
 			{
 			treeOut->close();
+			if (trackMemory)
+				cerr << "@-" << treeOut << " deleting ofstream \"" << outTreeFilename << "\"" << endl;
 			delete treeOut;
 			}
 		}

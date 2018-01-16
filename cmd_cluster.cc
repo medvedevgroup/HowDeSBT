@@ -265,12 +265,14 @@ int ClusterCommand::execute()
 	cluster_greedily ();
 
 	if (contains(debug,"console"))
-		print_topology (cout,treeRoot,0);
+		print_topology(cout,treeRoot,0);
 	else
 		{
 	    std::ofstream out(treeFilename);
-		print_topology (out,treeRoot,0);
+		print_topology(out,treeRoot,0);
 		}
+
+	delete_tree(treeRoot);
 
 	// build the tree (we defer this to the "build" command)
 
@@ -432,6 +434,10 @@ void ClusterCommand::cluster_greedily()
 		BitVector* bv = leafVectors[u];
 		bv->load();
 		node[u] = new BinaryTree(u,bv->bits->data());
+		if (node[u] == nullptr)
+			fatal ("error: failed to create BinaryTree for node[" + std::to_string(u) + "]");
+		if (trackMemory)
+			cerr << "@+" << node[u] << " creating BinaryTree for node[" << u << "]" << endl;
 		if (contains(debug,"bits"))
 			{ cerr << u << ": ";  dump_bits (cerr, node[u]->bits);  cerr << endl; }
 		}
@@ -503,7 +509,12 @@ void ClusterCommand::cluster_greedily()
 			     << " (merges node[" << u << " and node[" << v << "])" << endl;
 
 		bitwise_or (node[u]->bits, node[v]->bits, /*dst*/ wBits, numBits);
+
 		node[w] = new BinaryTree(w,wBits,node[u],node[v]);
+		if (node[w] == nullptr)
+			fatal ("error: failed to create BinaryTree for node[" + std::to_string(w) + "]");
+		if (trackMemory)
+			cerr << "@+" << node[w] << " creating BinaryTree for node[" << w << "]" << endl;
 
 		if (contains(debug,"bits"))
 			{ cerr << w << ": ";  dump_bits (cerr, wBits);  cerr << endl; }
@@ -610,6 +621,23 @@ void ClusterCommand::print_topology
 
 	if (root->children[0] != nullptr) print_topology (out, root->children[0], level+1);
 	if (root->children[1] != nullptr) print_topology (out, root->children[1], level+1);
+	}
+
+//----------
+//
+// delete_tree--
+//	
+//----------
+
+void ClusterCommand::delete_tree
+   (BinaryTree*		root)
+	{
+	if (root->children[0] != nullptr) delete_tree(root->children[0]);
+	if (root->children[1] != nullptr) delete_tree(root->children[1]);
+
+	if (trackMemory)
+		cerr << "@-" << root << " discarding BinaryTree node" << endl;
+	delete root;
 	}
 
 //----------

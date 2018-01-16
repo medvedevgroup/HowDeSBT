@@ -26,6 +26,8 @@ using std::endl;
 //
 //----------
 
+// $$$ add trackMemory to hash constructor/destructor
+
 FileManager::FileManager
    (BloomTree* root)
 	  :	modelBf(nullptr)
@@ -50,7 +52,10 @@ FileManager::FileManager
 		nameToNode[node->name] = node;
 
 		if (filenameToNames.count(node->bfFilename) == 0)
+			{
+			// !!! $$$ this looks like a memory leak
 			filenameToNames[node->bfFilename] = new vector<string>;
+			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
 		}
 
@@ -121,6 +126,7 @@ std::ifstream* FileManager::preload_content
 
 	if (already_preloaded(filename)) return nullptr;
 
+	// $$$ add trackMemory for in
 	std::ifstream* in = new std::ifstream(filename, std::ios::binary | std::ios::in);
 
 	//std::ifstream in (filename, std::ios::binary | std::ios::in);
@@ -163,12 +169,14 @@ std::ifstream* FileManager::preload_content
 			node->bf->is_consistent_with (modelBf, /*beFatal*/ true);
 		}
 
-	// if we're supposed to leave the file open, return the file to the caller;
-	// otherwise, clean up the file and return null
+	// if we're supposed to leave the file open, return the file to the caller
+	// (the caller is expected to close and delete it); otherwise, clean up the
+	// file and return null
 
 	if (leaveFileOpen)
 		return in;
 
+	// $$$ add trackMemory for in
 	in->close();
 	delete in;
 	return nullptr;

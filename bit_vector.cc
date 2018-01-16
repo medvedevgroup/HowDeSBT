@@ -1501,6 +1501,8 @@ string BitVector::compressor_to_string
 //
 //----------
 
+#define numBytesSanityLimit  ((size_t) (1*1000*1000*1000))
+
 //=== variant 1 ===
 
 BitVector* BitVector::bit_vector
@@ -1513,6 +1515,10 @@ BitVector* BitVector::bit_vector
 	string kind     = _kind;
 	size_t offset   = _offset;
 	u64 numBits = 0;
+
+	if (numBytes > numBytesSanityLimit)
+		fatal ("internal error: request for " + std::to_string(numBytes)
+		    + "for bit vector \"" + filename + "\" exceeds sanity limit");
 
 	// if no kind has been specified, see if the filename is of the form
 	// <filename>:<type>[:<offset>]

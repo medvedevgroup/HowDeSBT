@@ -177,6 +177,7 @@ BloomFilter::BloomFilter
 	// (see note in first constuctor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
+	// $$$ add trackMemory to hash constructor/destructor
 	hasher1 = new HashCanonical(kmerSize,_hashSeed1);
 	if (_numHashes > 1)
 		hasher2 = new HashCanonical(kmerSize,_hashSeed2);
