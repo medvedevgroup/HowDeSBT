@@ -210,6 +210,7 @@ BloomFilter::BloomFilter
 	if (newFilename != "") filename = newFilename;
 	                  else filename = templateBf->filename;
 
+	// $$$ add trackMemory to hash constructor/destructor
 	hasher1 = hasher2 = nullptr;
 	if (numHashes > 0)
 		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed1);
@@ -769,6 +770,10 @@ void BloomFilter::squeeze_by
 			int fillValue = (compressor == bvcomp_zeros)? 0 : 1;
 			u64 resultNumBits = bitwise_count(srcBv->bits->data(),numBits);
 			sdslbitvector* resultBits = new sdslbitvector(resultNumBits,fillValue);
+			if (trackMemory)
+				cerr << "@+" << resultBits << " creating sdslbitvector for BitVector "
+				     << bvs[whichDstBv]->identity() << endl;
+
 			bvs[whichDstBv]->replace_bits(resultBits);
 			break;
 		}
