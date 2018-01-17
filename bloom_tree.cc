@@ -822,7 +822,7 @@ void BloomTree::construct_determined_brief_nodes ()
 			sdslbitvector* bHowC = child->bf->get_bit_vector(0)->bits;
 			sdslbitvector* iHowC = new sdslbitvector(*bHowC);
 			if (trackMemory)
-				cerr << "@+" << iDetC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
+				cerr << "@+" << iHowC << " creating iHowC sdslbitvector for child " << child->bfFilename << endl;
 			bitwise_and (/*dst*/ iHowC->data(), /*src*/ iDetC->data(), bf->numBits);
 
 			child->bf->squeeze_by(iDetC,0);
