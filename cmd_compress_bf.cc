@@ -317,14 +317,14 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		}
 
 	// load the source filter
- 	// $$$ if the file contains mutiple filters we should compress each
+ 	// $$$ if the file contains multiple filters we should compress each
  	//     .. separately and combine them into a single resultant file;  as it
  	//     .. stands, we'll get an internal error in BloomFilter::preload()
  
 	BloomFilter* srcBf = new BloomFilter (filename);
 	srcBf->load();
 
-	// øøø this need to loop over bvs[]	
+	// øøø this needs to loop over bvs[]	
 	u32 srcCompressor = srcBf->bvs[0]->compressor();
 	if (compressor == srcCompressor)
 		{
@@ -344,7 +344,7 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		dstBf->new_bits (srcBf->bvs[0], compressor);
 	else
 		{
-		// øøø this need to loop over bvs[]	
+		// øøø this needs to loop over bvs[]	
 		// ……… improve this for RRR by decoding chunk by chunk
 		dstBf->new_bits (compressor);
 		BitVector* srcBv = srcBf->bvs[0];
