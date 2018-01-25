@@ -56,6 +56,8 @@ void ClusterCommand::usage
 	s << "                    (by default we use the first " << defaultEndPosition << " bits)" << endl;
 	s << "  --bits=<N>        number of bits to use from each filter; same as 0..<N>" << endl;
 	s << "  --nobuild         perform the clustering but don't build the tree's nodes" << endl;
+	s << "                    (this is the default)" << endl;
+	s << "  --build           perform clustering, then build the uncompressed nodes" << endl;
 	}
 
 void ClusterCommand::debug_help
@@ -85,7 +87,7 @@ void ClusterCommand::parse
 
 	startPosition = 0;
 	endPosition   = defaultEndPosition;
-	inhibitBuild  = false;
+	inhibitBuild  = true;
 
 	// skip command name
 
@@ -161,11 +163,14 @@ void ClusterCommand::parse
 			continue;
 			}
 
-		// --nobuild
+		// --nobuild, --build
 
 		if ((arg == "--nobuild")
 		 ||	(arg == "--dontbuild"))
 			{ inhibitBuild = true;  continue; }
+
+		if (arg == "--build")
+			{ inhibitBuild = false;  continue; }
 
 		// (unadvertised) debug options
 
