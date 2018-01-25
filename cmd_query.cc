@@ -253,6 +253,14 @@ void QueryCommand::parse
 	if (countAllKmerHits)
 		onlyLeaves = true;
 
+	if (collectNodeStats)
+		{
+		if (justReportKmerCounts)
+			chastise ("--collectnodestats cannot be used with --justcountkmers");
+		if (countAllKmerHits)
+			chastise ("--collectnodestats cannot be used with --countallkmerhits");
+		}
+
 	return;
 	}
 
@@ -362,7 +370,7 @@ int QueryCommand::execute()
 
 		u32 batchSize = queries.size();
 		for (const auto& node : order)
-			node->collect_query_stats(batchSize);
+			node->enable_query_stats(batchSize);
 		}
 
 	// propagate debug information into the queries and/or tree nodes
@@ -471,6 +479,16 @@ int QueryCommand::execute()
 			{
 			std::ofstream out(matchesFilename);
 			print_matches (out);
+			}
+
+		// report per-node query stats
+
+		if (collectNodeStats)
+			{
+			if (order.size() == 0)
+				root->post_order(order);
+			for (const auto& node : order)
+				node->report_query_stats(cerr,queries);
 			}
 		}
 

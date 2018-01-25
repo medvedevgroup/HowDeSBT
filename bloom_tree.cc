@@ -993,23 +993,6 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	}
 
 
-void BloomTree::collect_query_stats
-   (const u32 batchSize)
-	{
-	if (queryStats != nullptr)
-		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
-		      + " to collect query stats"
-		      + ", but it had already previously allocated a stats vector");
-
-	queryStats = new querystats[batchSize];
-	if (queryStats == nullptr)
-		fatal ("error: failed to allocate " + std::to_string(batchSize)
-		     + "-entry stats array for BloomTree(" + bfFilename + ")");
-	if (trackMemory)
-		cerr << "@+" << queryStats << " allocating stats for BloomTree(" << bfFilename << ")" << endl;
-	}
-
-
 int BloomTree::lookup
    (const u64 pos) const
 	{
@@ -1021,6 +1004,7 @@ int BloomTree::lookup
 	else
 		return BloomFilter::unresolved;
 	}
+
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
@@ -1548,6 +1532,63 @@ void BloomTree::batch_count_kmer_hits
 	// we don't need this node's filter to be resident any more
 
 	unloadable();
+	}
+
+
+void BloomTree::enable_query_stats
+   (const u32 batchSize)
+	{
+	if (queryStats != nullptr)
+		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
+		      + " to collect query stats"
+		      + ", but it had already previously allocated a stats array");
+
+	queryStats = new querystats[batchSize];
+	if (queryStats == nullptr)
+		fatal ("error: failed to allocate " + std::to_string(batchSize)
+		     + "-entry stats array for BloomTree(" + bfFilename + ")");
+	if (trackMemory)
+		cerr << "@+" << queryStats << " allocating stats for BloomTree(" << bfFilename << ")" << endl;
+	queryStatsLen = batchSize;
+
+	for (u32 ix=0 ; ix<queryStatsLen ; ix++)
+		clear_query_stats(queryStats[ix]);
+	}
+
+
+void BloomTree::clear_query_stats
+   (querystats& stats)
+	{
+	stats.visited = false;
+	stats.farf    = 7;
+	}
+
+void BloomTree::report_query_stats
+   (std::ostream&       s,
+	std::vector<Query*> queries)
+	{
+	if (queryStats == nullptr)
+		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
+		      + " to report query stats it never collected");
+	if (queries.size() != queryStatsLen)
+		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
+		      + " to report stats for " + std::to_string(queries.size())
+		      + " queries, but it collected for " + std::to_string(queryStatsLen));
+
+	for (u32 ix=0 ; ix<queryStatsLen ; ix++)
+		report_query_stats(s,queries[ix]->name,queryStats[ix]);
+	}
+
+void BloomTree::report_query_stats
+   (std::ostream& s,
+	const string& queryName,
+	querystats&   stats)
+	{
+	s << name
+	  << " " << queryName
+	  << " " << stats.visited
+	  << " " << stats.farf
+	  << endl;
 	}
 
 //----------

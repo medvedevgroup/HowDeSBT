@@ -16,7 +16,8 @@
 
 struct querystats
 	{
-	std::uint64_t farf;  // $$$ replace this
+	bool          visited;  // $$$ replace this
+	std::uint64_t farf;     // $$$ replace this
 	};
 
 
@@ -53,8 +54,6 @@ public:
 	virtual void construct_determined_brief_nodes ();
 	virtual void construct_intersection_nodes ();
 
-	virtual void collect_query_stats(const std::uint32_t batchSize);
-
 	virtual int lookup (const std::uint64_t pos) const;
 	virtual void batch_query (std::vector<Query*> queries, double queryThreshold,
 	                          bool isLeafOnly=false, bool distinctKmers=false);
@@ -67,6 +66,12 @@ public:
 	                                    bool isLeafOnly=false, bool distinctKmers=false);
 private:
 	virtual void batch_count_kmer_hits (std::vector<Query*> queries);
+
+public:
+	virtual void enable_query_stats(const std::uint32_t batchSize);
+	virtual void clear_query_stats(querystats& stats);
+	virtual void report_query_stats(std::ostream& s,std::vector<Query*> queries);
+	virtual void report_query_stats(std::ostream& s,const std::string& queryName,querystats& stats);
 
 public:
 	bool isDummy;						// a dummy has no filter; the root might
@@ -87,7 +92,8 @@ public:
 	static int  dbgTraversalCounter;
 
 public:
-	querystats* queryStats;		// querystats queryStats[batchSize]
+	std::uint32_t queryStatsLen;
+	querystats* queryStats;				// querystats queryStats[queryStatsLen]
 
 public:
 	bool dbgTraversal           = false;
