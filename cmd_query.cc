@@ -22,6 +22,7 @@ using std::cin;
 using std::cout;
 using std::cerr;
 using std::endl;
+#define u32 std::uint32_t
 #define u64 std::uint64_t
 
 
@@ -106,6 +107,7 @@ void QueryCommand::parse
 	checkConsistency     = true;
 	justReportKmerCounts = false;
 	countAllKmerHits     = false;
+	collectNodeStats     = false;
 
 	// skip command name
 
@@ -199,7 +201,7 @@ void QueryCommand::parse
 			continue;
 			}
 
-		// --justcountkmers
+		// --countallkmerhits
 
 		if (arg == "--countallkmerhits")
 			{
@@ -207,6 +209,11 @@ void QueryCommand::parse
 			countAllKmerHits     = true;
 			continue;
 			}
+
+		// --collectnodestats (unadvertised)
+
+		if (arg == "--collectnodestats")
+			{ collectNodeStats = true;  continue; }
 
 		// --out=<filename>, etc.
 
@@ -343,6 +350,19 @@ int QueryCommand::execute()
 			cerr << ">" << q->name << endl;
 			cerr << q->seq << endl;
 			}
+		}
+
+	// if we're to collect per-node query stats, tell each node that it is to
+	// collect stats
+
+	if (collectNodeStats)
+		{
+		if (order.size() == 0)
+			root->post_order(order);
+
+		u32 batchSize = queries.size();
+		for (const auto& node : order)
+			node->collect_query_stats(batchSize);
 		}
 
 	// propagate debug information into the queries and/or tree nodes

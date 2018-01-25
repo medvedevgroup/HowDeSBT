@@ -36,6 +36,7 @@ public:
 	bool checkConsistency;			// only meaningful if useFileManager is false
 	bool justReportKmerCounts;
 	bool countAllKmerHits;
+	bool collectNodeStats;
 
 	std::vector<Query*> queries;
 	};

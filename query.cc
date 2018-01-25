@@ -35,8 +35,9 @@ Query::Query
 		numFailed(0),
 		nodesExamined(0)
 	{
-	name = qd.name;
-	seq  = qd.seq;
+	batchIx = qd.batchIx;
+	name    = qd.name;
+	seq     = qd.seq;
 	}
 
 Query::~Query()
@@ -250,7 +251,10 @@ void Query::read_query_file
 					cerr << "warning: ignoring empty sequence in \"" << filename << "\""
 					     << " (at line " << std::to_string(queryLineNum) << ")" << endl;
 				else
+					{
+					qd.batchIx = queries.size();
 					queries.emplace_back(new Query(qd));
+					}
 				}
 
 			queryLineNum = lineNum;
@@ -272,6 +276,7 @@ void Query::read_query_file
 
 		else
 			{
+			qd.batchIx = queries.size();
 			qd.name = baseName + std::to_string(lineNum);
 			qd.seq  = line;
 			queries.emplace_back(new Query(qd));
@@ -287,7 +292,10 @@ void Query::read_query_file
 			cerr << "warning: ignoring empty sequence in \"" << filename << "\""
 			     << " (preceding line " << lineNum << ")" << endl;
 		else
+			{
+			qd.batchIx = queries.size();
 			queries.emplace_back(new Query(qd));
+			}
 		}
 
 	}

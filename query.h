@@ -16,8 +16,9 @@
 
 struct querydata
 	{
-	std::string name;
-	std::string seq;	// nucleotide sequence
+	std::uint32_t batchIx;	// index of this query within a batch
+	std::string   name;
+	std::string   seq;		// nucleotide sequence
 	};
 
 
@@ -33,8 +34,9 @@ public:
 	virtual std::uint64_t kmer_positions_hash (std::uint64_t numUnresolved=-1);
 
 public:
+	std::uint32_t batchIx;	// index of this query within a batch
 	std::string name;
-	std::string seq;	// nucleotide sequence
+	std::string seq;		// nucleotide sequence
 	std::vector<std::uint64_t> kmerPositions;
 
 	std::uint64_t numPositions;

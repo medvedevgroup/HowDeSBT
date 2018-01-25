@@ -21,6 +21,7 @@ using std::vector;
 using std::cout;
 using std::cerr;
 using std::endl;
+#define u32 std::uint32_t
 #define u64 std::uint64_t
 
 //----------
@@ -47,7 +48,8 @@ BloomTree::BloomTree
 		bfFilename(_bfFilename),
 		bf(nullptr),
 		isLeaf(true),
-		parent(nullptr)
+		parent(nullptr),
+		queryStats(nullptr)
 	{
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
@@ -60,7 +62,8 @@ BloomTree::BloomTree
 		bfFilename(root->bfFilename),
 		bf(root->bf),
 		isLeaf(root->isLeaf),
-		parent(nullptr)
+		parent(nullptr),
+		queryStats(nullptr)
 	{
 	// nota bene: this doesn't copy the subtree, just the root node; we expect
 	//            the caller will detach everything from the root node
@@ -81,6 +84,11 @@ BloomTree::~BloomTree()
 	if (bf != nullptr) delete bf;
 	for (const auto& subtree : children)
 		delete subtree;
+
+	if ((trackMemory) && (queryStats != nullptr))
+		cerr << "@-" << queryStats << " discarding stats for BloomTree(" << bfFilename << ")" << endl;
+
+	if (queryStats != nullptr) delete[] queryStats;
 	}
 
 void BloomTree::preload()
@@ -985,8 +993,25 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	}
 
 
+void BloomTree::collect_query_stats
+   (const u32 batchSize)
+	{
+	if (queryStats != nullptr)
+		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
+		      + " to collect query stats"
+		      + ", but it had already previously allocated a stats vector");
+
+	queryStats = new querystats[batchSize];
+	if (queryStats == nullptr)
+		fatal ("error: failed to allocate " + std::to_string(batchSize)
+		     + "-entry stats array for BloomTree(" + bfFilename + ")");
+	if (trackMemory)
+		cerr << "@+" << queryStats << " allocating stats for BloomTree(" << bfFilename << ")" << endl;
+	}
+
+
 int BloomTree::lookup
-   (const std::uint64_t pos) const
+   (const u64 pos) const
 	{
 	int resolution = bf->lookup(pos);
 	if  (resolution != BloomFilter::unresolved)

@@ -14,6 +14,12 @@
 //
 //----------
 
+struct querystats
+	{
+	std::uint64_t farf;  // $$$ replace this
+	};
+
+
 class BloomTree
 	{
 public:
@@ -47,6 +53,8 @@ public:
 	virtual void construct_determined_brief_nodes ();
 	virtual void construct_intersection_nodes ();
 
+	virtual void collect_query_stats(const std::uint32_t batchSize);
+
 	virtual int lookup (const std::uint64_t pos) const;
 	virtual void batch_query (std::vector<Query*> queries, double queryThreshold,
 	                          bool isLeafOnly=false, bool distinctKmers=false);
@@ -77,6 +85,9 @@ public:
 	static bool trackMemory;
 	static bool reportUnload;
 	static int  dbgTraversalCounter;
+
+public:
+	querystats* queryStats;		// querystats queryStats[batchSize]
 
 public:
 	bool dbgTraversal           = false;

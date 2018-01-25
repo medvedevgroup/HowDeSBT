@@ -284,7 +284,7 @@ int ClusterCommand::execute()
 	if (inhibitBuild)
 		{
 		cerr << treeFilename << " has been created"
-		     << ", but (because of --nobuild) the internal nodes have not been built." << endl;
+		     << ", but the internal nodes have not been built." << endl;
 		cerr << "You can use this command to build them:" << endl;
 		cerr << commandLine << endl;
 		}
