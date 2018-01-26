@@ -485,10 +485,18 @@ int QueryCommand::execute()
 
 		if (collectNodeStats)
 			{
-			if (order.size() == 0)
-				root->post_order(order);
-			for (const auto& node : order)
-				node->report_query_stats(cerr,queries);
+			vector<BloomTree*> preOrder;
+			root->pre_order(preOrder);
+
+			bool isFirst = true;
+			for (auto& q : queries)
+				{
+				if (isFirst) isFirst = false;
+				        else cerr << endl;
+
+				for (const auto& node : preOrder)
+					node->report_query_stats(cerr,q);
+				}
 			}
 		}
 

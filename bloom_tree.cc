@@ -1095,6 +1095,17 @@ void BloomTree::batch_query
 		return;
 		}
 
+	// collect some stats
+
+	if (queryStats != nullptr)
+		{
+		for (qIx=0 ; qIx<incomingQueries ; qIx++)
+			{
+			Query* q = queries[qIx];
+			queryStats[q->batchIx].examined = true;
+			}
+		}
+
 	if (dbgTraversal)
 		cerr << "examining " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
 
@@ -1239,18 +1250,41 @@ void BloomTree::batch_query
 		// if the query is resolved, swap it with the end of list, and shorten
 		// the list; we leave qIx at the same position, as this now points to
 		// the query moved from the end of the list
+		//
+		// otherwise, just move on to the next query
 
 		if (queryPasses or queryFails)
 			{
 			activeQueries--;
 			queries[qIx] = queries[activeQueries];
 			queries[activeQueries] = q;
-			continue;
+			}
+		else
+			{
+			qIx++;  // move on to the next query
 			}
 
-		// otherwise, move on to the next query
+		// collect some stats
 
-		qIx++;
+		if (queryStats != nullptr)
+			{
+			querystats* stats = &queryStats[q->batchIx];
+
+			if (queryPasses) stats->passed = true;
+			if (queryFails)  stats->failed = true;
+			stats->numPassed     = q->numPassed;
+			stats->numFailed     = q->numFailed;
+			stats->numUnresolved = q->numUnresolved;
+
+			stats->locallyPassed = stats->numPassed;
+			stats->locallyFailed = stats->numFailed;
+			if (parent != nullptr)
+				{
+				querystats* parentStats = &parent->queryStats[q->batchIx];
+				stats->locallyPassed -= parentStats->numPassed;
+				stats->locallyFailed -= parentStats->numFailed;
+				}
+			}
 		}
 
 	// unless we're going to adjust kmers/positions, we don't need this node's
@@ -1559,36 +1593,47 @@ void BloomTree::enable_query_stats
 void BloomTree::clear_query_stats
    (querystats& stats)
 	{
-	stats.visited = false;
-	stats.farf    = 7;
+	stats.examined      = false;
+	stats.passed        = false;
+	stats.failed        = false;
+	stats.numPassed     = 0;
+	stats.numFailed     = 0;
+	stats.numUnresolved = 0;
+	stats.locallyPassed = 0;
+	stats.locallyFailed = 0;
 	}
 
 void BloomTree::report_query_stats
-   (std::ostream&       s,
-	std::vector<Query*> queries)
+   (std::ostream&   s,
+	Query*			q)
 	{
 	if (queryStats == nullptr)
-		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
+		fatal ("internal error: asking " + name
 		      + " to report query stats it never collected");
-	if (queries.size() != queryStatsLen)
-		fatal ("internal error: asking BloomTree(" + bfFilename + ")"
-		      + " to report stats for " + std::to_string(queries.size())
+
+	u32 batchIx = q->batchIx;
+	if (batchIx >= queryStatsLen)
+		fatal ("internal error: asking " + name +
+		      + " to report stats for query " + std::to_string(batchIx)
 		      + " queries, but it collected for " + std::to_string(queryStatsLen));
 
-	for (u32 ix=0 ; ix<queryStatsLen ; ix++)
-		report_query_stats(s,queries[ix]->name,queryStats[ix]);
-	}
+	querystats* stats = &queryStats[batchIx];
 
-void BloomTree::report_query_stats
-   (std::ostream& s,
-	const string& queryName,
-	querystats&   stats)
-	{
-	s << name
-	  << " " << queryName
-	  << " " << stats.visited
-	  << " " << stats.farf
-	  << endl;
+	s << q->name
+	  << "\t" << name
+	  << "\t" << ((stats->examined)? "E" : "-")
+	  << "\t" << ((stats->passed)? "P" : ((stats->failed)? "F" : "-"));
+
+	if (stats->examined)
+		s << "\t" << stats->locallyPassed
+		  << "\t" << stats->locallyFailed
+		  << "\t" << stats->numPassed
+		  << "\t" << stats->numFailed
+		  << "\t" << stats->numUnresolved;
+	else
+		s << "\t-\t-\t-\t-\t-";
+
+	s << endl;
 	}
 
 //----------

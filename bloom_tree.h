@@ -16,8 +16,14 @@
 
 struct querystats
 	{
-	bool          visited;  // $$$ replace this
-	std::uint64_t farf;     // $$$ replace this
+	bool			examined;
+	bool			passed;
+	bool			failed;
+	std::uint64_t	numPassed;
+	std::uint64_t	numFailed;
+	std::uint64_t	numUnresolved;
+	std::uint64_t	locallyPassed;
+	std::uint64_t	locallyFailed;
 	};
 
 
@@ -70,8 +76,7 @@ private:
 public:
 	virtual void enable_query_stats(const std::uint32_t batchSize);
 	virtual void clear_query_stats(querystats& stats);
-	virtual void report_query_stats(std::ostream& s,std::vector<Query*> queries);
-	virtual void report_query_stats(std::ostream& s,const std::string& queryName,querystats& stats);
+	virtual void report_query_stats(std::ostream& s,Query* q);
 
 public:
 	bool isDummy;						// a dummy has no filter; the root might
