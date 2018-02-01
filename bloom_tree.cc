@@ -1603,9 +1603,10 @@ void BloomTree::clear_query_stats
 	stats.locallyFailed = 0;
 	}
 
-void BloomTree::report_query_stats
+bool BloomTree::report_query_stats  // returns true if anything was reported
    (std::ostream&   s,
-	Query*			q)
+	Query*			q,
+	bool			quietly)
 	{
 	if (queryStats == nullptr)
 		fatal ("internal error: asking " + name
@@ -1618,6 +1619,8 @@ void BloomTree::report_query_stats
 		      + " queries, but it collected for " + std::to_string(queryStatsLen));
 
 	querystats* stats = &queryStats[batchIx];
+	if ((quietly) && (!stats->examined))
+		return false;
 
 	s << q->name
 	  << "\t" << name
@@ -1634,6 +1637,8 @@ void BloomTree::report_query_stats
 		s << "\t-\t-\t-\t-\t-";
 
 	s << endl;
+
+	return true;
 	}
 
 //----------

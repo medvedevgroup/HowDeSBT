@@ -76,7 +76,7 @@ private:
 public:
 	virtual void enable_query_stats(const std::uint32_t batchSize);
 	virtual void clear_query_stats(querystats& stats);
-	virtual void report_query_stats(std::ostream& s,Query* q);
+	virtual bool report_query_stats(std::ostream& s,Query* q,bool quietly=true);
 
 public:
 	bool isDummy;						// a dummy has no filter; the root might

@@ -488,14 +488,17 @@ int QueryCommand::execute()
 			vector<BloomTree*> preOrder;
 			root->pre_order(preOrder);
 
-			bool isFirst = true;
+			bool needSpacer = false;
 			for (auto& q : queries)
 				{
-				if (isFirst) isFirst = false;
-				        else cerr << endl;
+				if (needSpacer) cerr << endl;
 
+				needSpacer = false;
 				for (const auto& node : preOrder)
-					node->report_query_stats(cerr,q);
+					{
+					bool reportedSomething = node->report_query_stats(cerr,q);
+					if (reportedSomething) needSpacer = true;
+					}
 				}
 			}
 		}
