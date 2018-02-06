@@ -902,7 +902,7 @@ u64 bitwise_or_not_count
 	u64			numOnes = 0;
 
 	for (n=numBits ; n>=8 ; n-=8)
-		numOnes += popCount8[*(scan1++) | ~*(scan2++)];
+		numOnes += popCount8[*(scan1++) | ((u8)~*(scan2++))];
 
 	if (n == 0) return numOnes;
 
