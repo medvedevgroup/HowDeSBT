@@ -94,6 +94,9 @@ def read_sabutan_tree_file(f,keepFileExtension=False):
 
 	for (level,name) in read_sabutan_list(f,keepFileExtension=keepFileExtension):
 		#print >>stderr, "read %d %s" % (level,name)
+		#for (dgbLevel,dbgNode) in nodeStack:
+		#	print >>stderr, "  %d %s" % (dgbLevel,dbgNode.name)
+
 		while (topLevelSame) and (level < topLevel):
 			(sibLevel,sibling) = nodeStack.pop()
 			siblings = [sibling]
