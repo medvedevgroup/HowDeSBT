@@ -55,6 +55,9 @@ void ClusterCommand::usage
 	s << "                    algorithm only considers this subset of each filter's bits" << endl;
 	s << "                    (by default we use the first " << defaultEndPosition << " bits)" << endl;
 	s << "  --bits=<N>        number of bits to use from each filter; same as 0..<N>" << endl;
+	s << "  --keepallnodes    keep all nodes of the binary tree" << endl;
+	s << "                    (by default we remove nodes that appear fruitless)" << endl;
+	s << "  --nowinnow        (same as --keepallnodes)" << endl;
 	s << "  --nobuild         perform the clustering but don't build the tree's nodes" << endl;
 	s << "                    (this is the default)" << endl;
 	s << "  --build           perform clustering, then build the uncompressed nodes" << endl;
@@ -74,6 +77,8 @@ void ClusterCommand::debug_help
 	s << "  queue" << endl;
 	s << "  mergings" << endl;
 	s << "  numbers" << endl;
+	s << "  winnow" << endl;
+	s << "  winnowratio" << endl;
 	}
 
 void ClusterCommand::parse
@@ -85,9 +90,11 @@ void ClusterCommand::parse
 
 	// defaults
 
-	startPosition = 0;
-	endPosition   = defaultEndPosition;
-	inhibitBuild  = true;
+	startPosition      = 0;
+	endPosition        = defaultEndPosition;
+	winnowNodes        = true;
+	winnowingThreshold = defaultWinnowingThreshold;
+	inhibitBuild       = true;
 
 	// skip command name
 
@@ -160,6 +167,28 @@ void ClusterCommand::parse
 			{
 			startPosition = 0;
 			endPosition   = string_to_unitized_u64(argVal);
+			continue;
+			}
+
+		// --nowinnow, --winnow
+
+		if ((arg == "--nowinnow")
+		 ||	(arg == "--nowinnowing")
+		 ||	(arg == "--dontwinnow")
+		 ||	(arg == "--keepallnodes"))
+			{ winnowNodes = false;  continue; }
+
+		if ((arg == "--winnow")
+		 ||	(arg == "--winnowing"))
+			{ winnowNodes = true;  continue; }
+
+		// --winnow=<F> (unadvertised)
+
+		if ((is_prefix_of (arg, "--winnow="))
+		 ||	(is_prefix_of (arg, "--winnowing=")))
+			{
+			winnowNodes = true;
+			winnowingThreshold = string_to_probability(argVal);
 			continue;
 			}
 
@@ -267,7 +296,9 @@ int ClusterCommand::execute()
 			cerr << "bit vector " << bv->filename << " " << bv->offset << endl;
 		}
 
-	cluster_greedily ();
+	cluster_greedily();
+	if (winnowNodes)
+		winnow_nodes(treeRoot,/*isRoot*/true);
 
 	if (contains(debug,"console"))
 		print_topology(cout,treeRoot,0);
@@ -384,7 +415,7 @@ void ClusterCommand::find_leaf_vectors()
 // cluster_greedily--
 //	Determine a binary tree structure by greedy clustering.
 //
-// The clustering process consist of repeatedly (a) choosing the closest pair
+// The clustering process consists of repeatedly (a) choosing the closest pair
 // of nodes, and (b) replacing those nodes with a new node that is their union.
 //
 //----------
@@ -427,6 +458,9 @@ void ClusterCommand::cluster_greedily()
 	if (numLeaves == 0)
 		fatal ("internal error: cluster_greedily() asked to cluster an empty nodelist");
 
+	if (numLeaves == 1)  // (this test is because we will assume the root is not a leaf)
+		fatal ("internal error: cluster_greedily() asked to cluster a single node");
+
 	u32 numNodes = 2*numLeaves - 1;  // nodes in tree, including leaves
 	BinaryTree* node[numNodes];
 
@@ -440,7 +474,7 @@ void ClusterCommand::cluster_greedily()
 		if (node[u] == nullptr)
 			fatal ("error: failed to create BinaryTree for node[" + std::to_string(u) + "]");
 		if (trackMemory)
-			cerr << "@+" << node[u] << " creating BinaryTree for node[" << u << "]" << endl;
+			cerr << "@+" << node[u] << " creating BinaryTree for node[" << u << "] (" << bv->filename << ")" << endl;
 		node[u]->trackMemory = trackMemory;
 
 		if (contains(debug,"bits"))
@@ -511,7 +545,7 @@ void ClusterCommand::cluster_greedily()
 			     + " for node " + std::to_string(w) + "'s bit array");
 		if (trackMemory)
 			cerr << "@+" << wBits << " allocating bits for node[" << w << "]"
-			     << " (merges node[" << u << " and node[" << v << "])" << endl;
+			     << " (merges node[" << u << "] and node[" << v << "])" << endl;
 
 		bitwise_or (node[u]->bits, node[v]->bits, /*dst*/ wBits, numBits);
 
@@ -526,11 +560,43 @@ void ClusterCommand::cluster_greedily()
 			{ cerr << w << ": ";  dump_bits (cerr, wBits);  cerr << endl; }
 
 		// deactivate u and v by removing their bit arrays; if either was a
-		// leaf tell the corresonding bit vector it can get rid of its bits
+		// leaf tell the corresonding bit vector it can get rid of its bits;
+		//
+		// note that if we're going to be winnowing, we move (or copy) the bit
+		// arrays to bCup rather than get rid of them
+
+		if (winnowNodes)
+			{
+			if (u < numLeaves)
+				{
+				node[u]->bCup = (u64*) new char[numBytes];
+				if (node[u]->bCup == nullptr)
+					fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
+					     + " for node " + std::to_string(u) + "'s bCup array");
+				if (trackMemory)
+					cerr << "@+" << node[u]->bCup << " allocating bCup for node[" << u << "]" << endl;
+				std::memcpy (/*to*/ node[u]->bCup, /*from*/ node[u]->bits, /*how much*/ numBytes);
+				}
+			else
+				{ node[u]->bCup = node[u]->bits; }
+
+			if (v < numLeaves)
+				{
+				node[v]->bCup = (u64*) new char[numBytes];
+				if (node[v]->bCup == nullptr)
+					fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
+					     + " for node " + std::to_string(v) + "'s bCup array");
+				if (trackMemory)
+					cerr << "@+" << node[v]->bCup << " allocating bits for node[" << v << "]" << endl;
+				std::memcpy (/*to*/ node[v]->bCup, /*from*/ node[v]->bits, /*how much*/ numBytes);
+				}
+			else
+				{ node[v]->bCup = node[v]->bits; }
+			}
 
 		if (u < numLeaves)
 			leafVectors[u]->discard_bits();
-		else
+		else if (!winnowNodes)
 			{
 			if (trackMemory)
 				cerr << "@-" << node[u]->bits << " discarding bits for node[" << u << "]" << endl;
@@ -539,7 +605,7 @@ void ClusterCommand::cluster_greedily()
 
 		if (v < numLeaves)
 			leafVectors[v]->discard_bits();
-		else
+		else if (!winnowNodes)
 			{
 			if (trackMemory)
 				cerr << "@-" << node[v]->bits << " discarding bits for node[" << v << "]" << endl;
@@ -566,11 +632,23 @@ void ClusterCommand::cluster_greedily()
 		}
 
 	// get rid of the root
+	//
+	// note that if we're going to be winnowing, we move (or copy) the bit
+	// array to bCup rather than get rid of it
 
 	u32 root = numNodes-1;
-	if (trackMemory)
-		cerr << "@-" << node[root]->bits << " discarding bits for node[" << root << "]" << endl;
-	delete[] node[root]->bits;
+
+	if (winnowNodes)
+		{  // (note that we assume the root cannot be a leaf)
+		node[root]->bCup = node[root]->bits;
+		}
+	else
+		{
+		if (trackMemory)
+			cerr << "@-" << node[root]->bits << " discarding bits for node[" << root << "]" << endl;
+		delete[] node[root]->bits;
+		}
+
 	node[root]->bits = nullptr;
 
 	// sanity check -- the only thing left in node list should be the root
@@ -591,42 +669,250 @@ void ClusterCommand::cluster_greedily()
 
 //----------
 //
+// winnow_nodes--
+//	Remove "fruitless" nodes from the clustered binary tree structure.
+//
+// The winnowing process consists of removing nodes that have a low percentage
+// of bits that will "determine" present/absent for their subtree.  Experiments
+// (using real queries) have shown that this ratio correlates well with the
+// probability that a node will resolve a query.
+//
+//----------
+//
+// Implementation notes:
+//	(1)	The concept of "determined" bits is the same as is used for
+//		DeterminedFilter.  But the implementation here shares no code with
+//		that one, instead making use of the simpler formula
+//		  bDet = bCap union complement of bCup
+//	(2)	Fruitless nodes are left in the tree, but are marked as fruitless so
+//		that later operations (such as print_topology) can skip them.
+// 
+//----------
+
+void ClusterCommand::winnow_nodes
+   (BinaryTree*		node,
+	bool			isRoot)
+	{
+	u64 numBits = endPosition - startPosition;
+	u64 numBytes = (numBits + 7) / 8;
+
+	bool isLeaf = (node->children[0] == nullptr);
+	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
+		fatal ("internal error: node[" + std::to_string(node->nodeNum) + "] has only one child");
+
+	if (node->bCup == nullptr)
+		fatal ("internal error: leaf node[" + std::to_string(node->nodeNum) + "] has no bCup");
+
+	// allocate bit vector for bCap
+
+	node->bCap = (u64*) new char[numBytes];
+	if (node->bCap == nullptr)
+		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
+		     + " for node " + std::to_string(node->nodeNum) + "'s bCap array");
+	if (trackMemory)
+		cerr << "@+" << node->bCap << " allocating bCap for node[" << node->nodeNum << "]" << endl;
+
+	// if this is a leaf, just copy bCup to bCap
+
+	if (isLeaf)
+		{
+		std::memcpy (/*to*/ node->bCap, /*from*/ node->bCup, /*how much*/ numBytes);
+		return;
+		}
+
+	// otherwise, this is a non-leaf node;  first, winnow the descendents
+
+	winnow_nodes(node->children[0]);
+	winnow_nodes(node->children[1]);
+
+	// compute bCap from the children
+	//
+	// for this node n with children c1 and c2,
+	//   bCap(n) = bCap(c0) intersect bCap(c1)
+
+	bitwise_and(/*from*/     node->children[0]->bCap,
+	            /*and*/      node->children[1]->bCap,
+	            /*to*/       node->bCap,
+	            /*how much*/ numBits);
+
+	// compute bDet from bCap and bCup
+	//
+	// for this node n,
+	//   bDet(n) = bCap(n) union (not bCup(n))
+
+	node->bDet = (u64*) new char[numBytes];
+	if (node->bDet == nullptr)
+		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
+		     + " for node " + std::to_string(node->nodeNum) + "'s bDet array");
+	if (trackMemory)
+		cerr << "@+" << node->bDet << " allocating bDet for node[" << node->nodeNum << "]" << endl;
+
+	bitwise_or_not(/*from*/     node->bCap,
+	               /*or not*/   node->bCup,
+	               /*to*/       node->bDet,
+	               /*how much*/ numBits);
+
+	// determine whether the children are fruitful;  note that leaves are
+	// always considered fruitful
+  	//
+	// for each child c,
+	//   bDetInf(c) = not bDet(n)   (informative bits of bDet at c)
+	//   fruitfulness ratio = #bDet(c) / #bDetInf(c)
+	//                      = #(bDet(c) and not bDetInf(c)) / #(not bDet(n))
+	//                      = #(bDet(c) and not bDet(n))    / (numBits - #bDet(n))
+
+	u64 numer,denom;
+
+	denom = numBits - bitwise_count(node->bDet,numBits);
+
+	for (int childIx=0 ; childIx<2 ; childIx++)
+		{
+		BinaryTree* child = node->children[childIx];
+		bool childIsLeaf = (child->children[0] == nullptr);
+		if (childIsLeaf) continue;  // leaves are always fruitful
+
+		numer = bitwise_mask_count(/*in*/         child->bDet,
+		                           /*but not in*/ node->bDet,
+		                           /*how much*/   numBits);
+
+		if (contains(debug,"winnowratio"))
+			cerr << "winnow node[" << child->nodeNum << "] "
+			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
+			     << endl;
+
+		if (numer < denom*winnowingThreshold) // (numer/denom < winnowingThreshold)
+			{
+			child->fruitful = false;
+			if (contains(debug,"winnow"))
+				cerr << "winnowing removes node[" << child->nodeNum << "] "
+				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
+				     << endl;
+			}
+		}
+
+	// if this node has no parent, determine whether it is fruitful
+	//
+	// fruitfulness ratio = #bDet / #bDetInf
+	//                    = #bDet / numBits
+
+	if (isRoot)
+		{
+		numer = bitwise_count(node->bDet,numBits);
+		denom = numBits;
+
+		if (contains(debug,"winnowratio"))
+			cerr << "winnow node[" << node->nodeNum << "] "
+			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
+			     << endl;
+
+		if (numer < denom*winnowingThreshold) // (numer/denom < winnowingThreshold)
+			{
+			node->fruitful = false;
+			if (contains(debug,"winnow"))
+				cerr << "winnowing removes node[" << node->nodeNum << "] "
+				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
+				     << endl;
+			}
+		}
+
+	// dispose of childrens' bit vectors
+
+	for (int childIx=0 ; childIx<2 ; childIx++)
+		{
+		BinaryTree* child = node->children[childIx];
+
+		if (trackMemory)
+			{
+			if (child->bCup != nullptr)
+				cerr << "@-" << child->bCup << " discarding bCup for node[" << child->nodeNum << "]" << endl;
+			if (child->bCap != nullptr)
+				cerr << "@-" << child->bCap << " discarding bCap for node[" << child->nodeNum << "]" << endl;
+			if (child->bDet != nullptr)
+				cerr << "@-" << child->bDet << " discarding bDet for node[" << child->nodeNum << "]" << endl;
+			}
+
+		if (child->bCup != nullptr)
+			{ delete[] child->bCup;  child->bCup = nullptr; }
+
+		if (child->bCap != nullptr)
+			{ delete[] child->bCap;  child->bCap = nullptr; }
+
+		if (child->bDet != nullptr)
+			{ delete[] child->bDet;  child->bDet = nullptr; }
+		}
+
+	// if this node has no parent, dispose of its bit vectors
+
+	if (isRoot)
+		{
+		if (trackMemory)
+			{
+			if (node->bCup != nullptr)
+				cerr << "@-" << node->bCup << " discarding bCup for node[" << node->nodeNum << "]" << endl;
+			if (node->bCap != nullptr)
+				cerr << "@-" << node->bCap << " discarding bCap for node[" << node->nodeNum << "]" << endl;
+			if (node->bDet != nullptr)
+				cerr << "@-" << node->bDet << " discarding bDet for node[" << node->nodeNum << "]" << endl;
+			}
+
+		if (node->bCup != nullptr)
+			{ delete[] node->bCup;  node->bCup = nullptr; }
+
+		if (node->bCap != nullptr)
+			{ delete[] node->bCap;  node->bCap = nullptr; }
+
+		if (node->bDet != nullptr)
+			{ delete[] node->bDet;  node->bDet = nullptr; }
+		}
+
+	}
+
+//----------
+//
 // print_topology--
 //	
 //----------
 
 void ClusterCommand::print_topology
    (std::ostream&	out,
-	BinaryTree*		root,
+	BinaryTree*		node,
 	int				level)
 	{
 	u32				numLeaves = leafVectors.size();
-	u32				nodeNum = root->nodeNum;
+	u32				nodeNum = node->nodeNum;
 	string			nodeName;
 
-	if (nodeNum < numLeaves)
-		nodeName = leafVectors[nodeNum]->filename;
-	else
+// $$$ add a node-renaming step, to replace rename_sabutan_nodes.py
+
+	int nextLevel = level;
+	if (node->fruitful) nextLevel++;
+
+	if (node->fruitful)
 		{
-		nodeName = nodeTemplate;
-		string field = "{node}";
-		std::size_t fieldIx = nodeName.find (field);
-		if (fieldIx == string::npos)
-			fatal ("internal error: nodeTemplate=\"" + nodeTemplate + "\""
-			     + "does not contain \"{node}\"");
-		nodeName.replace (fieldIx, field.length(), std::to_string(1+nodeNum));
+		if (nodeNum < numLeaves)
+			nodeName = leafVectors[nodeNum]->filename;
+		else
+			{
+			nodeName = nodeTemplate;
+			string field = "{node}";
+			std::size_t fieldIx = nodeName.find (field);
+			if (fieldIx == string::npos)
+				fatal ("internal error: nodeTemplate=\"" + nodeTemplate + "\""
+					 + "does not contain \"{node}\"");
+			nodeName.replace (fieldIx, field.length(), std::to_string(1+nodeNum));
+			}
+
+		if (not contains(debug,"numbers"))
+			out << string(level,'*');
+		else if (level == 0)
+			out << "- (" << nodeNum << ") ";
+		else
+			out << string(level,'*') << " (" << nodeNum << ") ";
+		out << nodeName << endl;
 		}
 
-	if (not contains(debug,"numbers"))
-		out << string(level,'*');
-	else if (level == 0)
-		out << "- (" << nodeNum << ") ";
-	else
-		out << string(level,'*') << " (" << nodeNum << ") ";
-	out << nodeName << endl;
-
-	if (root->children[0] != nullptr) print_topology (out, root->children[0], level+1);
-	if (root->children[1] != nullptr) print_topology (out, root->children[1], level+1);
+	if (node->children[0] != nullptr) print_topology (out, node->children[0], nextLevel);
+	if (node->children[1] != nullptr) print_topology (out, node->children[1], nextLevel);
 	}
 
 //----------

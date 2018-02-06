@@ -160,7 +160,8 @@ void QueryCommand::parse
 
 		if ((is_prefix_of (arg, "--threshold="))
 		 ||	(is_prefix_of (arg, "--query-threshold="))
-		 ||	(is_prefix_of (arg, "--theta=")))
+		 ||	(is_prefix_of (arg, "--theta="))
+		 ||	(is_prefix_of (arg, "--specificity=")))
 			{ queryThreshold = string_to_probability(argVal);  continue; }
 
 		// --leafonly, etc.

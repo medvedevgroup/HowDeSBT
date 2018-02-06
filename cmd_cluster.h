@@ -15,7 +15,11 @@ public:
 	BinaryTree(const std::uint32_t _nodeNum, std::uint64_t* _bits,
 	           BinaryTree* child0=nullptr, BinaryTree* child1=nullptr)
 	  :	nodeNum(_nodeNum),
-		bits(_bits)
+		fruitful(true),
+		bits(_bits),
+		bCup(nullptr),
+		bCap(nullptr),
+		bDet(nullptr)
 		{
 		children[0] = child0;
 		children[1] = child1;
@@ -28,13 +32,35 @@ public:
 		{
 		if (children[0] != nullptr) delete children[0];
 		if (children[1] != nullptr) delete children[1];
+
+		if (trackMemory)
+			{
+			if (bits != nullptr)
+				std::cerr << "@-" << bits << " discarding bits for node[" << nodeNum << "]" << std::endl;
+			if (bCup != nullptr)
+				std::cerr << "@-" << bCup << " discarding bCup for node[" << nodeNum << "]" << std::endl;
+			if (bCap != nullptr)
+				std::cerr << "@-" << bCap << " discarding bCap for node[" << nodeNum << "]" << std::endl;
+			if (bDet != nullptr)
+				std::cerr << "@-" << bDet << " discarding bDet for node[" << nodeNum << "]" << std::endl;
+			}
+
+		if (bits != nullptr) delete bits;
+		if (bCup != nullptr) delete bCup;
+		if (bCap != nullptr) delete bCap;
+		if (bDet != nullptr) delete bDet;
+
 		if (trackMemory)
 			std::cerr << "@-" << this << " discarding BinaryTree node" << std::endl;
 		}
 
 	std::uint32_t nodeNum;
+	bool fruitful;
 	std::uint32_t height;
 	std::uint64_t* bits;
+	std::uint64_t* bCup;		// union of all leaves in the subtree
+	std::uint64_t* bCap;		// inersection of all leaves in the subtree
+	std::uint64_t* bDet;		// "determined" bits at this node
 	BinaryTree* children[2];
 	bool trackMemory;
 	};
@@ -44,6 +70,7 @@ class ClusterCommand: public Command
 	{
 public:
 	static const std::uint64_t defaultEndPosition = 100*1000;
+	static constexpr double defaultWinnowingThreshold = 0.2;
 
 public:
 	ClusterCommand(const std::string& name): Command(name),treeRoot(nullptr) {}
@@ -55,7 +82,8 @@ public:
 	virtual int execute (void);
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
-	virtual void print_topology (std::ostream& out, BinaryTree* root, int level);
+	virtual void winnow_nodes (BinaryTree* node,bool isRoot=false);
+	virtual void print_topology (std::ostream& out, BinaryTree* node, int level);
 	virtual void dump_bits (std::ostream& out, const std::uint64_t* bits);
 
 	std::string listFilename;
@@ -63,6 +91,8 @@ public:
 	std::string nodeTemplate;
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
+	bool winnowNodes;
+	double winnowingThreshold;
 	bool inhibitBuild;
 	bool trackMemory;
 

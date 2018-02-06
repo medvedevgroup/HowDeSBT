@@ -803,8 +803,8 @@ u64 bitwise_count
 
 //----------
 //
-// bitwise_and_count, bitwise_mask_count, bitwise_or_count, and 
-// bitwise_xor_count --
+// bitwise_and_count, bitwise_mask_count, bitwise_or_count,
+// bitwise_or_not_count, and bitwise_xor_count --
 //	Compute the count of 1s in the result of a bitwise operation between two
 //	bit arrays.
 //
@@ -887,6 +887,27 @@ u64 bitwise_or_count
 
 	u8 mask = least_significant(u8,n);
 	numOnes += popCount8[(*scan1 | *scan2) & mask];
+
+	return numOnes;
+	}
+
+u64 bitwise_or_not_count
+   (const void*	bits1,
+	const void*	bits2,
+	const u64	numBits)
+	{
+	u8*			scan1 = (u8*) bits1;
+	u8*			scan2 = (u8*) bits2;
+	u64			n;
+	u64			numOnes = 0;
+
+	for (n=numBits ; n>=8 ; n-=8)
+		numOnes += popCount8[*(scan1++) | ~*(scan2++)];
+
+	if (n == 0) return numOnes;
+
+	u8 mask = least_significant(u8,n);
+	numOnes += popCount8[(*scan1 | ~*scan2) & mask];
 
 	return numOnes;
 	}
