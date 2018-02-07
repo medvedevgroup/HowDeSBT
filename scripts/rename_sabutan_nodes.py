@@ -11,7 +11,9 @@ def usage(s=None):
 	message = """
 usage: cat sabutan_tree_file | rename_sabutan_nodes <template> [options]
   <template>   template for names to assign to internal tree nodes; this must
-               contain the substring {node}"""
+               contain the substring {node}
+
+Note that this functionality is now performed by default in "sabutan cluster"."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))

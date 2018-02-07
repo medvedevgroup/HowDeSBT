@@ -94,6 +94,7 @@ void ClusterCommand::parse
 	endPosition        = defaultEndPosition;
 	winnowNodes        = true;
 	winnowingThreshold = defaultWinnowingThreshold;
+	renumberNodes      = true;
 	inhibitBuild       = true;
 
 	// skip command name
@@ -155,7 +156,11 @@ void ClusterCommand::parse
 			nodeTemplate = argVal; 
 			std::size_t fieldIx = nodeTemplate.find ("{node}");
 			if (fieldIx == string::npos)
-				chastise ("--node is required to contain the substring \"{node}\"");
+				fieldIx = nodeTemplate.find ("{node:1}");
+			if (fieldIx == string::npos)
+				fieldIx = nodeTemplate.find ("{node:0}");
+			if (fieldIx == string::npos)
+				chastise ("--node is required to contain the substring \"{node}\", or a variant of it");
 			continue;
 			}
 
@@ -191,6 +196,11 @@ void ClusterCommand::parse
 			winnowingThreshold = string_to_probability(argVal);
 			continue;
 			}
+
+		// --norenumber (unadvertised)
+
+		if (arg == "--norenumber")
+			{ renumberNodes = false;  continue; }
 
 		// --nobuild, --build
 
@@ -296,9 +306,21 @@ int ClusterCommand::execute()
 			cerr << "bit vector " << bv->filename << " " << bv->offset << endl;
 		}
 
+	// create a binary tree
+
 	cluster_greedily();
+
+	// remove fruitless nodes
+	
 	if (winnowNodes)
 		winnow_nodes(treeRoot,/*isRoot*/true);
+
+	// assign nodes top-down numbers;  nodes will be assigned names from these
+
+	if (renumberNodes)
+		top_down_numbering(treeRoot,/*depth*/0,/*isRoot*/true);
+
+	// output the topology
 
 	if (contains(debug,"console"))
 		print_topology(cout,treeRoot,0);
@@ -690,8 +712,8 @@ void ClusterCommand::cluster_greedily()
 //----------
 
 void ClusterCommand::winnow_nodes
-   (BinaryTree*		node,
-	bool			isRoot)
+   (BinaryTree*	node,
+	bool		isRoot)
 	{
 	u64 numBits = endPosition - startPosition;
 	u64 numBytes = (numBits + 7) / 8;
@@ -869,6 +891,76 @@ void ClusterCommand::winnow_nodes
 
 //----------
 //
+// top_down_numbering--
+//	Assign node numbers sequentially, starting with the root and moving
+//	down level by level, and numbering left to right within each level.
+//
+//----------
+
+void ClusterCommand::top_down_numbering
+   (BinaryTree*	node,
+	int			depth,
+	bool		isRoot)
+	{
+	if (isRoot)
+		{
+		count_depths(node,0);
+		int maxDepth = depthToNodeCount.size()-1;
+		u32 sum = 0;
+		for (int depthIx=0 ; depthIx<=maxDepth ; depthIx++)
+			{
+			depthToNodeId.emplace_back(sum);
+			sum += depthToNodeCount[depthIx];
+			}
+		}
+
+	bool isLeaf = (node->children[0] == nullptr);
+	if (isLeaf) return;
+
+	if (node->fruitful)
+		node->nodeId = ++depthToNodeId[depth];
+
+	int nextDepth = depth;
+	if (node->fruitful) nextDepth++;
+
+	if (node->children[0] != nullptr) top_down_numbering(node->children[0],nextDepth);
+	if (node->children[1] != nullptr) top_down_numbering(node->children[1],nextDepth);
+	}
+
+//----------
+//
+// count_depths--
+//	Count the number of nodes at each level of the tree, ignoring leaves and
+//	fruitless nodes.
+//
+// This populates the vector depthToNodeCount, which is assumed to be empty
+// upon entry.
+//
+//----------
+
+void ClusterCommand::count_depths
+   (BinaryTree*	node,
+	int			depth)
+	{
+	bool isLeaf = (node->children[0] == nullptr);
+	if (isLeaf) return;
+
+	if (node->fruitful)
+		{
+		while (depthToNodeCount.size() <= depth)
+			depthToNodeCount.emplace_back(0);
+		depthToNodeCount[depth]++;
+		}
+
+	int nextDepth = depth;
+	if (node->fruitful) nextDepth++;
+
+	if (node->children[0] != nullptr) count_depths(node->children[0],nextDepth);
+	if (node->children[1] != nullptr) count_depths(node->children[1],nextDepth);
+	}
+
+//----------
+//
 // print_topology--
 //	
 //----------
@@ -882,24 +974,37 @@ void ClusterCommand::print_topology
 	u32				nodeNum = node->nodeNum;
 	string			nodeName;
 
-// $$$ add a node-renaming step, to replace rename_sabutan_nodes.py
-
-	int nextLevel = level;
-	if (node->fruitful) nextLevel++;
-
 	if (node->fruitful)
 		{
 		if (nodeNum < numLeaves)
 			nodeName = leafVectors[nodeNum]->filename;
 		else
 			{
+			u32 nodeId = node->nodeId;
+			if (!renumberNodes) nodeId = 1+nodeNum;
+
 			nodeName = nodeTemplate;
+			bool countFromZero = false;
 			string field = "{node}";
-			std::size_t fieldIx = nodeName.find (field);
+			std::size_t fieldIx = nodeName.find(field);
+			if (fieldIx == string::npos)
+				{
+				field = "{node:1}";
+				fieldIx = nodeName.find(field);
+				}
+			if (fieldIx == string::npos)
+				{
+				field = "{node:0}";
+				fieldIx = nodeName.find(field);
+				countFromZero = (fieldIx != string::npos);
+				}
+
 			if (fieldIx == string::npos)
 				fatal ("internal error: nodeTemplate=\"" + nodeTemplate + "\""
-					 + "does not contain \"{node}\"");
-			nodeName.replace (fieldIx, field.length(), std::to_string(1+nodeNum));
+					 + "does not contain \"{node}\", nor a variant of it");
+
+			if (countFromZero) nodeId--;
+			nodeName.replace (fieldIx, field.length(), std::to_string(nodeId));
 			}
 
 		if (not contains(debug,"numbers"))
@@ -910,6 +1015,9 @@ void ClusterCommand::print_topology
 			out << string(level,'*') << " (" << nodeNum << ") ";
 		out << nodeName << endl;
 		}
+
+	int nextLevel = level;
+	if (node->fruitful) nextLevel++;
 
 	if (node->children[0] != nullptr) print_topology (out, node->children[0], nextLevel);
 	if (node->children[1] != nullptr) print_topology (out, node->children[1], nextLevel);

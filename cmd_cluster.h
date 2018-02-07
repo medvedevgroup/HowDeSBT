@@ -15,6 +15,7 @@ public:
 	BinaryTree(const std::uint32_t _nodeNum, std::uint64_t* _bits,
 	           BinaryTree* child0=nullptr, BinaryTree* child1=nullptr)
 	  :	nodeNum(_nodeNum),
+		nodeId(0),
 		fruitful(true),
 		bits(_bits),
 		bCup(nullptr),
@@ -55,6 +56,7 @@ public:
 		}
 
 	std::uint32_t nodeNum;
+	std::uint32_t nodeId;
 	bool fruitful;
 	std::uint32_t height;
 	std::uint64_t* bits;
@@ -83,6 +85,8 @@ public:
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
 	virtual void winnow_nodes (BinaryTree* node,bool isRoot=false);
+	virtual void top_down_numbering (BinaryTree* node,int depth,bool isRoot=false);
+	virtual void count_depths (BinaryTree* node,int depth);
 	virtual void print_topology (std::ostream& out, BinaryTree* node, int level);
 	virtual void dump_bits (std::ostream& out, const std::uint64_t* bits);
 
@@ -93,11 +97,14 @@ public:
 	std::uint64_t endPosition;
 	bool winnowNodes;
 	double winnowingThreshold;
+	bool renumberNodes;
 	bool inhibitBuild;
 	bool trackMemory;
 
 	std::vector<BitVector*> leafVectors;
 	BinaryTree* treeRoot;
+	std::vector<std::uint32_t> depthToNodeCount;
+	std::vector<std::uint32_t> depthToNodeId;
 	};
 
 #endif // cmd_cluster_H
