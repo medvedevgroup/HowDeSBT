@@ -65,7 +65,7 @@ def main():
 
 	bitVectorTemplate = None
 	svgFilename       = "sbt_tree_to_svg.svg"
-	debug = {}
+	debug             = {}
 
 	for arg in argv[1:]:
 		if ("=" in arg):

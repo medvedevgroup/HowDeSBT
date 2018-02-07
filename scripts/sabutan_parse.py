@@ -20,15 +20,17 @@ traversal of the tree, and the asterisks indicate the depth of each node.
 from sys import argv,stdin,stdout,stderr,exit
 
 
-def read_sabutan_tree_file(f,keepFileExtension=False):
+def read_sabutan_tree_file(f,keepFileExtension=False,debug=False):
 	nodeStack = []
 	topLevelSame = False
 	topLevel = None
+	forest = []
 
 	for (level,name) in read_sabutan_list(f,keepFileExtension=keepFileExtension):
-		#print >>stderr, "read %d %s" % (level,name)
-		#for (dgbLevel,dbgNode) in nodeStack:
-		#	print >>stderr, "  %d %s" % (dgbLevel,dbgNode.name)
+		if (debug):
+			print >>stderr, "read %d %s" % (level,name)
+			for (dgbLevel,dbgNode) in nodeStack:
+				print >>stderr, "  %d %s" % (dgbLevel,dbgNode.name)
 
 		while (topLevelSame) and (level < topLevel):
 			(sibLevel,sibling) = nodeStack.pop()
@@ -42,31 +44,39 @@ def read_sabutan_tree_file(f,keepFileExtension=False):
 			(parentLevel,parent) = nodeStack[-1]
 			assert (parentLevel == topLevel-1)
 
-			#print >>stderr, "  assigning %s children %s" \
-			#              % (parent.name,
-			#                 ",".join([child.name for child in children]))
+			if (debug):
+				print >>stderr, "  assigning %s children %s" \
+				              % (parent.name,
+				                 ",".join([child.name for child in siblings]))
 			parent.children = siblings
 			for sibling in siblings:
 				sibling.parent = parent
 
 			topLevel = parentLevel
-			if (len(nodeStack) < 2):
-				topLevelSame = False
-			else:
+			if (len(nodeStack) > 1):
 				(prevLevel,_) = nodeStack[-2]
 				topLevelSame = (prevLevel == topLevel)
+			else:
+				topLevelSame = False
+				(rootLevel,tree) = nodeStack.pop()
+				assert (rootLevel == 0)
+				forest += [tree]
+				if (debug):
+					print >>stderr, "adding %s to forest" % tree.name
 
 		if (level < 0): break   # (end-of-list)
 
-		#print >>stderr, "pushing %d %s" % (level,name)
+		if (debug):
+			print >>stderr, "pushing %d %s" % (level,name)
 		nodeStack += [(level,TreeNode(name))]
 		topLevelSame = (level == topLevel)
 		topLevel = level
 
-	assert (len(nodeStack) == 1)
-	(_,tree) = nodeStack[0]
+	if (debug):
+		print >>stderr, "returning [%s]" \
+		              % ",".join([tree.name for tree in forest])
 
-	return tree
+	return forest
 
 
 def read_sabutan_list(f,keepFileExtension=False):

@@ -18,14 +18,24 @@ usage: cat sabutan_tree_file | rename_sabutan_nodes <template> [options]
 
 
 def main():
+	global debug
 
 	# parse the command line
 
 	nameTemplate = None
+	debug        = {}
 
 	for arg in argv[1:]:
+		if ("=" in arg):
+			argVal = arg.split("=",1)[1]
+
 		if ("{node}" in arg):
 			nameTemplate = arg
+		elif (arg == "--debug"):
+			debug["debug"] = True
+		elif (arg.startswith("--debug=")):
+			for name in argVal.split(","):
+				debug[name] = True
 		else:
 			usage("unrecognized option: %s" % arg)
 
@@ -34,16 +44,22 @@ def main():
 
 	# read the tree
 
-	tree = read_sabutan_tree_file(stdin,keepFileExtension=True)
-	tree.compute_depth()
-	preOrder = tree.pre_order()
+	forest = read_sabutan_tree_file(stdin,keepFileExtension=True,debug=("parse" in debug))
+	assert (len(forest) != 0), "input has no tree"
 
-	# assign new names
+	# collect nodes by depth
 
 	depthToNodes = {}
-	for node in preOrder:
-		if (node.depth not in depthToNodes): depthToNodes[node.depth] = []
-		depthToNodes[node.depth] += [node]
+
+	for tree in forest:
+		tree.compute_depth()
+		preOrder = tree.pre_order()
+
+		for node in preOrder:
+			if (node.depth not in depthToNodes): depthToNodes[node.depth] = []
+			depthToNodes[node.depth] += [node]
+
+	# assign new names
 
 	nodeNumber = 0
 	for depth in depthToNodes:
@@ -54,7 +70,8 @@ def main():
 
 	# output the tree topology, with the new names
 
-	tree.list_pre_order()
+	for tree in forest:
+		tree.list_pre_order()
 
 
 if __name__ == "__main__": main()

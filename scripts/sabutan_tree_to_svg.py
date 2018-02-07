@@ -174,7 +174,11 @@ def main():
 
 	# read the tree
 
-	tree = read_sabutan_tree_file(stdin)
+	forest = read_sabutan_tree_file(stdin)
+	assert (len(forest) != 0), "input has no tree"
+	assert (len(forest) == 1), "input is a forest (not supported yet)"
+	tree = forest[0]
+
 	tree.compute_depth()
 	nameToNode = tree.build_dict()
 	preOrder   = tree.pre_order()

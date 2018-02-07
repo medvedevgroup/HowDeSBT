@@ -24,14 +24,21 @@ def main():
 
 	# read the tree
 
-	tree = read_sabutan_tree_file(stdin,keepFileExtension=True)
+	forest = read_sabutan_tree_file(stdin,keepFileExtension=True)
+	assert (len(forest) != 0), "input has no tree"
 
 	# find the deepest node
 
-	tree.compute_depth()
-	preOrder = tree.pre_order()
+	maxDepth = None
 
-	maxDepth = max([node.depth for node in preOrder])
+	for tree in forest:
+		tree.compute_depth()
+		preOrder = tree.pre_order()
+		treeMaxDepth = max([node.depth for node in preOrder])
+
+		if (maxDepth == None) or (treeMaxDepth > maxDepth):
+			maxDepth = treeMaxDepth
+
 	print "max depth is %d" % maxDepth
 
 

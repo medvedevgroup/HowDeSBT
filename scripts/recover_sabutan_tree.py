@@ -4,7 +4,7 @@ Recover the tree relationship from a sabutan tree hierarchy file.
 """
 
 from sys           import argv,stdin,stdout,stderr,exit
-from sabutan_parse import read_sbt_tree_file
+from sabutan_parse import read_sabutan_tree_file
 
 def usage(s=None):
 	message = """
@@ -53,24 +53,26 @@ def main():
 
 	# process the tree
 
-	tree = read_sabutan_tree_file(stdin)
+	forest = read_sabutan_tree_file(stdin)
+	assert (len(forest) != 0), "input has no tree"
 
-	if (showWhat == "pre order"):
-		tree.list_pre_order()
-	elif (showWhat == "leaf groups"):
-		tree.list_leaf_groups()
-	elif (showWhat == "height etc"):
-		tree.compute_height_etc()
-		tree.list_height_etc()
-	elif (showWhat == "subtree"):
-		nameToNode = tree.build_dict()
-		assert (nodeName in nameToNode), \
-		       "unknown node: \"%s\"" % nodeName
-		subtree = nameToNode[nodeName]
-		subtree.list_pre_order(fileSpec=fileSpec)
-	else:
-		assert (False), \
-		       "internal error: unknown operation \"%s\"" % showWhat
+	for tree in forest:
+		if (showWhat == "pre order"):
+			tree.list_pre_order()
+		elif (showWhat == "leaf groups"):
+			tree.list_leaf_groups()
+		elif (showWhat == "height etc"):
+			tree.compute_height_etc()
+			tree.list_height_etc()
+		elif (showWhat == "subtree"):
+			nameToNode = tree.build_dict()
+			assert (nodeName in nameToNode), \
+			       "unknown node: \"%s\"" % nodeName
+			subtree = nameToNode[nodeName]
+			subtree.list_pre_order(fileSpec=fileSpec)
+		else:
+			assert (False), \
+			       "internal error: unknown operation \"%s\"" % showWhat
 
 
 
