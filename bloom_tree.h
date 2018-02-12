@@ -61,17 +61,17 @@ public:
 	virtual void construct_intersection_nodes ();
 
 	virtual int lookup (const std::uint64_t pos) const;
-	virtual void batch_query (std::vector<Query*> queries, double queryThreshold,
+	virtual void batch_query (std::vector<Query*> queries,
 	                          bool isLeafOnly=false, bool distinctKmers=false);
 private:
-	virtual void batch_query (std::uint64_t activeQueries, std::vector<Query*> queries);
+	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries);
 	virtual void query_matches_leaves (Query* q);
 
 public:
-	virtual void batch_count_kmer_hits (std::vector<Query*> queries, double queryThreshold,
+	virtual void batch_count_kmer_hits (std::vector<Query*> queries,
 	                                    bool isLeafOnly=false, bool distinctKmers=false);
 private:
-	virtual void batch_count_kmer_hits (std::vector<Query*> queries);
+	virtual void perform_batch_count_kmer_hits (std::vector<Query*> queries);
 
 public:
 	virtual void enable_query_stats(const std::uint32_t batchSize);

@@ -47,27 +47,34 @@ void QueryCommand::usage
 //$$$ .. without having to generate every populated filter size; implementation
 //$$$ .. would just act as a filter on the hashed position list for each query
 	short_description(s);
-	s << "usage: " << commandName << " [<queryfilename>] [options]" << endl;
+	s << "usage: " << commandName << " [<queryfilename>[=<F>]] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
-	s << "  --tree=<filename>  name of the tree toplogy file" << endl;
-	s << "  <queryfilename>    (cumulative) name of a query file; this is either a fasta" << endl;
-	s << "                     file or a file with one nucleotide sequence per line; if" << endl;
-	s << "                     no query files are provided, queries are read from stdin" << endl;
-	s << "  --threshold=<F>    fraction of query kmers that must be present in a leaf to" << endl;
-	s << "                     be considered a match; this must be between 0 and 1" << endl;
-	s << "                     (default is " << defaultQueryThreshold << ")" << endl;
-	s << "  --leafonly         disregard internal tree nodes and perform the query only" << endl;
-	s << "                     at the leaves" << endl;
-	s << "  --distinctkmers    perform the query counting each distinct kmer only once" << endl;
-	s << "                     (by default we count a query kmer each time it occurs)" << endl;
-	s << "  --nomanager        don't use a file manager; generally this means each file" << endl;
-	s << "                     can contain only one bloom filter" << endl;
-	s << "  --noconsistency    (only with --nomanager) don't check that bloom filter" << endl;
-	s << "                     properties are consistent across the tree" << endl;
-	s << "  --justcountkmers   just report the number of kmers in each query, and quit" << endl;
-	s << "  --countallkmerhits report the number of kmers that 'hit', for each query/leaf" << endl;
-	s << "  --out=<filename>   file for query results; if this is not provided, results" << endl;
-	s << "                     are written to stdout" << endl;
+	s << "  --tree=<filename>    name of the tree toplogy file" << endl;
+	s << "  <queryfilename>      (cumulative) name of a query file; this is either a" << endl;
+	s << "                       fasta file or a file with one nucleotide sequence per" << endl;
+	s << "                       line; if no query files are provided, queries are read" << endl;
+	s << "                       from stdin" << endl;
+	s << "  <queryfilename>=<F>  query file with associated threshold; <F> has the same" << endl;
+	s << "                       meaning as in --threshold=<F> but applies only to this" << endl;
+	s << "                       query file" << endl;
+	s << "  --threshold=<F>      fraction of query kmers that must be present in a leaf" << endl;
+	s << "                       to be considered a match; this must be between 0 and 1;" << endl;
+	s << "                       this only applies to query files for which <F> is not" << endl;
+	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
+	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
+	s << "  --leafonly           disregard internal tree nodes and perform the query only" << endl;
+	s << "                       at the leaves" << endl;
+	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
+	s << "                       (by default we count a query kmer each time it occurs)" << endl;
+	s << "  --nomanager          don't use a file manager; generally this means each file" << endl;
+	s << "                       can contain only one bloom filter" << endl;
+	s << "  --noconsistency      (only with --nomanager) don't check that bloom filter" << endl;
+	s << "                       properties are consistent across the tree" << endl;
+	s << "  --justcountkmers     just report the number of kmers in each query, and quit" << endl;
+	s << "  --countallkmerhits   report the number of kmers that 'hit', for each" << endl;
+	s << "                       query/leaf" << endl;
+	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
+	s << "                       are written to stdout" << endl;
 	}
 
 void QueryCommand::debug_help
@@ -100,14 +107,14 @@ void QueryCommand::parse
 
 	// defaults
 
-	queryThreshold       = defaultQueryThreshold;
-	onlyLeaves           = false;
-	distinctKmers        = false;
-	useFileManager       = true;
-	checkConsistency     = true;
-	justReportKmerCounts = false;
-	countAllKmerHits     = false;
-	collectNodeStats     = false;
+	generalQueryThreshold = defaultQueryThreshold;
+	onlyLeaves            = false;
+	distinctKmers         = false;
+	useFileManager        = true;
+	checkConsistency      = true;
+	justReportKmerCounts  = false;
+	countAllKmerHits      = false;
+	collectNodeStats      = false;
 
 	// skip command name
 
@@ -152,9 +159,26 @@ void QueryCommand::parse
 			{ treeFilename = argVal;  continue; }
 
 		// (unadvertised) --query=<filename>
+		//             or --query=<filename>=<F> or --query=<filename>:<F>
 
 		if (is_prefix_of (arg, "--query="))
-			{ queryFilenames.emplace_back(strip_blank_ends(argVal));  continue; }
+			{
+			string::size_type threshIx = argVal.find('=');
+			if (threshIx == string::npos) threshIx = argVal.find(':');
+
+			if (threshIx == string::npos)
+				{
+				queryFilenames.emplace_back(strip_blank_ends(argVal));
+				queryThresholds.emplace_back(-1.0);  // (unassigned threshold)
+				}
+			else
+				{
+				double thisQueryThreshold = string_to_probability(arg.substr(threshIx+1));
+				queryFilenames.emplace_back(strip_blank_ends(argVal));
+				queryThresholds.emplace_back(thisQueryThreshold);
+				}
+			continue;
+			}
 
 		// --threshold=<F>
 
@@ -162,7 +186,7 @@ void QueryCommand::parse
 		 ||	(is_prefix_of (arg, "--query-threshold="))
 		 ||	(is_prefix_of (arg, "--theta="))
 		 ||	(is_prefix_of (arg, "--specificity=")))
-			{ queryThreshold = string_to_probability(argVal);  continue; }
+			{ generalQueryThreshold = string_to_probability(argVal);  continue; }
 
 		// --leafonly, etc.
 
@@ -241,9 +265,24 @@ void QueryCommand::parse
 		if (is_prefix_of (arg, "--"))
 			chastise ("unrecognized option: \"" + arg + "\"");
 
+
+		// <queryfilename>=<F> or <queryfilename>:<F>
+
+		string::size_type threshIx = argValIx;
+		if (threshIx == string::npos) threshIx = arg.find(':');
+
+		if (threshIx != string::npos)
+			{
+			double thisQueryThreshold = string_to_probability(arg.substr(threshIx+1));
+			queryFilenames.emplace_back(strip_blank_ends(arg.substr(0,threshIx)));
+			queryThresholds.emplace_back(thisQueryThreshold);
+			continue;
+			}
+
 		// <queryfilename>
 
 		queryFilenames.emplace_back(strip_blank_ends(arg));
+		queryThresholds.emplace_back(-1.0);  // (unassigned threshold)
 		}
 
 	// sanity checks
@@ -260,6 +299,15 @@ void QueryCommand::parse
 			chastise ("--collectnodestats cannot be used with --justcountkmers");
 		if (countAllKmerHits)
 			chastise ("--collectnodestats cannot be used with --countallkmerhits");
+		}
+
+	// assign threshold to any unassigned queries
+
+	int numQueryFiles = queryFilenames.size();
+	for (int queryIx=0 ; queryIx<numQueryFiles ; queryIx++)
+		{
+		if (queryThresholds[queryIx] < 0)
+			queryThresholds[queryIx] = generalQueryThreshold;
 		}
 
 	return;
@@ -454,7 +502,7 @@ int QueryCommand::execute()
 		{
 		// perform the query (sort of)
 
-		root->batch_count_kmer_hits(queries,queryThreshold,onlyLeaves,distinctKmers);
+		root->batch_count_kmer_hits(queries,onlyLeaves,distinctKmers);
 
 		// report results
 
@@ -470,7 +518,7 @@ int QueryCommand::execute()
 		{
 		// perform the query
 
-		root->batch_query(queries,queryThreshold,onlyLeaves,distinctKmers);
+		root->batch_query(queries,onlyLeaves,distinctKmers);
 
 		// report results
 
@@ -522,18 +570,20 @@ void QueryCommand::read_queries()
 	// if no query files are provided, read from stdin
 
 	if (queryFilenames.empty())
-		Query::read_query_file (cin, /*filename*/ "", queries);
+		Query::read_query_file (cin, /*filename*/ "", generalQueryThreshold, queries);
 
 	// otherwise, read each query file
 
 	else
 		{
-		for (auto& filename : queryFilenames)
+		int numQueryFiles = queryFilenames.size();
+		for (int queryIx=0 ; queryIx<numQueryFiles ; queryIx++)
 			{
+			string filename = queryFilenames[queryIx];
 			std::ifstream in (filename);
 			if (not in)
 				fatal ("error: failed to open \"" + filename + "\"");
-			Query::read_query_file (in, filename, queries);
+			Query::read_query_file (in, filename, queryThresholds[queryIx], queries);
 			in.close();
 			}
 		}

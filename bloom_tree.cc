@@ -1008,7 +1008,6 @@ int BloomTree::lookup
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
-	double			queryThreshold,
 	bool			isLeafOnly,
 	bool			distinctKmers)
 	{
@@ -1052,7 +1051,7 @@ void BloomTree::batch_query
 		q->numFailed     = 0;
 		q->numPositions  = numPositions;
 		q->numUnresolved = numPositions;
-		q->neededToPass  = ceil (queryThreshold * numPositions);
+		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
 		q->nodesExamined = 0;
 
@@ -1073,10 +1072,10 @@ void BloomTree::batch_query
 
 	u64 activeQueries = localQueries.size();
 	if (activeQueries > 0)
-		batch_query (activeQueries, localQueries);
+		perform_batch_query (activeQueries, localQueries);
 	}
 
-void BloomTree::batch_query
+void BloomTree::perform_batch_query
    (u64				activeQueries,
 	vector<Query*>	queries)
 	{
@@ -1091,7 +1090,7 @@ void BloomTree::batch_query
 			cerr << "(skipping through dummy node)" << endl;
 
 		for (const auto& child : children)
-			child->batch_query (activeQueries, queries);
+			child->perform_batch_query (activeQueries, queries);
 		return;
 		}
 
@@ -1335,7 +1334,7 @@ void BloomTree::batch_query
 	if (activeQueries > 0)
 		{
 		for (const auto& child : children)
-			child->batch_query (activeQueries, queries);
+			child->perform_batch_query (activeQueries, queries);
 		}
 
 	// restore kmer/position lists as we move up the tree
@@ -1415,7 +1414,6 @@ void BloomTree::query_matches_leaves
 
 void BloomTree::batch_count_kmer_hits
    (vector<Query*>	queries,
-	double			queryThreshold,
 	bool			isLeafOnly,
 	bool			distinctKmers)
 	{
@@ -1424,7 +1422,7 @@ void BloomTree::batch_count_kmer_hits
 
 	BloomFilter* bf = real_filter();
 	if (bf == nullptr)
-		fatal ("internal error: batch_query() unable to locate any bloom filter");
+		fatal ("internal error: batch_count_kmer_hits() unable to locate any bloom filter");
 	bf->preload();
 
 	if ((isLeafOnly) && (bf->kind() != bfkind_simple))
@@ -1458,7 +1456,7 @@ void BloomTree::batch_count_kmer_hits
 		q->numFailed     = 0;
 		q->numPositions  = numPositions;
 		q->numUnresolved = numPositions;
-		q->neededToPass  = ceil (queryThreshold * numPositions);
+		q->neededToPass  = ceil (q->threshold * numPositions);
 		q->neededToFail  = (numPositions - q->neededToPass) + 1;
 		q->nodesExamined = 0;
 
@@ -1478,10 +1476,10 @@ void BloomTree::batch_count_kmer_hits
 		dbgTraversalCounter = 0;
 
 	if (localQueries.size() > 0)
-		batch_count_kmer_hits (localQueries);
+		perform_batch_count_kmer_hits (localQueries);
 	}
 
-void BloomTree::batch_count_kmer_hits
+void BloomTree::perform_batch_count_kmer_hits
    (vector<Query*>	queries)
 	{
 	// skip non-leaf nodes
@@ -1495,7 +1493,7 @@ void BloomTree::batch_count_kmer_hits
 			}
 
 		for (const auto& child : children)
-			child->batch_count_kmer_hits (queries);
+			child->perform_batch_count_kmer_hits (queries);
 		return;
 		}
 

@@ -25,7 +25,7 @@ struct querydata
 class Query
 	{
 public:
-	Query(const querydata& qd);
+	Query(const querydata& qd, double threshold);
 	virtual ~Query();
 
 	virtual void kmerize (BloomFilter* bf, bool distinct=false);
@@ -37,6 +37,7 @@ public:
 	std::uint32_t batchIx;	// index of this query within a batch
 	std::string name;
 	std::string seq;		// nucleotide sequence
+	double threshold;		// search threshold
 	std::vector<std::uint64_t> kmerPositions;
 
 	std::uint64_t numPositions;
@@ -62,6 +63,7 @@ public:
 
 public:
 	static void read_query_file (std::istream& in, const std::string& filename,
+	                             double threshold,
 	                             std::vector<Query*>& queries);
 	};
 

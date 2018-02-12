@@ -26,8 +26,10 @@ using std::endl;
 //----------
 
 Query::Query
-   (const querydata& qd)
-	  :	numPositions(0),
+   (const querydata& qd,
+	double _threshold)
+	  :	threshold(_threshold),
+		numPositions(0),
 		neededToPass(0),
 		neededToFail(0),
 		numUnresolved(0),
@@ -172,6 +174,8 @@ u64 Query::kmer_positions_hash
 //	const string&	filename:	The name of the file. This is only used for
 //								.. assigning names to unnamed queries, and for
 //								.. error reports.
+//	double			threshold:	'Hit' threshold for queries in this file.
+//								0 < threshold <= 1
 //	vector<Query*>&	queries:	List to copy queries to. Queries are appended
 //								.. to this, so any contents it has prior to the
 //								.. call are preserved. Note that the caller is
@@ -195,6 +199,7 @@ u64 Query::kmer_positions_hash
 void Query::read_query_file
    (std::istream&	in,
 	const string&	_filename,
+	double			threshold,
 	vector<Query*>&	queries)
 	{
 	bool			fileTypeKnown = false;
@@ -253,7 +258,7 @@ void Query::read_query_file
 				else
 					{
 					qd.batchIx = queries.size();
-					queries.emplace_back(new Query(qd));
+					queries.emplace_back(new Query(qd,threshold));
 					}
 				}
 
@@ -279,7 +284,7 @@ void Query::read_query_file
 			qd.batchIx = queries.size();
 			qd.name = baseName + std::to_string(lineNum);
 			qd.seq  = line;
-			queries.emplace_back(new Query(qd));
+			queries.emplace_back(new Query(qd,threshold));
 			qd.name = "";
 			}
 		}
@@ -294,7 +299,7 @@ void Query::read_query_file
 		else
 			{
 			qd.batchIx = queries.size();
-			queries.emplace_back(new Query(qd));
+			queries.emplace_back(new Query(qd,threshold));
 			}
 		}
 

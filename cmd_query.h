@@ -12,7 +12,7 @@
 class QueryCommand: public Command
 	{
 public:
-	static constexpr double defaultQueryThreshold = 0.9;
+	static constexpr double defaultQueryThreshold = 0.7;  // 70%
 
 public:
 	QueryCommand(const std::string& name): Command(name) {}
@@ -28,8 +28,9 @@ public:
 
 	std::string treeFilename;
 	std::vector<std::string> queryFilenames;
+	std::vector<double> queryThresholds;
 	std::string matchesFilename;
-	double queryThreshold;
+	double generalQueryThreshold;
 	bool onlyLeaves;
 	bool distinctKmers;
 	bool useFileManager;
