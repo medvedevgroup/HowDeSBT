@@ -107,7 +107,7 @@ void QueryCommand::parse
 
 	// defaults
 
-	generalQueryThreshold = defaultQueryThreshold;
+	generalQueryThreshold = -1.0;		// (unassigned threshold)
 	onlyLeaves            = false;
 	distinctKmers         = false;
 	useFileManager        = true;
@@ -186,7 +186,15 @@ void QueryCommand::parse
 		 ||	(is_prefix_of (arg, "--query-threshold="))
 		 ||	(is_prefix_of (arg, "--theta="))
 		 ||	(is_prefix_of (arg, "--specificity=")))
-			{ generalQueryThreshold = string_to_probability(argVal);  continue; }
+			{
+			if (generalQueryThreshold >= 0.0)
+				{
+				cerr << "warning: --threshold=<F> used more that once; only final setting will apply" << endl;
+				cerr << "(to use different thresholds for different files, use <queryfilename>=<F> form)" << endl;
+				}
+			generalQueryThreshold = string_to_probability(argVal);
+			continue;
+			}
 
 		// --leafonly, etc.
 
@@ -302,6 +310,9 @@ void QueryCommand::parse
 		}
 
 	// assign threshold to any unassigned queries
+
+	if (generalQueryThreshold < 0.0)
+		generalQueryThreshold = defaultQueryThreshold;
 
 	int numQueryFiles = queryFilenames.size();
 	for (int queryIx=0 ; queryIx<numQueryFiles ; queryIx++)
