@@ -174,7 +174,7 @@ BloomFilter::BloomFilter
 		numBits(_numBits),
 		numBitVectors(1)
 	{
-	// (see note in first constuctor)
+	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
 	// $$$ add trackMemory to hash constructor/destructor
@@ -202,9 +202,9 @@ BloomFilter::BloomFilter
 		hashSeed2(templateBf->hashSeed2),
 		hashModulus(templateBf->hashModulus),
 		numBits(templateBf->numBits),
-		numBitVectors(1)
+		numBitVectors(templateBf->numBitVectors)
 	{
-	// (see note in first constuctor)
+	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
 	if (newFilename != "") filename = newFilename;
@@ -1206,7 +1206,8 @@ void DeterminedBriefFilter::restore_positions_in_list
 //----------
 
 string BloomFilter::strip_filter_suffix
-   (const string&	filename)
+   (const string&	filename,
+	bool			complete)
 	{
 	string name = filename;
 
@@ -1216,17 +1217,20 @@ string BloomFilter::strip_filter_suffix
 	if (is_suffix_of (name, ".unity"))
 		name = strip_suffix(name,".unity");
 
-	if (is_suffix_of (name, ".rrr"))
-		name = strip_suffix(name,".rrr");
-	else if (is_suffix_of (name, ".roar"))
-		name = strip_suffix(name,".roar");
+	if (complete)
+		{
+		if (is_suffix_of (name, ".rrr"))
+			name = strip_suffix(name,".rrr");
+		else if (is_suffix_of (name, ".roar"))
+			name = strip_suffix(name,".roar");
 
-	if (is_suffix_of (name, ".allsome"))			// bfkind_allsome
-		name = strip_suffix(name,".allsome");
-	else if (is_suffix_of (name, ".det"))			// bfkind_determined
-		name = strip_suffix(name,".det");
-	else if (is_suffix_of (name, ".detbrief"))		// bfkind_determined_brief
-		name = strip_suffix(name,".detbrief");
+		if (is_suffix_of (name, ".allsome"))			// bfkind_allsome
+			name = strip_suffix(name,".allsome");
+		else if (is_suffix_of (name, ".det"))			// bfkind_determined
+			name = strip_suffix(name,".det");
+		else if (is_suffix_of (name, ".detbrief"))		// bfkind_determined_brief
+			name = strip_suffix(name,".detbrief");
+		}
 
 	return name;
 	}

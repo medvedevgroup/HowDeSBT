@@ -296,7 +296,7 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	// always create this in the current directory, even if the source filter
 	// is from another directory
 
-	string dstFilename     = BloomFilter::strip_filter_suffix(strip_file_path(filename));
+	string dstFilename     = BloomFilter::strip_filter_suffix(strip_file_path(filename),false);
 	string compressionDesc = BitVector::compressor_to_string(compressor);
 	if (compressionDesc == "uncompressed")
 		dstFilename += ".bf";
@@ -317,15 +317,24 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		}
 
 	// load the source filter
- 	// $$$ if the file contains multiple filters we should compress each
- 	//     .. separately and combine them into a single resultant file;  as it
- 	//     .. stands, we'll get an internal error in BloomFilter::preload()
  
-	BloomFilter* srcBf = new BloomFilter (filename);
+	BloomFilter* srcBf = BloomFilter::bloom_filter(filename);
 	srcBf->load();
 
-	// øøø this needs to loop over bvs[]	
+	// make sure all vectors in the source filter have the same compression
+	// type;  and if this is the type the user wants, we're already done
+
+	if (srcBf->numBitVectors == 0)
+		fatal ("error: \"" + filename + "\" contains no bit vectors");
+
 	u32 srcCompressor = srcBf->bvs[0]->compressor();
+	for (int whichBv=1 ; whichBv<srcBf->numBitVectors ; whichBv++)
+		{
+		if (srcBf->bvs[whichBv]->compressor() != srcCompressor)
+			fatal ("error: not converting \"" + filename + "\""
+			    + " (its bit vectors are inconsistently compressed)");
+		}
+
 	if (compressor == srcCompressor)
 		{
 		cerr << "warning: not converting \"" << filename << "\""
@@ -337,20 +346,24 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	// source is uncompressed) or copying bits one-by-one (if the source is
 	// compressed)
 
-	BloomFilter* dstBf = new BloomFilter(srcBf, dstFilename);
+	BloomFilter* dstBf = BloomFilter::bloom_filter(srcBf,dstFilename);
 
-	// øøø this need to loop over bvs[]	
 	if (srcCompressor == bvcomp_uncompressed)
-		dstBf->new_bits (srcBf->bvs[0], compressor);
+		{
+		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
+			dstBf->new_bits (srcBf->bvs[whichBv], compressor, whichBv);
+		}
 	else
 		{
-		// øøø this needs to loop over bvs[]	
-		// ……… improve this for RRR by decoding chunk by chunk
-		dstBf->new_bits (compressor);
-		BitVector* srcBv = srcBf->bvs[0];
-		BitVector* dstBv = dstBf->bvs[0];
-		for (u64 pos=0 ; pos<srcBf->numBits ; pos++)
-			{ if ((*srcBv)[pos] == 1) dstBv->write_bit(pos); }
+		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
+			{
+			// ……… improve this for RRR by decoding chunk by chunk
+			dstBf->new_bits (compressor, whichBv);
+			BitVector* srcBv = srcBf->bvs[whichBv];
+			BitVector* dstBv = dstBf->bvs[whichBv];
+			for (u64 pos=0 ; pos<srcBf->numBits ; pos++)
+				{ if ((*srcBv)[pos] == 1) dstBv->write_bit(pos); }
+			}
 		}
 
 	// save the destination filter; note that the bit vector will automatically

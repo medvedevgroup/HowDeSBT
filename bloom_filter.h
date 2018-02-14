@@ -109,7 +109,8 @@ public:
 	static bool reportManager;
 
 public:
-	static std::string strip_filter_suffix (const std::string& filename);
+	static std::string strip_filter_suffix
+	    (const std::string& filename, bool complete=true);
 	static std::string default_filter_name
 	    (const std::string& filename, const int componentNumber=-1);
 	static std::string filter_kind_to_string(std::uint32_t bfKind, bool shortString=true);

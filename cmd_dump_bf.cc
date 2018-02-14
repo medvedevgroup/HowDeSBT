@@ -277,7 +277,7 @@ int DumpBFCommand::execute()
 		{
 		if (contains(debug,"singleton"))
 			{
-			BloomFilter* bf = new BloomFilter (bfFilename);
+			BloomFilter* bf = BloomFilter::bloom_filter(bfFilename);
 			bf->preload();
 			u64 numBits = bf->num_bits();
 
@@ -329,7 +329,7 @@ int DumpBFCommand::execute()
 		{
 		if (contains(debug,"singleton"))
 			{
-			BloomFilter* bf = new BloomFilter (bfFilename);
+			BloomFilter* bf = BloomFilter::bloom_filter(bfFilename);
 			if (showAs == "header")
 				bf->preload();
 			else
@@ -382,16 +382,43 @@ void DumpBFCommand::dump_one_bloom_filter
 	cout << std::setfill(' ');
 
 	u64 numBits = bf->num_bits();
-
 	u64 startPos = std::min (startPosition, numBits);
 	u64 endPos   = std::min (endPosition,   numBits);
 
 	for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
 		{
 		BitVector* bv = bf->get_bit_vector(bvIx);
+		u32 compressor = bv->compressor();
+
+//…… yank this
+		cerr << "bf[" << bvIx << "] = bv = " << bv << endl;
+		cerr << "bv->class_identity() = \"" << bv->class_identity() << "\"" << endl;
+		cerr << "bv->bits = " << bv->bits << endl;
+
+		if (compressor == bvcomp_rrr)
+			{
+			RrrBitVector* rrrBv = (RrrBitVector*) bv;
+			cerr << "bv->rrrBits = " << rrrBv->rrrBits << endl;
+			}
+//…… yank that
 
 		u64 bvNumBits = numBits;
-		if (bv->isResident) bvNumBits = bv->bits->size();
+		if (bv->isResident)
+			{
+			// $$$ move this into the BitVector class and subclasses
+			if (bv->bits != nullptr)
+				bvNumBits = bv->bits->size();
+			else if (compressor == bvcomp_rrr)
+				{
+				RrrBitVector* rrrBv = (RrrBitVector*) bv;
+				if (rrrBv->bits != nullptr) bvNumBits = rrrBv->bits->size();
+				}
+			else if (compressor == bvcomp_roar)
+				{
+				RoarBitVector* roarBv = (RoarBitVector*) bv;
+				if (roarBv->bits != nullptr) bvNumBits = roarBv->bits->size();
+				}
+			}
 		u64 bvEndPos = std::min(endPos,bvNumBits);
 
 		string bfName = _bfName;
@@ -403,7 +430,7 @@ void DumpBFCommand::dump_one_bloom_filter
 			// $$$ we might like to see the compressor type for all the components,
 			//     .. but currently only the first component is output
 			cout << std::setfill(' ') << std::setw(nameWidth+1) << std::left << bfName
-				 << " (" << BitVector::compressor_to_string(bv->compressor()) << ")"
+				 << " (" << BitVector::compressor_to_string(compressor) << ")"
 				 << " k="       << bf->kmerSize
 				 << " hashes="  << bf->numHashes
 				 << " seed="    << bf->hashSeed1 << "," << bf->hashSeed2
@@ -487,7 +514,7 @@ void DumpBFCommand::dump_one_bloom_filter
 			if (startPos > 0) select1Ss << "...";
 
 			bool rankSupported = false;
-			if (bv->compressor() == bvcomp_uncompressed)
+			if (compressor == bvcomp_uncompressed)
 				{
 				rankSupported = true;
 
@@ -533,7 +560,7 @@ void DumpBFCommand::dump_one_bloom_filter
 						}
 					}
 				}
-			else if (bv->compressor() == bvcomp_rrr)
+			else if (compressor == bvcomp_rrr)
 				{
 				rankSupported = true;
 
