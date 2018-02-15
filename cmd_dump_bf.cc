@@ -25,6 +25,11 @@ using std::endl;
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
+
+#define HEX_04        std::setfill('0')<<std::setw(4)<<std::right<<std::hex<<std::uppercase
+#define HEX_X08 "0x"<<std::setfill('0')<<std::setw(8)<<std::right<<std::hex<<std::uppercase
+
+
 void DumpBFCommand::short_description
    (std::ostream& s)
 	{
@@ -390,19 +395,6 @@ void DumpBFCommand::dump_one_bloom_filter
 		BitVector* bv = bf->get_bit_vector(bvIx);
 		u32 compressor = bv->compressor();
 
-//…… yank this
-//		cerr << "bf[" << bvIx << "] = bv = " << bv << endl;
-//		cerr << "bv->class_identity() = \"" << bv->class_identity() << "\"" << endl;
-//		cerr << "bv->bits = " << bv->bits << endl;
-//		cerr << "bv->num_bits() = " << bv->num_bits() << endl;
-//
-//		if (compressor == bvcomp_rrr)
-//			{
-//			RrrBitVector* rrrBv = (RrrBitVector*) bv;
-//			cerr << "bv->rrrBits = " << rrrBv->rrrBits << endl;
-//			}
-//…… yank that
-
 		u64 bvNumBits = numBits;
 		if (bv->isResident) bvNumBits = bv->num_bits();
 		u64 bvEndPos = std::min(endPos,bvNumBits);
@@ -413,15 +405,19 @@ void DumpBFCommand::dump_one_bloom_filter
 		cout.flags(saveCoutFlags);
 		if (showAs == "header")
 			{
-			// $$$ we might like to see the compressor type for all the components,
-			//     .. but currently only the first component is output
+			// $$$ bf->numBits doesn't reflect the bit*vector*s actual bit
+			//     count, but the goal here is to display the bf file's header,
+			//     and the bv's have not been completely loaded
 			cout << std::setfill(' ') << std::setw(nameWidth+1) << std::left << bfName
 				 << " (" << BitVector::compressor_to_string(compressor) << ")"
 				 << " k="       << bf->kmerSize
 				 << " hashes="  << bf->numHashes
 				 << " seed="    << bf->hashSeed1 << "," << bf->hashSeed2
 				 << " modulus=" << bf->hashModulus
-				 << " bits="    << bf->numBits << endl;
+				 << " bits="    << bf->numBits
+				 << " segment=" << HEX_X08 << bv->offset
+				 << ".."        << HEX_X08 << (bv->offset+bv->numBytes)
+				 << endl;
 			}
 		else if (showAs == "density")
 			{
@@ -448,8 +444,8 @@ void DumpBFCommand::dump_one_bloom_filter
 			if (bitsInByte > 0)
 				crc = update_crc(crc,byte<<(8-bitsInByte));
 			cout << std::setfill(' ') << std::setw(nameWidth+1) << std::left << bfName
-				 << " " << std::setfill('0') << std::setw(4) << std::right << std::hex << std::uppercase << (crc >> 16)
-				 << " " << std::setfill('0') << std::setw(4) << std::right << std::hex << std::uppercase << (crc & 0x0000FFFF) << endl;
+				 << " " << HEX_04 << (crc >> 16)
+				 << " " << HEX_04 << (crc & 0x0000FFFF) << endl;
 			}
 		else if (showAs == "integers")
 			{
