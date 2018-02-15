@@ -91,7 +91,8 @@ struct bffileheader
 	std::uint64_t	hashSeed1;	// [20]
 	std::uint64_t	hashSeed2;	// [28]
 	std::uint64_t	hashModulus;// [30]
-	std::uint64_t	numBits;	// [38]
+	std::uint64_t	numBits;	// [38] (the filter's bit vectors may differ
+								//      .. from this, and from each other)
 	std::uint32_t	numVectors;	// [40]
 	std::uint32_t	padding2;	// [44] (expected to be 0)
 	std::uint32_t	padding3;	// [48] (expected to be 0)

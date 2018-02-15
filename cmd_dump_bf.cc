@@ -391,34 +391,20 @@ void DumpBFCommand::dump_one_bloom_filter
 		u32 compressor = bv->compressor();
 
 //…… yank this
-		cerr << "bf[" << bvIx << "] = bv = " << bv << endl;
-		cerr << "bv->class_identity() = \"" << bv->class_identity() << "\"" << endl;
-		cerr << "bv->bits = " << bv->bits << endl;
-
-		if (compressor == bvcomp_rrr)
-			{
-			RrrBitVector* rrrBv = (RrrBitVector*) bv;
-			cerr << "bv->rrrBits = " << rrrBv->rrrBits << endl;
-			}
+//		cerr << "bf[" << bvIx << "] = bv = " << bv << endl;
+//		cerr << "bv->class_identity() = \"" << bv->class_identity() << "\"" << endl;
+//		cerr << "bv->bits = " << bv->bits << endl;
+//		cerr << "bv->num_bits() = " << bv->num_bits() << endl;
+//
+//		if (compressor == bvcomp_rrr)
+//			{
+//			RrrBitVector* rrrBv = (RrrBitVector*) bv;
+//			cerr << "bv->rrrBits = " << rrrBv->rrrBits << endl;
+//			}
 //…… yank that
 
 		u64 bvNumBits = numBits;
-		if (bv->isResident)
-			{
-			// $$$ move this into the BitVector class and subclasses
-			if (bv->bits != nullptr)
-				bvNumBits = bv->bits->size();
-			else if (compressor == bvcomp_rrr)
-				{
-				RrrBitVector* rrrBv = (RrrBitVector*) bv;
-				if (rrrBv->bits != nullptr) bvNumBits = rrrBv->bits->size();
-				}
-			else if (compressor == bvcomp_roar)
-				{
-				RoarBitVector* roarBv = (RoarBitVector*) bv;
-				if (roarBv->bits != nullptr) bvNumBits = roarBv->bits->size();
-				}
-			}
+		if (bv->isResident) bvNumBits = bv->num_bits();
 		u64 bvEndPos = std::min(endPos,bvNumBits);
 
 		string bfName = _bfName;

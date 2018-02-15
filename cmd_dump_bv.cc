@@ -43,8 +43,9 @@ void DumpBVCommand::usage
 	s << "usage: " << commandName << " <filename> [<filename>..] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
 	s << "  <filename>      (cumulative) a bit vector file, either .bv, .rrr or .roar" << endl;
-	s << "  <filename>:<type>[:<offset>] bit vector is embedded in another file; <type>" << endl;
-	s << "                  is bv, rrr or roar; <offset> is location within the file" << endl;
+	s << "  <filename>:<type>[:<offset>][:<bytes>] bit vector is embedded in another" << endl;
+	s << "                  file; <type> is bv, rrr or roar; <offset> is location within" << endl;
+	s << "                  the file" << endl;
 	s << "  --vectors=<N>   number of bit vectors to generate for each filename; this" << endl;
 	s << "                  requires that the filename contain the substring {number}" << endl;
 	s << "  --bits=<N>      limit of the number of bits to display from each bit vector" << endl;
@@ -232,9 +233,11 @@ void DumpBVCommand::parse
 			chastise ("unrecognized option: \"" + arg + "\"");
 
 		// <start>..<end>
+		// (we exclude ":" because some filename forms have ":" and ".."
 
+		std::size_t colonIx = arg.find (':');
 		std::size_t separatorIx = arg.find ("..");
-		if (separatorIx != string::npos)
+		if ((colonIx == string::npos) && (separatorIx != string::npos))
 			{
 			startPosition = string_to_unitized_u64(arg.substr (0, separatorIx));
 			endPosition   = string_to_unitized_u64(arg.substr (separatorIx+2));
@@ -306,7 +309,7 @@ int DumpBVCommand::execute()
 	size_t onesCountWidth = 0;
 	for (const auto& bvFilename : bvFilenames)
 		{
-		BitVector* bv = BitVector::bit_vector (bvFilename);
+		BitVector* bv = BitVector::bit_vector(bvFilename);
 		u64 numBits = bv->num_bits();
 
 		u64 startPos   = std::min (startPosition, numBits);

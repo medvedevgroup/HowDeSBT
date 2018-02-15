@@ -1462,10 +1462,8 @@ string BitVector::compressor_to_string
 //
 // Arguments (variant 1):
 //	const string&	filename:	The name of the file that contains the vector's
-//								.. bits. This can also be of the form
-//								.. <filename>:<type>[:<offset>][:<bits>]. The
-//								.. <bits> field is only applicable for certain
-//								.. types (namely "raw").
+//								.. bits. This can also be of the special forms
+//								.. discussed in note 2.
 //	const string&	kind:		The type of bit vector (.e.g. "bv", "rrr",
 //								.. "roar", or "raw"); an empty string means we
 //								.. should determine the type from the filename.
@@ -1498,6 +1496,19 @@ string BitVector::compressor_to_string
 // Notes:
 //	(1)	This does *not* load the bits from the file, or even check that the
 //		file exists.
+//	(2)	Filename parsing supports special forms that allow a bitvector to be
+//		extracted from a segment of the file.  The three special forms are
+//		  <filename>:<type>[:<offset>[..<end>]]
+//		  <filename>:<type>[:<offset>[:<bytes>]]
+//		  <filename>:raw[:<offset>[:<bits>]]
+//		where
+//		  <type>   is e.g. "bv", "rrr", etc.
+//		  <offset> gives the first byte of the segment; this can be decimal,
+//		           or hexadecimal if it begins with "0x"
+//		  <end>    gives the first byte *not* in the segment (decimal or hex)
+//		  <bytes>  gives the number of bytes in the segment (decimal or hex)
+//		  <bits>   gives the number of *bits* in the segment; this only applies
+//		           to "raw" type
 //
 //----------
 
@@ -1509,19 +1520,24 @@ BitVector* BitVector::bit_vector
    (const string&	_filename,
 	const string&	_kind,
 	const size_t	_offset,
-	const size_t	numBytes)
+	const size_t	_numBytes)
 	{
 	string filename = _filename;
 	string kind     = _kind;
 	size_t offset   = _offset;
+	size_t numBytes = _numBytes;
 	u64 numBits = 0;
 
 	if (numBytes > numBytesSanityLimit)
 		fatal ("internal error: request for " + std::to_string(numBytes)
 		    + "for bit vector \"" + filename + "\" exceeds sanity limit");
 
-	// if no kind has been specified, see if the filename is of the form
-	// <filename>:<type>[:<offset>]
+	// if no kind has been specified, see if the filename is one of the forms
+	//    <filename>:<type>[:<offset>[..<end>]]
+	//  or
+	//    <filename>:<type>[:<offset>[:<bytes>]]
+	//  or
+	//    <filename>:raw[:<offset>[:<bits>]]
 
 	if (kind.empty())
 		{
@@ -1535,13 +1551,44 @@ BitVector* BitVector::bit_vector
 				{
 				string offsetStr = kind.substr(colonIx+1);
 				kind    = kind.substr(0,colonIx);
+				size_t endOffset = 0;
 				colonIx = offsetStr.find(':');
-				if ((kind == "raw") && (colonIx != string::npos))
+				if (colonIx != string::npos)
 					{
-					numBits   = string_to_u64 (offsetStr.substr(colonIx+1));
-					offsetStr = offsetStr.substr(0,colonIx);
+					if (kind == "raw")
+						{
+						numBits   = string_to_u64 (offsetStr.substr(colonIx+1), /*allowHex*/ true);
+						offsetStr = offsetStr.substr(0,colonIx);
+						}
+					else if (numBytes == 0)
+						{
+						numBytes  = string_to_u64 (offsetStr.substr(colonIx+1), /*allowHex*/ true);
+						offsetStr = offsetStr.substr(0,colonIx);
+						}
+					else
+						fatal ("error: can't decipher \"" + _filename + "\" as a bit vector");
+					}
+				else
+					{
+					string::size_type dotsIx = offsetStr.find("..");
+					if (dotsIx != string::npos)
+						{
+						if ((kind != "raw") && (numBytes == 0))
+							{
+							endOffset = string_to_u64 (offsetStr.substr(dotsIx+2), /*allowHex*/ true);
+							offsetStr = offsetStr.substr(0,dotsIx);
+							}
+						if (endOffset == 0)
+							fatal ("error: can't decipher \"" + _filename + "\" as a bit vector");
+						}
 					}
 				offset = string_to_u64 (offsetStr, /*allowHex*/ true);
+				if (endOffset != 0)
+					{
+					if (endOffset <= offset)
+						fatal ("error: can't decipher \"" + _filename + "\" as a bit vector");
+					numBytes = endOffset - offset;
+					}
 				}
 			}
 		if (kind[0] == '.')
