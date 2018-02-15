@@ -947,7 +947,7 @@ void ClusterCommand::count_depths
 
 	if (node->fruitful)
 		{
-		while (depthToNodeCount.size() <= depth)
+		while (depthToNodeCount.size() <= (size_t) depth)
 			depthToNodeCount.emplace_back(0);
 		depthToNodeCount[depth]++;
 		}
