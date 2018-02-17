@@ -9,8 +9,8 @@
 #include <string>
 #include <cstdlib>
 #include <cstdint>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include "utilities.h"
 #include "bit_utilities.h"

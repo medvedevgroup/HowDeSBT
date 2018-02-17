@@ -126,6 +126,11 @@ bool BloomFilter::trackMemory    = false;
 bool BloomFilter::reportCreation = false;
 bool BloomFilter::reportManager  = false;
 
+bool BloomFilter::reportFileBytes    = false;
+bool BloomFilter::countFileBytes     = false;
+u64  BloomFilter::totalFileReads     = 0;
+u64  BloomFilter::totalFileBytesRead = 0;
+
 //----------
 //
 // BloomFilter--
@@ -1510,6 +1515,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(sizeof(prefix)) + ")"
 		     + " produced " + std::to_string(currentFilePos) + " bytes");
+	if (reportFileBytes)
+		cerr << "read " << sizeof(prefix) << " for BloomFilter::identify_content(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += sizeof(prefix); }
 
 	if (prefix.magic == bffileheaderMagicUn)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1553,6 +1562,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
+	if (reportFileBytes)
+		cerr << "read " << remainingBytes << " for BloomFilter::identify_content(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += remainingBytes; }
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)

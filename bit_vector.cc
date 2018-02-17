@@ -26,6 +26,11 @@ using std::endl;
 bool BitVector::trackMemory    = false;
 bool BitVector::reportCreation = false;
 
+bool BitVector::reportFileBytes    = false;
+bool BitVector::countFileBytes     = false;
+u64  BitVector::totalFileReads     = 0;
+u64  BitVector::totalFileBytesRead = 0;
+
 //----------
 //
 // BitVector--
@@ -161,6 +166,10 @@ void BitVector::serialized_in
 	auto startTime = get_wall_time();
 	sdsl::load (*bits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
 	fileLoadTime += elapsed_wall_time(startTime);
+	if (reportFileBytes)
+		cerr << "read " << numBytes << " for BitVector::serialized_in(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	numBits = bits->size();
 	isResident = true;
 	}
@@ -588,6 +597,10 @@ void RrrBitVector::serialized_in
 	auto startTime = get_wall_time();
 	sdsl::load (*rrrBits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
 	fileLoadTime = elapsed_wall_time(startTime);
+	if (reportFileBytes)
+		cerr << "read " << numBytes << " for RrrBitVector::serialized_in(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	numBits = rrrBits->size();
 	isResident = true;
 
@@ -898,6 +911,10 @@ void RoarBitVector::serialized_in
 	if (!in.good())
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading header from \"" + filename + "\"");
+	if (reportFileBytes)
+		cerr << "read " << roarHeaderBytes << " for RoarBitVector::serialized_in(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += roarHeaderBytes; }
 	size_t roarBytes = header.roarBytes;
 
 	char* serializedData = new char[roarBytes];
@@ -913,6 +930,10 @@ void RoarBitVector::serialized_in
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading " + std::to_string(roarBytes) + " bytes"
 		     + " from \"" + filename + "\"");
+	if (reportFileBytes)
+		cerr << "read " << roarBytes << " for RoarBitVector::serialized_in(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += roarBytes; }
 
     roarBits = roaring_bitmap_portable_deserialize(serializedData);
 	fileLoadTime = elapsed_wall_time(startTime);
@@ -1171,6 +1192,10 @@ void RawBitVector::serialized_in
 	auto startTime = get_wall_time();
 	in.read ((char*) rawBits, numBytes);  // $$$ ERROR_CHECK we need to check for errors in the read
 	fileLoadTime = elapsed_wall_time(startTime);
+	if (reportFileBytes)
+		cerr << "read " << numBytes << " for RawBitVector::serialized_in(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	numBits = bits->size();
 	isResident = true;
 	}

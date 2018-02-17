@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdlib>
 #include <cstdint>
+#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -82,6 +83,8 @@ void QueryCommand::debug_help
 	{
 	s << "--debug= options" << endl;
 	s << "  trackmemory" << endl;
+	s << "  reportfilebytes" << endl;
+	s << "  countfilebytes" << endl;
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
@@ -337,6 +340,16 @@ int QueryCommand::execute()
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
 		}
+	if (contains(debug,"reportfilebytes"))
+		{
+		BloomFilter::reportFileBytes = true;
+		BitVector::reportFileBytes   = true;
+		}
+	if (contains(debug,"countfilebytes"))
+		{
+		BloomFilter::countFileBytes = true;
+		BitVector::countFileBytes   = true;
+		}
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 
@@ -565,6 +578,18 @@ int QueryCommand::execute()
 
 	if (manager != nullptr)
 		delete manager;
+
+	if (contains(debug,"countfilebytes"))
+		{
+		u64 fileReads     = BloomFilter::totalFileReads     + BitVector::totalFileReads;
+		u64 fileBytesRead = BloomFilter::totalFileBytesRead + BitVector::totalFileBytesRead;
+
+		if (fileReads == 0)
+			cerr << "fileBytesRead: " << fileBytesRead << "/0" << endl;
+		else
+			cerr << "fileBytesRead: " << fileBytesRead << "/" << fileReads
+			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
+		}
 
 	return EXIT_SUCCESS;
 	}
