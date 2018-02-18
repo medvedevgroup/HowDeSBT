@@ -173,6 +173,8 @@ BloomFilter::BloomFilter
 		manager(nullptr),
 		filename(_filename),
 		kmerSize(_kmerSize),
+		hasher1(nullptr),
+		hasher2(nullptr),
 		numHashes(_numHashes),
 		hashSeed1(_hashSeed1),
 		hashSeed2(_hashSeed2),
@@ -196,6 +198,8 @@ BloomFilter::BloomFilter
 	  :	ready(true),
 		manager(nullptr),
 		kmerSize(templateBf->kmerSize),
+		hasher1(nullptr),
+		hasher2(nullptr),
 		numHashes(templateBf->numHashes),
 		hashSeed1(templateBf->hashSeed1),
 		hashSeed2(templateBf->hashSeed2),
@@ -220,8 +224,8 @@ BloomFilter::~BloomFilter()
 	if (trackMemory)
 		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
-	if (hasher1 != NULL) delete hasher1;
-	if (hasher2 != NULL) delete hasher2;
+	if (hasher1 != nullptr) delete hasher1;
+	if (hasher2 != nullptr) delete hasher2;
 
 	// nota bene: we only consider the first numBitVectors entries; the rest
 	//            are never used

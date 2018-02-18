@@ -136,8 +136,8 @@ void BloomTree::unloadable()
 	if (reportUnload)
 		cerr << "marking " << name << " as unloadable" << endl;
 
-	if (bf != NULL)
-		{ delete bf;  bf = NULL; }
+	if (bf != nullptr)
+		{ delete bf;  bf = nullptr; }
 	}
 
 void BloomTree::relay_debug_settings()

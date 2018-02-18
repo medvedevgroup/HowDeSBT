@@ -67,10 +67,12 @@ void QueryCommand::usage
 	s << "                       at the leaves" << endl;
 	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
 	s << "                       (by default we count a query kmer each time it occurs)" << endl;
-	s << "  --nomanager          don't use a file manager; generally this means each file" << endl;
+	s << "  --usemanager         use a file manager; if a manager isn't used, each file" << endl;
 	s << "                       can contain only one bloom filter" << endl;
-	s << "  --noconsistency      (only with --nomanager) don't check that bloom filter" << endl;
-	s << "                       properties are consistent across the tree" << endl;
+	s << "                       (by default a manager isn't used)" << endl;
+	s << "  --consistencycheck   before searching, check that bloom filter properties are" << endl;
+	s << "                       consistent across the tree" << endl;
+	s << "                       (not needed with --usemanager)" << endl;
 	s << "  --justcountkmers     just report the number of kmers in each query, and quit" << endl;
 	s << "  --countallkmerhits   report the number of kmers that 'hit', for each" << endl;
 	s << "                       query/leaf" << endl;
@@ -113,8 +115,8 @@ void QueryCommand::parse
 	generalQueryThreshold = -1.0;		// (unassigned threshold)
 	onlyLeaves            = false;
 	distinctKmers         = false;
-	useFileManager        = true;
-	checkConsistency      = true;
+	useFileManager        = false;
+	checkConsistency      = false;
 	justReportKmerCounts  = false;
 	countAllKmerHits      = false;
 	collectNodeStats      = false;
@@ -216,13 +218,20 @@ void QueryCommand::parse
 		 || (arg == "--distinct"))
 			{ distinctKmers = true;  continue; }
 
-		// --nomanager
+		// --usemanager, (unadvertised) --nomanager
+
+		if ((arg == "--usemanager")
+		 || (arg == "--nofilemanager"))
+			{ useFileManager = true;  continue; }
 
 		if ((arg == "--nomanager")
 		 || (arg == "--nofilemanager"))
 			{ useFileManager = false;  continue; }
 
-		// --noconsistency
+		// --consistencycheck, (unadvertised) --noconsistency
+
+		if (arg == "--consistencycheck")
+			{ checkConsistency = true;  continue; }
 
 		if ((arg == "--noconsistency")
 		 || (arg == "--noconsistencycheck"))
@@ -355,6 +364,7 @@ int QueryCommand::execute()
 		BitVector::reportCreation = true;
 
 	// read the tree
+	// $$$ we really should derive useFileManager from the tree 
 
 	BloomTree* root = BloomTree::read_topology(treeFilename,onlyLeaves);
 	vector<BloomTree*> order;

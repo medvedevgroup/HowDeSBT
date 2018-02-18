@@ -304,7 +304,7 @@ void MakeBVCommand::parse
 
 MakeBVCommand::~MakeBVCommand()
 	{
-	if (hasher != NULL) delete hasher;
+	if (hasher != nullptr) delete hasher;
 	}
 
 

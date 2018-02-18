@@ -280,7 +280,7 @@ ClusterCommand::~ClusterCommand()
 	{
 	for (const auto& bf : leafVectors)
 		delete bf;
-	if (treeRoot != NULL) delete treeRoot;
+	if (treeRoot != nullptr) delete treeRoot;
 	}
 
 
