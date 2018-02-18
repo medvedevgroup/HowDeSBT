@@ -594,13 +594,20 @@ int QueryCommand::execute()
 
 	if (contains(debug,"countfilebytes"))
 		{
-		u64 fileReads     = BloomFilter::totalFileReads     + BitVector::totalFileReads;
-		u64 fileBytesRead = BloomFilter::totalFileBytesRead + BitVector::totalFileBytesRead;
-
-		if (fileReads == 0)
-			cerr << "fileBytesRead: " << fileBytesRead << "/0" << endl;
+		u64 fileReads     = BloomFilter::totalFileReads;
+		u64 fileBytesRead = BloomFilter::totalFileBytesRead;
+		if (BloomFilter::totalFileReads == 0)
+			cerr << "BF fileBytesRead: " << fileBytesRead << "/0" << endl;
 		else
-			cerr << "fileBytesRead: " << fileBytesRead << "/" << fileReads
+			cerr << "BF fileBytesRead: " << fileBytesRead << "/" << fileReads
+			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
+
+		fileReads     = BitVector::totalFileReads;
+		fileBytesRead = BitVector::totalFileBytesRead;
+		if (fileReads == 0)
+			cerr << "BV fileBytesRead: " << fileBytesRead << "/0" << endl;
+		else
+			cerr << "BV fileBytesRead: " << fileBytesRead << "/" << fileReads
 			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
 		}
 

@@ -933,7 +933,7 @@ void RoarBitVector::serialized_in
 	if (reportFileBytes)
 		cerr << "read " << roarBytes << " for RoarBitVector::serialized_in(" << filename << ")" << endl;
 	if (countFileBytes)
-		{ totalFileReads++;  totalFileBytesRead += roarBytes; }
+		totalFileBytesRead += roarBytes; // (we intentionally don't do totalFileReads++)
 
     roarBits = roaring_bitmap_portable_deserialize(serializedData);
 	fileLoadTime = elapsed_wall_time(startTime);

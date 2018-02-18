@@ -1569,7 +1569,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 	if (reportFileBytes)
 		cerr << "read " << remainingBytes << " for BloomFilter::identify_content(" << filename << ")" << endl;
 	if (countFileBytes)
-		{ totalFileReads++;  totalFileBytesRead += remainingBytes; }
+		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)
