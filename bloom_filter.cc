@@ -239,7 +239,7 @@ void BloomFilter::setup_hashers()
 	// $$$ add trackMemory to hash constructor/destructor
 	if ((numHashes > 0) && (hasher1 == nullptr))
 		hasher1 = new HashCanonical(kmerSize,hashSeed1);
-	if (numHashes > 1) && (hasher2 == nullptr))
+	if ((numHashes > 1) && (hasher2 == nullptr))
 		hasher2 = new HashCanonical(kmerSize,hashSeed2);
 	}
 
