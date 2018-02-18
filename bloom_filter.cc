@@ -182,13 +182,7 @@ BloomFilter::BloomFilter
 	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	// $$$ add trackMemory to hash constructor/destructor
-	hasher1 = new HashCanonical(kmerSize,_hashSeed1);
-	if (_numHashes > 1)
-		hasher2 = new HashCanonical(kmerSize,_hashSeed2);
-	else
-		hasher2 = nullptr;
-
+	setup_hashers();
 	if (_hashModulus == 0) hashModulus = _numBits;
 	                  else hashModulus = _hashModulus;
 
@@ -215,12 +209,7 @@ BloomFilter::BloomFilter
 	if (newFilename != "") filename = newFilename;
 	                  else filename = templateBf->filename;
 
-	// $$$ add trackMemory to hash constructor/destructor
-	hasher1 = hasher2 = nullptr;
-	if (numHashes > 0)
-		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed1);
-	if (numHashes > 1)
-		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed2);
+	setup_hashers();
 
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
@@ -243,6 +232,15 @@ BloomFilter::~BloomFilter()
 string BloomFilter::identity() const
 	{
 	return class_identity() + ":\"" + filename + "\"";
+	}
+
+void BloomFilter::setup_hashers()
+	{
+	// $$$ add trackMemory to hash constructor/destructor
+	if ((numHashes > 0) && (hasher1 == nullptr))
+		hasher1 = new HashCanonical(kmerSize,hashSeed1);
+	if (numHashes > 1) && (hasher2 == nullptr))
+		hasher2 = new HashCanonical(kmerSize,hashSeed2);
 	}
 
 void BloomFilter::preload(bool bypassManager)
@@ -292,6 +290,8 @@ void BloomFilter::preload(bool bypassManager)
 		delete templateBf;
 		}
 
+	if ((numHashes > 0) && (hasher1 == nullptr))
+		setup_hashers();
 	}
 
 //……… we should have a reload() too

@@ -33,6 +33,7 @@ public:
 	virtual std::string identity() const;
 	virtual std::uint32_t kind() const { return bfkind_simple; }
 
+	virtual void setup_hashers();
 	virtual void preload(bool bypassManager=false);
 	virtual void load(bool bypassManager=false);
 	virtual void save();

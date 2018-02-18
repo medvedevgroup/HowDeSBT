@@ -337,6 +337,7 @@ int QueryCommand::execute()
 	{
 	if (contains(debug,"trackmemory"))
 		{
+		BloomTree::trackMemory   = true;
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
 		}
@@ -575,6 +576,8 @@ int QueryCommand::execute()
 				}
 			}
 		}
+
+//$$$ where do we delete the tree?  looks like a memory leak
 
 	if (manager != nullptr)
 		delete manager;
