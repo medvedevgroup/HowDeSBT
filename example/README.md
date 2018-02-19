@@ -8,7 +8,7 @@ _This section is not yet written.  For now, we magically assume the size is
 (2) Convert the fasta files to bloom filter bit vectors.
 
 _Difference vs bloomtree-allsome: here you have to set the minimum abundance.
-The default was 3 in bloomtree-allsome, in sabutan the deault is 1._
+The default was 3 in bloomtree-allsome, in sabutan the default is 1._
 
 ```bash  
 bf_size=500000
@@ -83,7 +83,8 @@ etc.
 
 (4b) Convert the "determined,brief" tree to RRR.
 
-Note that eventually this step will be combined with step 4.
+_Note that eventually this step will be combined with step 4, and you'll just
+get the RRR files directly._
 
 ```bash  
 cat detbrief.sbt \
