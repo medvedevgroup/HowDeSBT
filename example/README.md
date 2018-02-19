@@ -120,7 +120,7 @@ a bug that requires it though._
 
 ```bash  
 sabutan query --tree=detbrief.rrr.sbt --usemanager \
-    queries.fa --threshold=0.5 \
+    queries1.fa=0.5 queries2.fa=0.7 \
   > queryresults
 ```
 
