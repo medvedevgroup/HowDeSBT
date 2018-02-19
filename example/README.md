@@ -51,7 +51,7 @@ ls experiment*.kmers \
 
 (3) Create a tree topology.
 
-_Difference vs bloomtree-allsome: ../bfcluster/sbuild did both the clustering
+_Difference vs bloomtree-allsome: bfcluster/sbuild did both the clustering
 *and* built all the uncompressed nodes.  Here we just cluster and leave the
 building of nodes for later steps._
 
