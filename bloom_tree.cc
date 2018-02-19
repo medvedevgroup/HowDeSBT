@@ -241,7 +241,7 @@ void BloomTree::construct_union_nodes ()
 		{
 		if (dbgTraversal)
 			cerr << "pre-loading " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
-		bf = new BloomFilter(bfFilename);
+		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->preload();
 		return;
 		}
@@ -289,7 +289,7 @@ void BloomTree::construct_union_nodes ()
 			{
 			if (dbgTraversal)
 				cerr << "pre-loading " << child->name << endl;
-			child->bf = new BloomFilter(child->bfFilename);
+			child->bf = BloomFilter::bloom_filter(child->bfFilename);
 			child->bf->preload();
 			}
 
@@ -311,7 +311,7 @@ void BloomTree::construct_union_nodes ()
 
 		if (bf == nullptr) // copy first child's filter
 			{
-			bf = new BloomFilter(child->bf,bfFilename);
+			bf = BloomFilter::bloom_filter(child->bf,bfFilename);
 			bf->new_bits(childBv);
 			}
 		else // union with later child's filter
@@ -353,7 +353,7 @@ void BloomTree::construct_allsome_nodes ()
 			cerr << "\n=== constructing leaf (for allsome) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
-		BloomFilter* bfInput = new BloomFilter(bfFilename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		bf = new AllSomeFilter(newBfFilename);
@@ -510,7 +510,7 @@ void BloomTree::construct_determined_nodes ()
 			cerr << "\n=== constructing leaf (for determined) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
-		BloomFilter* bfInput = new BloomFilter(bfFilename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		bf = new DeterminedFilter(newBfFilename);
@@ -694,7 +694,7 @@ void BloomTree::construct_determined_brief_nodes ()
 			cerr << "\n=== constructing leaf (for determined,brief) " << name << " ===" << endl;
 
 		// …… we should require that bfInput has only one bit vector, uncompressed
-		BloomFilter* bfInput = new BloomFilter(bfFilename);
+		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
 		bf = new DeterminedBriefFilter(newBfFilename);
@@ -901,7 +901,7 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 		{
 		if (dbgTraversal)
 			cerr << "pre-loading " << name << endl;
-		bf = new BloomFilter(bfFilename);
+		bf = BloomFilter::bloom_filter(bfFilename);
 		bf->preload();
 		return;
 		}
@@ -949,7 +949,7 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 			{
 			if (dbgTraversal)
 				cerr << "pre-loading " << child->name << endl;
-			child->bf = new BloomFilter(child->bfFilename);
+			child->bf = BloomFilter::bloom_filter(child->bfFilename);
 			child->bf->preload();
 			}
 
@@ -971,7 +971,7 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 
 		if (bf == nullptr) // copy first child's filter
 			{
-			bf = new BloomFilter(child->bf,newBfFilename);
+			bf = BloomFilter::bloom_filter(child->bf,newBfFilename);
 			bf->new_bits(childBv);
 			}
 		else // intersection with later child's filter
