@@ -126,6 +126,11 @@ bool BloomFilter::trackMemory    = false;
 bool BloomFilter::reportCreation = false;
 bool BloomFilter::reportManager  = false;
 
+bool BloomFilter::reportFileBytes    = false;
+bool BloomFilter::countFileBytes     = false;
+u64  BloomFilter::totalFileReads     = 0;
+u64  BloomFilter::totalFileBytesRead = 0;
+
 //----------
 //
 // BloomFilter--
@@ -168,6 +173,8 @@ BloomFilter::BloomFilter
 		manager(nullptr),
 		filename(_filename),
 		kmerSize(_kmerSize),
+		hasher1(nullptr),
+		hasher2(nullptr),
 		numHashes(_numHashes),
 		hashSeed1(_hashSeed1),
 		hashSeed2(_hashSeed2),
@@ -177,13 +184,7 @@ BloomFilter::BloomFilter
 	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	// $$$ add trackMemory to hash constructor/destructor
-	hasher1 = new HashCanonical(kmerSize,_hashSeed1);
-	if (_numHashes > 1)
-		hasher2 = new HashCanonical(kmerSize,_hashSeed2);
-	else
-		hasher2 = nullptr;
-
+	setup_hashers();
 	if (_hashModulus == 0) hashModulus = _numBits;
 	                  else hashModulus = _hashModulus;
 
@@ -197,6 +198,8 @@ BloomFilter::BloomFilter
 	  :	ready(true),
 		manager(nullptr),
 		kmerSize(templateBf->kmerSize),
+		hasher1(nullptr),
+		hasher2(nullptr),
 		numHashes(templateBf->numHashes),
 		hashSeed1(templateBf->hashSeed1),
 		hashSeed2(templateBf->hashSeed2),
@@ -210,12 +213,7 @@ BloomFilter::BloomFilter
 	if (newFilename != "") filename = newFilename;
 	                  else filename = templateBf->filename;
 
-	// $$$ add trackMemory to hash constructor/destructor
-	hasher1 = hasher2 = nullptr;
-	if (numHashes > 0)
-		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed1);
-	if (numHashes > 1)
-		hasher1 = new HashCanonical(kmerSize,templateBf->hashSeed2);
+	setup_hashers();
 
 	if (trackMemory)
 		cerr << "@+" << this << " constructor BloomFilter(" << identity() << "), variant 3" << endl;
@@ -226,8 +224,8 @@ BloomFilter::~BloomFilter()
 	if (trackMemory)
 		cerr << "@-" << this << " destructor BloomFilter(" << identity() << ")" << endl;
 
-	if (hasher1 != NULL) delete hasher1;
-	if (hasher2 != NULL) delete hasher2;
+	if (hasher1 != nullptr) delete hasher1;
+	if (hasher2 != nullptr) delete hasher2;
 
 	// nota bene: we only consider the first numBitVectors entries; the rest
 	//            are never used
@@ -238,6 +236,15 @@ BloomFilter::~BloomFilter()
 string BloomFilter::identity() const
 	{
 	return class_identity() + ":\"" + filename + "\"";
+	}
+
+void BloomFilter::setup_hashers()
+	{
+	// $$$ add trackMemory to hash constructor/destructor
+	if ((numHashes > 0) && (hasher1 == nullptr))
+		hasher1 = new HashCanonical(kmerSize,hashSeed1);
+	if ((numHashes > 1) && (hasher2 == nullptr))
+		hasher2 = new HashCanonical(kmerSize,hashSeed2);
 	}
 
 void BloomFilter::preload(bool bypassManager)
@@ -287,6 +294,8 @@ void BloomFilter::preload(bool bypassManager)
 		delete templateBf;
 		}
 
+	if ((numHashes > 0) && (hasher1 == nullptr))
+		setup_hashers();
 	}
 
 //……… we should have a reload() too
@@ -1510,6 +1519,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(sizeof(prefix)) + ")"
 		     + " produced " + std::to_string(currentFilePos) + " bytes");
+	if (reportFileBytes)
+		cerr << "read " << sizeof(prefix) << " for BloomFilter::identify_content(" << filename << ")" << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += sizeof(prefix); }
 
 	if (prefix.magic == bffileheaderMagicUn)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1553,6 +1566,10 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
+	if (reportFileBytes)
+		cerr << "read " << remainingBytes << " for BloomFilter::identify_content(" << filename << ")" << endl;
+	if (countFileBytes)
+		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)

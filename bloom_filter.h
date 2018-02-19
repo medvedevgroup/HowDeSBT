@@ -33,6 +33,7 @@ public:
 	virtual std::string identity() const;
 	virtual std::uint32_t kind() const { return bfkind_simple; }
 
+	virtual void setup_hashers();
 	virtual void preload(bool bypassManager=false);
 	virtual void load(bool bypassManager=false);
 	virtual void save();
@@ -133,6 +134,10 @@ public:
 	bool dbgContains         = false;	// .. #defined in bloom_filter.cc
 	bool dbgAdjustPosList    = false;
 	bool dbgRankSelectLookup = false;
+	static bool reportFileBytes;
+	static bool countFileBytes;
+	static std::uint64_t totalFileReads;
+	static std::uint64_t totalFileBytesRead;
 
 public:
 	static const std::uint64_t npos = -1;

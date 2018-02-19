@@ -9,8 +9,8 @@
 #include <string>
 #include <cstdlib>
 #include <cstdint>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 #include "utilities.h"
 #include "bit_utilities.h"
@@ -52,7 +52,12 @@ BloomTree::BloomTree
 		queryStats(nullptr)
 	{
 	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
+		{
+		if (bfFilename.empty())
+			cerr << "@+" << this << " constructor BloomTree(<no file>), variant 1" << endl;
+		else
+			cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 1" << endl;
+		}
 	}
 
 BloomTree::BloomTree
@@ -73,13 +78,23 @@ BloomTree::BloomTree
 		children.emplace_back (child);
 
 	if (trackMemory)
-		cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 2" << endl;
+		{
+		if (bfFilename.empty())
+			cerr << "@+" << this << " constructor BloomTree(<no file>), variant 2" << endl;
+		else
+			cerr << "@+" << this << " constructor BloomTree(" << bfFilename << "), variant 2" << endl;
+		}
 	}
 
 BloomTree::~BloomTree()
 	{
 	if (trackMemory)
-		cerr << "@-" << this << " destructor BloomTree(" << bfFilename << ")" << endl;
+		{
+		if (bfFilename.empty())
+			cerr << "@-" << this << " destructor BloomTree(<no file>)" << endl;
+		else
+			cerr << "@-" << this << " destructor BloomTree(" << bfFilename << ")" << endl;
+		}
 
 	if (bf != nullptr) delete bf;
 	for (const auto& subtree : children)
@@ -121,8 +136,8 @@ void BloomTree::unloadable()
 	if (reportUnload)
 		cerr << "marking " << name << " as unloadable" << endl;
 
-	if (bf != NULL)
-		{ delete bf;  bf = NULL; }
+	if (bf != nullptr)
+		{ delete bf;  bf = nullptr; }
 	}
 
 void BloomTree::relay_debug_settings()

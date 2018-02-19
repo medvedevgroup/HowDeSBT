@@ -104,6 +104,10 @@ public:
 	double fileLoadTime = 0.0;	// (internal use) time (in secs) of latest load
 	static bool trackMemory;
 	static bool reportCreation;
+	static bool reportFileBytes;
+	static bool countFileBytes;
+	static std::uint64_t totalFileReads;
+	static std::uint64_t totalFileBytesRead;
 
 public:
 	static bool       valid_filename (const std::string& filename);

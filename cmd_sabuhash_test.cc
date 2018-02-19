@@ -178,7 +178,7 @@ void SabuhashTestCommand::parse
 
 SabuhashTestCommand::~SabuhashTestCommand()
 	{
-	if (hasher != NULL) delete hasher;
+	if (hasher != nullptr) delete hasher;
 	}
 
 
