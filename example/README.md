@@ -1,10 +1,14 @@
 # Tutorial, Creating a Bloom Filter Tree
 
 (1) Estimate the best bloom filter size.
+
 _This section is not yet written.  For now, we magically assume the size is
 500,000._
 
 (2) Convert the fasta files to bloom filter bit vectors.
+
+_Difference vs bloomtree-allsome: here you have to set the minimum abundance.
+The default was 3 in bloomtree-allsome, in sabutan the deault is 1._
 
 ```bash  
 bf_size=500000
@@ -32,6 +36,9 @@ TCTGCGAACCCAGACTTGGT
 CAAGACCTATGAGTAGAACG
 ```
 
+_Note that any minimum abundance is expected to have been applied when the kmer
+list was created._
+
 ```bash  
 bf_size=500000
 ls experiment*.kmers \
@@ -43,6 +50,15 @@ ls experiment*.kmers \
 ```
 
 (3) Create a tree topology.
+
+_Difference vs bloomtree-allsome: ../bfcluster/sbuild did both the clustering
+*and* built all the uncompressed nodes.  Here we just cluster and leave the
+building of nodes for later steps._
+
+_Also, ../bfcluster/sbuild hardwired the number of bits to 500K (used for
+determining Hamming distance between filters).  In this example I'm using 50K,
+but to reproduce what you got with bloomtree-allsome you'd want 500K._
+
 
 ```bash  
 cluster_bits=50000
@@ -91,14 +107,18 @@ named detbrief.rrr.sbt.  The bloom filter files are named experiment1.detbrief.r
 etc.
 
 (5) Run a batch of queries.
+
 _Note that our example has queries as fasta, where the bloomtree-allsome example
 just had queries as separate lines of the input file.  Sabutan can accept that
 format (if there's no fasta header, it assumes queries are one per line).  But
 if fasta input is used, the output identifies the queries by their fasta
 headers._
 
+_In the long run, --usemanager won't be used in this command.  There's currently
+a bug that requires it though._
+
 ```bash  
-${sabutan} query --tree=detbrief.rrr.sbt \
+sabutan query --tree=detbrief.rrr.sbt --usemanager \
     queries.fa --threshold=0.5 \
   > queryresults
 ```
