@@ -1228,16 +1228,21 @@ string BloomFilter::strip_filter_suffix
 
 	if (complete)
 		{
-		if (is_suffix_of (name, ".rrr"))
-			name = strip_suffix(name,".rrr");
-		else if (is_suffix_of (name, ".roar"))
-			name = strip_suffix(name,".roar");
+		string compSuffix = "." + BitVector::compressor_to_string(bvcomp_rrr);
+		if (is_suffix_of(name,compSuffix))
+			name = strip_suffix(name,compSuffix);
+		else
+			{
+			compSuffix = "." + BitVector::compressor_to_string(bvcomp_roar);
+			if (is_suffix_of(name,compSuffix))
+				name = strip_suffix(name,compSuffix);
+			}
 
-		if (is_suffix_of (name, ".allsome"))			// bfkind_allsome
+		if (is_suffix_of(name,".allsome"))			// bfkind_allsome
 			name = strip_suffix(name,".allsome");
-		else if (is_suffix_of (name, ".det"))			// bfkind_determined
+		else if (is_suffix_of(name,".det"))			// bfkind_determined
 			name = strip_suffix(name,".det");
-		else if (is_suffix_of (name, ".detbrief"))		// bfkind_determined_brief
+		else if (is_suffix_of(name,".detbrief"))		// bfkind_determined_brief
 			name = strip_suffix(name,".detbrief");
 		}
 
@@ -1388,13 +1393,25 @@ int BloomFilter::vectors_per_filter
 BloomFilter* BloomFilter::bloom_filter
    (const string&	filename)
 	{
-	if (is_suffix_of (filename, ".detbrief.bf"))		// bfkind_determined_brief
+	string reducedName = filename;
+	
+	string compSuffix = "." + BitVector::compressor_to_string(bvcomp_rrr) + ".bf";
+	if (is_suffix_of(reducedName,compSuffix))
+		reducedName = strip_suffix(reducedName,compSuffix) + ".bf";
+	else
+		{
+		compSuffix = "." + BitVector::compressor_to_string(bvcomp_roar) + ".bf";
+		if (is_suffix_of(reducedName,compSuffix))
+			reducedName = strip_suffix(reducedName,compSuffix) + ".bf";
+		}
+
+	if (is_suffix_of(reducedName,".detbrief.bf"))		// bfkind_determined_brief
 		return new DeterminedBriefFilter (filename);
-	if (is_suffix_of (filename, ".det.bf"))				// bfkind_determined
+	if (is_suffix_of(reducedName,".det.bf"))			// bfkind_determined
 		return new DeterminedFilter (filename);
-	if (is_suffix_of (filename, ".allsome.bf"))			// bfkind_allsome
+	if (is_suffix_of(reducedName,".allsome.bf"))		// bfkind_allsome
 		return new AllSomeFilter (filename);
-	if (is_suffix_of (filename, ".bf"))					// bfkind_simple
+	if (is_suffix_of(reducedName,".bf"))				// bfkind_simple
 		return new BloomFilter (filename);
 
 	fatal ("error: BloomFilter::bloom_filter(\"" + filename + "\""

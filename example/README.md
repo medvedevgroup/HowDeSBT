@@ -115,12 +115,11 @@ format (if there's no fasta header, it assumes queries are one per line).  But
 if fasta input is used, the output identifies the queries by their fasta
 headers._
 
-_In the long run, --usemanager won't be used in this command.  There's currently
-a bug that requires it though._
-
 ```bash  
-sabutan query --tree=detbrief.rrr.sbt --usemanager \
+sabutan query --tree=detbrief.rrr.sbt \
     queries1.fa=0.5 queries2.fa=0.7 \
   > queryresults
 ```
+
+The resulting queryresults should be identical to queryresults.expected.
 
