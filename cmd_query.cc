@@ -589,6 +589,9 @@ int QueryCommand::execute()
 
 //$$$ where do we delete the tree?  looks like a memory leak
 
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
+
 	if (manager != nullptr)
 		delete manager;
 

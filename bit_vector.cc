@@ -9,6 +9,7 @@
 
 #include "utilities.h"
 #include "bit_utilities.h"
+#include "file_manager.h"
 #include "bit_vector.h"
 
 using std::string;
@@ -130,23 +131,23 @@ void BitVector::load()
 		cerr << "loading " << identity() << endl;
 
 	auto startTime = get_wall_time();
-	std::ifstream in (filename, std::ios::binary | std::ios::in);
-	if (not in)
+	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+	if (not *in)
 		fatal ("error: BitVector::load(" + identity() + ")"
 		     + " failed to open \"" + filename + "\"");
 
 	if (offset != 0)
 		{
-		in.seekg (offset, in.beg);
-		if (not in)
+		in->seekg (offset, in->beg);
+		if (not *in)
 			fatal ("error: BitVector::load(" + identity() + ")"
 			     + " failed to seek to " + std::to_string(offset)
 			     + " in \"" + filename + "\"");
 		}
 	fileLoadTime = elapsed_wall_time(startTime);
 
-	serialized_in (in);
-	in.close();
+	serialized_in (*in);
+	FileManager::close_file(in);
 	if (reportLoadTime)
 		cerr << "[" << class_identity() << " load] " << fileLoadTime << " secs " << filename << endl;
 	fileLoadTime = 0;

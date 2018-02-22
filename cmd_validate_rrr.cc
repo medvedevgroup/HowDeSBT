@@ -8,6 +8,7 @@
 
 #include "utilities.h"
 #include "bit_vector.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -163,6 +164,11 @@ int ValidateRrrCommand::execute()
 		{
 		if ((bvRrr[pos] == 1) != (bv[pos] == 1)) differences++;
 		}
+
+	// clean up
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	// tell the user how it went
 

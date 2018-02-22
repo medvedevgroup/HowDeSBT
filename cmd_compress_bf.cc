@@ -8,6 +8,7 @@
 
 #include "utilities.h"
 #include "bloom_filter.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -285,6 +286,9 @@ int CompressBFCommand::execute()
 			delete treeOut;
 			}
 		}
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	return EXIT_SUCCESS;
 	}

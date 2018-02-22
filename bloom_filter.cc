@@ -16,8 +16,8 @@
 #include "utilities.h"
 #include "bit_utilities.h"
 #include "hash.h"
-#include "bloom_filter_file.h"
 #include "file_manager.h"
+#include "bloom_filter_file.h"
 #include "bloom_filter.h"
 
 using std::string;
@@ -270,13 +270,13 @@ void BloomFilter::preload(bool bypassManager)
 		}
 	else
 		{
-		std::ifstream in (filename, std::ios::binary | std::ios::in);
-		if (not in)
+		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
 
 		vector<pair<string,BloomFilter*>> content
-		    = BloomFilter::identify_content(in,filename);
+		    = BloomFilter::identify_content(*in,filename);
 		if (content.size() != 1)
 			fatal ("(internal?) error: in " + identity() + ".preload()"
 			     + " file contains multiple bloom filters"
@@ -292,6 +292,7 @@ void BloomFilter::preload(bool bypassManager)
 		copy_properties(templateBf);
 		steal_bits(templateBf);
 		delete templateBf;
+		FileManager::close_file(in);
 		}
 
 	if ((numHashes > 0) && (hasher1 == nullptr))
@@ -422,7 +423,7 @@ void BloomFilter::save()
 	out.write ((char*)header, headerSize);
 	out.close();
 
-	// cleanup
+	// clean up
 
 	if ((trackMemory) && (header != nullptr))
 		cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;

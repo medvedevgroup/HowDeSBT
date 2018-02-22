@@ -9,6 +9,7 @@
 #include "utilities.h"
 #include "bit_utilities.h"
 #include "bloom_filter.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -329,6 +330,11 @@ int ClusterCommand::execute()
 	    std::ofstream out(treeFilename);
 		print_topology(out,treeRoot,0);
 		}
+
+	// clean up
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	// build the tree (we defer this to the "build" command)
 

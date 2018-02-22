@@ -9,6 +9,7 @@
 #include "utilities.h"
 #include "bit_utilities.h"
 #include "bit_vector.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -212,6 +213,9 @@ void BVOperateCommand::op_and()
 
 	bitwise_and (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	dstBv->save();
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	delete bvA;
 	delete bvB;

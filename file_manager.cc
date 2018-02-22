@@ -22,6 +22,15 @@ using std::endl;
 
 //----------
 //
+// initialize class variables
+//
+//----------
+
+string         FileManager::openedFilename = "";
+std::ifstream* FileManager::openedFile     = nullptr;
+
+//----------
+//
 // FileManager--
 //
 //----------
@@ -116,20 +125,17 @@ bool FileManager::already_preloaded
 	return someArePreloaded;
 	}
 
-std::ifstream* FileManager::preload_content
-   (const string&	filename,
-	bool			leaveFileOpen)
+void FileManager::preload_content
+   (const string&	filename)
 	{
 	if (filenameToNames.count(filename) == 0)
 		fatal ("internal error: attempt to preload content from"
 		       " unknown file \"" + filename + "\"");
 
-	if (already_preloaded(filename)) return nullptr;
+	if (already_preloaded(filename)) return;
 
 	// $$$ add trackMemory for in
-	std::ifstream* in = new std::ifstream(filename, std::ios::binary | std::ios::in);
-
-	//std::ifstream in (filename, std::ios::binary | std::ios::in);
+	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 	if (not *in)
 		fatal ("error: FileManager::preload_content()"
 			   " failed to open \"" + filename + "\"");
@@ -169,17 +175,8 @@ std::ifstream* FileManager::preload_content
 			node->bf->is_consistent_with (modelBf, /*beFatal*/ true);
 		}
 
-	// if we're supposed to leave the file open, return the file to the caller
-	// (the caller is expected to close and delete it); otherwise, clean up the
-	// file and return null
-
-	if (leaveFileOpen)
-		return in;
-
 	// $$$ add trackMemory for in
-	in->close();
-	delete in;
-	return nullptr;
+	FileManager::close_file(in);
 	}
 
 void FileManager::load_content
@@ -191,15 +188,6 @@ void FileManager::load_content
 		fatal ("internal error: attempt to load content from"
 		       " unknown file \"" + filename + "\"");
 
-//øøø
-//if already_preloaded, open the file and seek to the first component
-//otherwise, preload_content(leaveFileOpen)
-//
-//bf->load() needs to be able to receive a stream
-//
-//in turn, bitvector->load() probably needs to be able to receive a stream and
-//avoid doing a seek
-//
 //øøø
 //though this loads everything in order, we really need to make sure that the
 //components are in the same order as they are in the file, and that the sizes
@@ -219,5 +207,58 @@ void FileManager::load_content
 		node->bf->load(/*bypassManager*/ true);
 		}
 
+	}
+
+//----------
+//
+// open_file, close_file--
+//	Wrapper for input stream open and close, keeping a file open until some
+//	other file is needed.  This (hopefully) saves us the overhead of opening a
+//	file, closing it, then opening it again.
+//
+//----------
+//
+// CAVEAT:	Any commands that reads bit vectors needs to call close_file()
+//			before exit, to avoid a memory leak.
+//
+//----------
+
+std::ifstream* FileManager::open_file
+   (const string&			filename,
+	std::ios_base::openmode	mode)
+	{
+	if ((openedFile != nullptr) && (filename == openedFilename))
+		return openedFile;
+
+	if (openedFile != nullptr)
+		{
+		openedFile->close();
+		delete openedFile;
+		}
+
+	openedFilename = filename;
+	openedFile     = new std::ifstream(filename,mode);
+	return openedFile;
+	}
+
+void FileManager::close_file
+   (std::ifstream*	in,
+	bool			really)
+	{
+	if (openedFile == nullptr) return; // $$$ should this be an error?
+
+	if (in == nullptr)
+		in = openedFile;
+	else if (in != openedFile)
+		fatal ("error: FileManager::close_file()"
+			   " is asked to close the wrong file");
+
+	if (really)
+		{
+		openedFile->close();
+		delete openedFile;
+		openedFilename = "";
+		openedFile     = nullptr;
+		}
 	}
 

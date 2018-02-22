@@ -10,6 +10,7 @@
 #include "bit_utilities.h"
 #include "bit_vector.h"
 #include "bloom_filter.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -377,7 +378,10 @@ int BFDistanceCommand::execute()
 		// u->unloadable(); øøø add this
 		}
 
-	// cleanup
+	// clean up
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	for (const auto& bv : bvs)
 		delete bv;

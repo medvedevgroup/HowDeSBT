@@ -9,6 +9,7 @@
 
 #include "utilities.h"
 #include "bloom_tree.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -296,6 +297,9 @@ int BuildSBTCommand::execute()
 	    std::ofstream out(outTreeFilename);
 		root->print_topology(out);
 		}
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	delete root;
 	return EXIT_SUCCESS;

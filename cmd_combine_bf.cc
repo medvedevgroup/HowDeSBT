@@ -8,6 +8,7 @@
 
 #include "utilities.h"
 #include "bloom_tree.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -343,6 +344,9 @@ int CombineBFCommand::execute()
 		delete root;
 		}
 
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
+
 	return EXIT_SUCCESS;
 	}
 
@@ -524,7 +528,7 @@ string CombineBFCommand::combine_bloom_filters ()
 	out.write ((char*)header, headerSize);
 	out.close();
 
-	// cleanup
+	// clean up
 
 	for (const auto& bf : componentBfs)
 		delete bf;

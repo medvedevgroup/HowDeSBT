@@ -9,6 +9,7 @@
 #include "utilities.h"
 #include "prng.h"
 #include "bit_vector.h"
+#include "file_manager.h"
 
 #include "support.h"
 #include "commands.h"
@@ -238,6 +239,9 @@ int LoadTestCommand::execute()
 
 		delete bv;
 		}
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	if (prng != nullptr) delete prng;
 	return EXIT_SUCCESS;

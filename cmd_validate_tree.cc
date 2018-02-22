@@ -9,8 +9,8 @@
 
 #include "utilities.h"
 #include "bloom_tree.h"
+#include "file_manager.h"
 
-#include "utilities.h"
 #include "support.h"
 #include "commands.h"
 #include "cmd_validate_tree.h"
@@ -201,6 +201,9 @@ int ValidateTreeCommand::execute()
 
 	delete modelBf;
 	delete root;
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
 
 	// we assume that any failures prevented us from getting to this point
 

@@ -30,9 +30,9 @@ public:
 	FileManager(BloomTree* root);
 	virtual ~FileManager();
 
-	virtual bool already_preloaded         (const std::string& filename);
-	virtual std::ifstream* preload_content (const std::string& filename, bool leaveFileOpen=false);
-	virtual void load_content              (const std::string& filename);
+	virtual bool already_preloaded (const std::string& filename);
+	virtual void preload_content   (const std::string& filename);
+	virtual void load_content      (const std::string& filename);
 
 public:
 	bool reportLoad = false;
@@ -46,6 +46,15 @@ public:
 									// hash table mapping a filename to the
 									// .. list of names of nodes to be loaded
 									// .. from that file
+
+public:
+	static std::ifstream* open_file  (const std::string& filename,
+	                                  std::ios_base::openmode mode=std::ios::in);
+	static void           close_file (std::ifstream* in=nullptr, bool really=false);
+
+public:
+	static std::string    openedFilename;
+	static std::ifstream* openedFile;
 	};
 
 #endif // file_manager_H
