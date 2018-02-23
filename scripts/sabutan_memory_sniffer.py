@@ -17,24 +17,24 @@ Typical input is shown below.  Lines that begin with @+ are allocators, those
 with @- are deallocators.  Other lines are ignored.  The @+ or @- prefix is
 followed by the address of the object.
 
-	@+0x7f9b18e00910 constructor BloomFilter(BloomFilter:"leaf6.bf")
-	@+0x7f9b18e009a0 malloc bf file header for "leaf6.bf"
-	about to construct BloomFilter for leaf6.bf content 0
-	@+0x7f9b18e00a10 constructor BloomFilter(BloomFilter:"leaf6.bf")
-	about to construct BitVector for leaf6.bf content 0
-	creating bit_vector type 1 at offset 112 in "leaf6.bf"
-	@+0x7f9b18e00aa0 constructor BitVector(BitVector:"leaf6.bf":112)
-	@-0x7f9b18e009a0 free bf file header for "leaf6.bf"
-	@-0x7f9b18e00a10 destructor BloomFilter(BloomFilter:"leaf6.bf")
-	@+0x7f9b18e00850 creating bits for BitVector(BitVector:"leaf6.bf":112 ...
-	@+0x7f9b18e00b40 constructor BloomFilter(BloomFilter:"leaf6.detbrief.bf")
-	@-0x7f9b18e00910 destructor BloomFilter(BloomFilter:"leaf6.bf")
-	@+0x7f9b18e00870 creating bits for BitVector(BitVector:"" 0x7f9b18e00a20)
-	@+0x7f9b18e00a20 constructor BitVector(BitVector:"")
-	@+0x7f9b18e00910 malloc bf file header for BloomFilter(...
-	Saving leaf6.detbrief.bf
-	@-0x7f9b18e00910 free bf file header for BloomFilter(...
-	 ..."""
+  @+0x7f9b18e00910 constructor BloomFilter(BloomFilter:"leaf6.bf")
+  @+0x7f9b18e009a0 malloc bf file header for "leaf6.bf"
+  about to construct BloomFilter for leaf6.bf content 0
+  @+0x7f9b18e00a10 constructor BloomFilter(BloomFilter:"leaf6.bf")
+  about to construct BitVector for leaf6.bf content 0
+  creating bit_vector type 1 at offset 112 in "leaf6.bf"
+  @+0x7f9b18e00aa0 constructor BitVector(BitVector:"leaf6.bf":112)
+  @-0x7f9b18e009a0 free bf file header for "leaf6.bf"
+  @-0x7f9b18e00a10 destructor BloomFilter(BloomFilter:"leaf6.bf")
+  @+0x7f9b18e00850 creating bits for BitVector(BitVector:"leaf6.bf":112 ...
+  @+0x7f9b18e00b40 constructor BloomFilter(BloomFilter:"leaf6.detbrief.bf")
+  @-0x7f9b18e00910 destructor BloomFilter(BloomFilter:"leaf6.bf")
+  @+0x7f9b18e00870 creating bits for BitVector(BitVector:"" 0x7f9b18e00a20)
+  @+0x7f9b18e00a20 constructor BitVector(BitVector:"")
+  @+0x7f9b18e00910 malloc bf file header for BloomFilter(...
+  Saving leaf6.detbrief.bf
+  @-0x7f9b18e00910 free bf file header for BloomFilter(...
+   ..."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s%s" % (s,message))
