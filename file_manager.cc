@@ -147,7 +147,7 @@ void FileManager::preload_content
 	if (BloomFilter::reportLoadTime)
 		{
 		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[BloomFilter open] " << elapsedTime << " secs " << filename << endl;
+		cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
 		}
 
 	vector<pair<string,BloomFilter*>> content
@@ -244,13 +244,13 @@ std::ifstream* FileManager::open_file
 	if (openedFile != nullptr)
 		{
 		if (reportOpenClose)
-			cerr << "closing \"" << openedFilename << "\"" << endl;
+			cerr << "[FileManager close_file] " << openedFilename << endl;
 		openedFile->close();
 		delete openedFile;
 		}
 
 	if (reportOpenClose)
-		cerr << "opening \"" << filename << "\"" << endl;
+			cerr << "[FileManager open_file] " << filename << endl;
 	openedFilename = filename;
 	openedFile     = new std::ifstream(filename,mode);
 	return openedFile;
@@ -271,7 +271,7 @@ void FileManager::close_file
 	if (really)
 		{
 		if (reportOpenClose)
-			cerr << "closing \"" << openedFilename << "\"" << endl;
+			cerr << "[FileManager close_file] " << openedFilename << endl;
 		openedFile->close();
 		delete openedFile;
 		openedFilename = "";

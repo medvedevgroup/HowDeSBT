@@ -282,7 +282,7 @@ void BloomFilter::preload(bool bypassManager)
 		if (reportLoadTime)
 			{
 			double elapsedTime = elapsed_wall_time(startTime);
-			cerr << "[BloomFilter open] " << elapsedTime << " secs " << filename << endl;
+			cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
 			}
 
 		vector<pair<string,BloomFilter*>> content
@@ -1600,12 +1600,12 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
-	if (reportLoadTime)
-		cerr << "[BloomFilter load header] " << elapsedTime << " secs " << filename << endl;
 	if (reportFileBytes)
 		cerr << "[BloomFilter identify_content] read " << remainingBytes << " bytes " << filename << endl;
 	if (countFileBytes)
 		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
+	if (reportLoadTime)
+		cerr << "[BloomFilter load header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)
