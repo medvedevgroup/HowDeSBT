@@ -26,8 +26,9 @@ using std::endl;
 //
 //----------
 
-string         FileManager::openedFilename = "";
-std::ifstream* FileManager::openedFile     = nullptr;
+bool           FileManager::reportOpenClose = false;
+string         FileManager::openedFilename  = "";
+std::ifstream* FileManager::openedFile      = nullptr;
 
 //----------
 //
@@ -232,10 +233,14 @@ std::ifstream* FileManager::open_file
 
 	if (openedFile != nullptr)
 		{
+		if (reportOpenClose)
+			cerr << "closing \"" << openedFilename << "\"" << endl;
 		openedFile->close();
 		delete openedFile;
 		}
 
+	if (reportOpenClose)
+		cerr << "opening \"" << filename << "\"" << endl;
 	openedFilename = filename;
 	openedFile     = new std::ifstream(filename,mode);
 	return openedFile;
@@ -248,13 +253,15 @@ void FileManager::close_file
 	if (openedFile == nullptr) return; // $$$ should this be an error?
 
 	if (in == nullptr)
-		in = openedFile;
+		{ in = openedFile;  really = true; }
 	else if (in != openedFile)
 		fatal ("error: FileManager::close_file()"
 			   " is asked to close the wrong file");
 
 	if (really)
 		{
+		if (reportOpenClose)
+			cerr << "closing \"" << openedFilename << "\"" << endl;
 		openedFile->close();
 		delete openedFile;
 		openedFilename = "";

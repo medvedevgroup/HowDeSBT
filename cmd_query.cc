@@ -87,6 +87,7 @@ void QueryCommand::debug_help
 	s << "  trackmemory" << endl;
 	s << "  reportfilebytes" << endl;
 	s << "  countfilebytes" << endl;
+	s << "  reportopenclose" << endl;
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
@@ -360,6 +361,8 @@ int QueryCommand::execute()
 		BloomFilter::countFileBytes = true;
 		BitVector::countFileBytes   = true;
 		}
+	if (contains(debug,"reportopenclose"))
+		FileManager::reportOpenClose = true;
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 

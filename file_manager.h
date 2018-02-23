@@ -48,6 +48,7 @@ public:
 									// .. from that file
 
 public:
+	static bool reportOpenClose;
 	static std::ifstream* open_file  (const std::string& filename,
 	                                  std::ios_base::openmode mode=std::ios::in);
 	static void           close_file (std::ifstream* in=nullptr, bool really=false);
