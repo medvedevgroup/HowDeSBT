@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <chrono>
 
 #include "utilities.h"
 #include "bit_utilities.h"
@@ -121,6 +122,9 @@ using std::endl;
 // initialize class variables
 //
 //----------
+
+bool BloomFilter::reportLoadTime = false;
+bool BloomFilter::reportSaveTime = false;
 
 bool BloomFilter::trackMemory    = false;
 bool BloomFilter::reportCreation = false;
@@ -258,9 +262,6 @@ void BloomFilter::preload(bool bypassManager)
 			{ delete bvs[bvIx];  bvs[bvIx] = nullptr; }
 		}
 
-//……… add an argument "leave file open", if it is true,
-//……… .. preload has to return a stream, which the caller has to close
-
 	if ((manager != nullptr) and (not bypassManager))
 		{
 		if (reportManager)
@@ -270,10 +271,19 @@ void BloomFilter::preload(bool bypassManager)
 		}
 	else
 		{
+		wall_time_ty startTime;
+
+		if (reportLoadTime) startTime = get_wall_time();
 		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
+
+		if (reportLoadTime)
+			{
+			double elapsedTime = elapsed_wall_time(startTime);
+			cerr << "[BloomFilter open] " << elapsedTime << " secs " << filename << endl;
+			}
 
 		vector<pair<string,BloomFilter*>> content
 		    = BloomFilter::identify_content(*in,filename);
@@ -1520,13 +1530,17 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
    (std::ifstream&	in,
 	const string&	filename)
 	{
+	wall_time_ty startTime;
+	double elapsedTime = 0.0;
 	vector<pair<string,BloomFilter*>> content;
 
 	// read and validate the header prefix
 
 	bffileprefix prefix;
 
+	if (reportLoadTime) startTime = get_wall_time();
 	in.read ((char*) &prefix, sizeof(prefix));
+	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
 
 	if (!in.good())
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1538,7 +1552,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		       " read(\"" + filename + "\"," + std::to_string(sizeof(prefix)) + ")"
 		     + " produced " + std::to_string(currentFilePos) + " bytes");
 	if (reportFileBytes)
-		cerr << "read " << sizeof(prefix) << " for BloomFilter::identify_content(" << filename << ")" << endl;
+		cerr << "[BloomFilter identify_content] read " << sizeof(prefix) << " bytes " << filename << endl;
 	if (countFileBytes)
 		{ totalFileReads++;  totalFileBytesRead += sizeof(prefix); }
 
@@ -1578,14 +1592,18 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		cerr << "@+" << header << " allocating bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
+	if (reportLoadTime) startTime = get_wall_time();
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
+	if (reportLoadTime) elapsedTime += elapsed_wall_time(startTime);
 	prevFilePos = currentFilePos;  currentFilePos += in.gcount();
 	if (currentFilePos != prefix.headerSize)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " read(\"" + filename + "\"," + std::to_string(remainingBytes) + ")"
 		     + " produced " + std::to_string(currentFilePos-prevFilePos) + " bytes");
+	if (reportLoadTime)
+		cerr << "[BloomFilter load header] " << elapsedTime << " secs " << filename << endl;
 	if (reportFileBytes)
-		cerr << "read " << remainingBytes << " for BloomFilter::identify_content(" << filename << ")" << endl;
+		cerr << "[BloomFilter identify_content] read " << remainingBytes << " bytes " << filename << endl;
 	if (countFileBytes)
 		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
 

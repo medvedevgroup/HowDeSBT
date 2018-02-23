@@ -298,11 +298,11 @@ int DumpBFCommand::execute()
 
 		else
 			{
-			std::ifstream in (bfFilename, std::ios::binary | std::ios::in);
-			if (not in)
+			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+			if (not *in)
 				fatal ("error: failed to open \"" + bfFilename + "\"");
 			vector<pair<string,BloomFilter*>> content
-				= BloomFilter::identify_content(in,bfFilename);
+				= BloomFilter::identify_content(*in,bfFilename);
 
 			for (const auto& templatePair : content)
 				{
@@ -327,6 +327,8 @@ int DumpBFCommand::execute()
 
 				if (showAs == "header") break;
 				}
+
+			FileManager::close_file(in);
 			}
 
 		}
@@ -348,11 +350,11 @@ int DumpBFCommand::execute()
 			}
 		else
 			{
-			std::ifstream in (bfFilename, std::ios::binary | std::ios::in);
-			if (not in)
+			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+			if (not *in)
 				fatal ("error: failed to open \"" + bfFilename + "\"");
 			vector<pair<string,BloomFilter*>> content
-				= BloomFilter::identify_content(in,bfFilename);
+				= BloomFilter::identify_content(*in,bfFilename);
 
 			for (const auto& bfPair : content)
 				{
@@ -373,6 +375,8 @@ int DumpBFCommand::execute()
 
 				if (showAs == "header") break;
 				}
+
+			FileManager::close_file(in);
 			}
 		}
 

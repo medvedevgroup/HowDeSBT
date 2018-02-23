@@ -242,11 +242,11 @@ int BFDistanceCommand::execute()
 
 	for (const auto& bfFilename : bfFilenames)
 		{
-		std::ifstream in (bfFilename, std::ios::binary | std::ios::in);
-		if (not in)
+		std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+		if (not *in)
 			fatal ("error: failed to open \"" + bfFilename + "\"");
 		vector<pair<string,BloomFilter*>> content
-			= BloomFilter::identify_content(in,bfFilename);
+			= BloomFilter::identify_content(*in,bfFilename);
 
 		int bvNum = 0;
 		for (const auto& templatePair : content)
@@ -277,6 +277,8 @@ int BFDistanceCommand::execute()
 				}
 			delete bf;
 			}
+
+		FileManager::close_file(in);
 		}
 
 	if (bvs.empty())

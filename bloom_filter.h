@@ -105,6 +105,8 @@ public:
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
+	static bool reportLoadTime;
+	static bool reportSaveTime;
 	static bool trackMemory;
 	static bool reportCreation;
 	static bool reportManager;

@@ -170,12 +170,12 @@ int ValidateTreeCommand::execute()
 		{
 		string filename = iter.first;
 
-		std::ifstream in (filename, std::ios::binary | std::ios::in);
-		if (not in)
+		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+		if (not *in)
 			fatal ("error: failed to open \"" + filename + "\"");
 
 		vector<pair<string,BloomFilter*>> content
-			= BloomFilter::identify_content(in,filename);
+			= BloomFilter::identify_content(*in,filename);
 
 		vector<string>* nodeNames = filenameToNames[filename];
 		for (const auto& templatePair : content)
@@ -197,6 +197,8 @@ int ValidateTreeCommand::execute()
 				delete templateBf;
 				}
 			}
+
+		FileManager::close_file(in);
 		}
 
 	delete modelBf;

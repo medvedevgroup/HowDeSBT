@@ -42,6 +42,8 @@ void          fatal                  (const std::string& message="");
 #include <chrono>
 #define get_wall_time()          std::chrono::system_clock::now()
 #define elapsed_wall_time(start) ((std::chrono::duration_cast<std::chrono::nanoseconds>(get_wall_time()-start).count()) / 1000000000.0)
+#define wall_time_ty             std::chrono::time_point<std::chrono::system_clock>
+
 
 // macro to declare a variable of type T with the gnu c compiler not caring
 // that it's not used

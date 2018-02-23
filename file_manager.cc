@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <unordered_map>
+#include <chrono>
 
 #include "utilities.h"
 #include "bloom_filter.h"
@@ -129,6 +130,8 @@ bool FileManager::already_preloaded
 void FileManager::preload_content
    (const string&	filename)
 	{
+	wall_time_ty startTime;
+
 	if (filenameToNames.count(filename) == 0)
 		fatal ("internal error: attempt to preload content from"
 		       " unknown file \"" + filename + "\"");
@@ -136,10 +139,17 @@ void FileManager::preload_content
 	if (already_preloaded(filename)) return;
 
 	// $$$ add trackMemory for in
+	if (BloomFilter::reportLoadTime) startTime = get_wall_time();
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 	if (not *in)
 		fatal ("error: FileManager::preload_content()"
 			   " failed to open \"" + filename + "\"");
+	if (BloomFilter::reportLoadTime)
+		{
+		double elapsedTime = elapsed_wall_time(startTime);
+		cerr << "[BloomFilter open] " << elapsedTime << " secs " << filename << endl;
+		}
+
 	vector<pair<string,BloomFilter*>> content
 		= BloomFilter::identify_content(*in,filename);
 

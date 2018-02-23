@@ -91,6 +91,7 @@ void QueryCommand::debug_help
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
+	s << "  reportloadtime" << endl;
 	s << "  names" << endl;
 	s << "  input" << endl;
 	s << "  sort" << endl;
@@ -374,6 +375,12 @@ int QueryCommand::execute()
 
 	if (contains(debug,"topology"))
 		root->print_topology(cerr);
+
+	if (contains(debug,"reportloadtime"))
+		{
+		BloomFilter::reportLoadTime = true;
+		BitVector::reportLoadTime   = true;
+		}
 
 	if (contains(debug,"load"))
 		{

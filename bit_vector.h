@@ -99,9 +99,8 @@ public:
 public:
 	bool reportLoad     = false;
 	bool reportSave     = false;
-	bool reportLoadTime = false;
-	bool reportSaveTime = false;
-	double fileLoadTime = 0.0;	// (internal use) time (in secs) of latest load
+	static bool reportLoadTime;
+	static bool reportSaveTime;
 	static bool trackMemory;
 	static bool reportCreation;
 	static bool reportFileBytes;
