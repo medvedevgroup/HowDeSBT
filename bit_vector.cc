@@ -130,6 +130,7 @@ string BitVector::identity() const
 void BitVector::load()
 	{
 	wall_time_ty startTime;
+	double       elapsedTime = 0.0;
 
 	if (isResident) return;
 
@@ -150,14 +151,14 @@ void BitVector::load()
 			     + " failed to seek to " + std::to_string(offset)
 			     + " in \"" + filename + "\"");
 		}
+	if (reportLoadTime)
+		{
+		elapsedTime = elapsed_wall_time(startTime);
+		cerr << "[" << class_identity() << " load-open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		}
 
 	serialized_in (*in);
 	FileManager::close_file(in);
-	if (reportLoadTime)
-		{
-		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[" << class_identity() << " load] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
-		}
 	}
 
 void BitVector::serialized_in

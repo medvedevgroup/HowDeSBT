@@ -1605,7 +1605,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 	if (countFileBytes)
 		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
 	if (reportLoadTime)
-		cerr << "[BloomFilter load header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+		cerr << "[BloomFilter load-header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)
