@@ -123,3 +123,29 @@ sabutan query --tree=detbrief.rrr.sbt \
 
 The resulting queryresults should be identical to queryresults.expected.
 
+(6) Ordering query results by how good they are.
+
+_Note that this describes a short term solution that we plan to improve upon.
+It requires that the query files are real fasta files with sequence headers._
+
+```bash  
+../scripts/order_query_results.sh \
+  queries1.fa queries2.fa \
+  queryresults \
+  queryresults.kmers
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,12 +1,23 @@
 #!/bin/bash
 
-queryFile=$1
-sabutanOutput=$2
-orderedOutput=$3
-specificity=0   # everything we search for here is a hit anyway
+# order_query_results <fasta1> [<fasta2> ...] <sabutan_out> <file_to_create>
 
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-echo ${thisScriptDir}
+
+numArgs=$#
+echo ${numArgs}
+
+queryFiles=$1
+shift
+while [ $# -gt 2 ]; do
+    queryFiles="${queryFiles} $1"
+    shift
+    done
+
+sabutanOutput=$1
+orderedOutput=$2
+
+specificity=0   # everything we search for here is a hit anyway
 
 # collect queries by leaf they hit
 
@@ -47,7 +58,7 @@ cat temp.${sabutanOutput}.leaf_to_queries \
       #
       echo "=== #${leafNum} of ${numLeafs}, ${leaf} (${numQueries} queries) ==="
       #
-      cat ${queryFile} \
+      cat ${queryFiles} \
         | python ${thisScriptDir}/pluck_from_fasta.py --sequences=${queries} \
         | ${sabutan} query \
           --tree=temp.${sabutanOutput}.${leaf}.sbt --threshold=${specificity} \
