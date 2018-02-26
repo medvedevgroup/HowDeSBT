@@ -4,9 +4,6 @@
 
 thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-numArgs=$#
-echo ${numArgs}
-
 queryFiles=$1
 shift
 while [ $# -gt 2 ]; do
@@ -23,11 +20,9 @@ specificity=0   # everything we search for here is a hit anyway
 
 cat ${sabutanOutput} \
   | grep -v "^#" \
-  | sed "s/.*\///" \
-  | sed "s/\..*\.bf/.bf/" \
   | awk 'BEGIN   { qName = "NA"; }
-         !/^SRR/ { qName = substr($1,2); }
-         /^SRR/  { print qName,$0 }' \
+         /^[*]/  { qName = substr($1,2); }
+         !/^[*]/ { print qName,$0 }' \
   | sort -k 2 \
   | awk '{
          if ($2 == leaf)
