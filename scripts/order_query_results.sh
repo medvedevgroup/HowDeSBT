@@ -1,7 +1,12 @@
+#!/bin/bash
+
 queryFile=$1
 sabutanOutput=$2
 orderedOutput=$3
 specificity=0   # everything we search for here is a hit anyway
+
+thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+echo ${thisScriptDir}
 
 # collect queries by leaf they hit
 
@@ -43,7 +48,7 @@ cat temp.${sabutanOutput}.leaf_to_queries \
       echo "=== #${leafNum} of ${numLeafs}, ${leaf} (${numQueries} queries) ==="
       #
       cat ${queryFile} \
-        | pick_from_fasta --sequences=${queries} \
+        | python ${thisScriptDir}/pluck_from_fasta.py --sequences=${queries} \
         | ${sabutan} query \
           --tree=temp.${sabutanOutput}.${leaf}.sbt --threshold=${specificity} \
           --countallkmerhits \
