@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 
 #include "utilities.h"
@@ -686,6 +687,8 @@ void QueryCommand::print_matches
 void QueryCommand::print_kmer_hit_counts
    (std::ostream& out) const
 	{
+	std::ios::fmtflags saveOutFlags(out.flags());
+
 	for (auto& q : queries)
 		{
 		int matchCount = 0;
@@ -705,11 +708,16 @@ void QueryCommand::print_kmer_hit_counts
 			bool queryPasses = (numPassed >= q->neededToPass);
 
 			out << q->name << " vs " << name
-	            << " " << numPassed << "/" << q->numPositions
-	            << " " << (numPassed/float(q->numPositions));
+	            << " " << numPassed << "/" << q->numPositions;
+	        if (q->numPositions == 0)
+				out << " NA";
+			else
+				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
 			if (queryPasses) out << " hit";
 		    out << endl;
 	        ix++;
         	}
         }
+
+	out.flags(saveOutFlags);
 	}
