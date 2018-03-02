@@ -88,7 +88,10 @@ static const bool ntIsACGT[256] =
 //----------
 //
 // is_prefix_of, is_suffix_of--
-//	Determine if one string is a prefix of another.
+//	Determine if one string is a prefix (or suffix) of another.
+//
+// NOTE: in C++20, callers should use basic_string.starts_with and
+//       basic_string.ends_with instead of these functions.
 //
 //----------
 //
@@ -97,8 +100,9 @@ static const bool ntIsACGT[256] =
 //	const string&	prefix:	the prefix to test for.
 //
 // Returns:
-//	True if s begins with the prefix;  false otherwise. Note that if s is
-//	shorter than the prefix it cannot begin with the prefix.
+//	True if s begins with the prefix (or ends with the suffix);  false
+//	otherwise. Note that if s is shorter than the prefix it cannot begin with
+//	the prefix.
 //
 //----------
 
