@@ -61,6 +61,7 @@ void BuildSBTCommand::debug_help
 	{
 	s << "--debug= options" << endl;
 	s << "  trackmemory" << endl;
+	s << "  reportrankselect" << endl;
 	s << "  btunload" << endl;
 	s << "  bfcreation" << endl;
 	s << "  bfmanager" << endl;
@@ -231,6 +232,8 @@ int BuildSBTCommand::execute()
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
 		}
+	if (contains(debug,"reportrankselect"))
+		BitVector::reportRankSelect = true;
 	if (contains(debug,"btunload"))
 		BloomTree::reportUnload = true;
 	if (contains(debug,"bfcreation"))

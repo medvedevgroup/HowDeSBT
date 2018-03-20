@@ -107,6 +107,11 @@ public:
 	static bool countFileBytes;
 	static std::uint64_t totalFileReads;
 	static std::uint64_t totalFileBytesRead;
+	static bool reportRankSelect;
+	static std::uint64_t totalRankNews;
+	static std::uint64_t totalSelectNews;
+	static std::uint64_t totalRankCalls;
+	static std::uint64_t totalSelectCalls;
 
 public:
 	static bool       valid_filename (const std::string& filename);

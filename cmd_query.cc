@@ -89,6 +89,7 @@ void QueryCommand::debug_help
 	s << "  reportfilebytes" << endl;
 	s << "  countfilebytes" << endl;
 	s << "  reportopenclose" << endl;
+	s << "  reportrankselect" << endl;
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  load" << endl;
@@ -365,6 +366,8 @@ int QueryCommand::execute()
 		}
 	if (contains(debug,"reportopenclose"))
 		FileManager::reportOpenClose = true;
+	if (contains(debug,"reportrankselect"))
+		BitVector::reportRankSelect = true;
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 
@@ -623,6 +626,21 @@ int QueryCommand::execute()
 		else
 			cerr << "BV fileBytesRead: " << fileBytesRead << "/" << fileReads
 			     << " (" << (u64) floor(fileBytesRead/fileReads) << " bytes per)" << endl;
+		}
+
+	if (contains(debug,"reportrankselect"))
+		{
+		float rankAvg   = ((float) BitVector::totalRankCalls) / BitVector::totalRankNews;
+		float selectAvg = ((float) BitVector::totalSelectCalls) / BitVector::totalSelectNews;
+		
+		cerr << "BV total rank() calls:   "
+		     << BitVector::totalRankCalls   << "/" << BitVector::totalRankNews
+		     << std::setprecision(1) << std::fixed << " (" << rankAvg << " avg)"
+		     << endl;
+		cerr << "BV total select() calls: "
+		     << BitVector::totalSelectCalls << "/" << BitVector::totalSelectNews
+		     << std::setprecision(1) << std::fixed << " (" << selectAvg << " avg)"
+		     << endl;
 		}
 
 	return EXIT_SUCCESS;

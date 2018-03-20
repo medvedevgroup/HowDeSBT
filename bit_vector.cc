@@ -21,6 +21,42 @@ using std::endl;
 
 //----------
 //
+// debugging defines--
+//
+// In "normal" builds, the triggering defines here are *not* #defined, so that
+// no run-time penalty is incurred.
+//
+//----------
+
+//#define bit_vector_rankSelectDebug// if this is #defined, extra code is added
+									// .. to allow debugging of rank/select to
+									// .. be turned on and off;
+
+#ifndef bit_vector_rankSelectDebug
+#define dbgRankSelect_CountRankNew   ;
+#define dbgRankSelect_CountSelectNew ;
+#define dbgRankSelect_CountRank      ;
+#define dbgRankSelect_CountSelect    ;
+#endif // not bit_vector_rankSelectDebug
+
+#ifdef bit_vector_rankSelectDebug
+
+#define dbgRankSelect_CountRankNew                                           \
+	if (reportRankSelect) totalRankNews++;
+
+#define dbgRankSelect_CountSelectNew                                         \
+	if (reportRankSelect) totalSelectNews++;
+
+#define dbgRankSelect_CountRank                                              \
+	if (reportRankSelect) totalRankCalls++;
+
+#define dbgRankSelect_CountSelect                                            \
+	if (reportRankSelect) totalSelectCalls++;
+
+#endif // bit_vector_rankSelectDebug
+
+//----------
+//
 // initialize class variables
 //
 //----------
@@ -35,6 +71,12 @@ bool BitVector::reportFileBytes    = false;
 bool BitVector::countFileBytes     = false;
 u64  BitVector::totalFileReads     = 0;
 u64  BitVector::totalFileBytesRead = 0;
+
+bool BitVector::reportRankSelect = false;
+u64  BitVector::totalRankNews    = 0;
+u64  BitVector::totalSelectNews  = 0;
+u64  BitVector::totalRankCalls   = 0;
+u64  BitVector::totalSelectCalls = 0;
 
 //----------
 //
@@ -464,11 +506,13 @@ u64 BitVector::rank1
 
 	if (ranker1 == nullptr)
 		{
+		dbgRankSelect_CountRankNew;
 		ranker1 = new sdslrank1(bits);
 		if (trackMemory)
 			cerr << "@+" << ranker1 << " creating ranker1 for BitVector(" << identity() << " " << this << ")" << endl;
 		}
 
+	dbgRankSelect_CountRank;
 	return ranker1->rank(pos);
 	}
 
@@ -482,11 +526,13 @@ u64 BitVector::select0
 
 	if (selector0 == nullptr)
 		{
+		dbgRankSelect_CountSelectNew;
 		selector0 = new sdslselect0(bits);
 		if (trackMemory)
 			cerr << "@+" << selector0 << " creating selector0 for BitVector(" << identity() << " " << this << ")" << endl;
 		}
 
+	dbgRankSelect_CountSelect;
 	return selector0->select(pos+1);  // (pos+1 compensates for SDSL API)
 	}
 
@@ -806,7 +852,13 @@ u64 RrrBitVector::rank1
 		     + " in null bit vector");
 
 	if (rrrRanker1 == nullptr)
+		{
+		dbgRankSelect_CountRankNew;
 		rrrRanker1 = new rrrrank1(rrrBits);
+		if (trackMemory)
+			cerr << "@+" << rrrRanker1 << " creating ranker1 for RrrBitVector(" << identity() << " " << this << ")" << endl;
+		}
+	dbgRankSelect_CountRank;
 	return rrrRanker1->rank(pos);
 	}
 
@@ -819,12 +871,23 @@ u64 RrrBitVector::select0
 		     + " in null bit vector");
 
 	if (rrrSelector0 == nullptr)
+		{
+		dbgRankSelect_CountSelectNew;
 		rrrSelector0 = new rrrselect0(rrrBits);
+		if (trackMemory)
+			cerr << "@+" << rrrSelector0 << " creating selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
+		}
+	dbgRankSelect_CountSelect;
 	return rrrSelector0->select(pos+1);  // (pos+1 compensates for SDSL API)
 	}
 
 void RrrBitVector::discard_rank_select ()
 	{
+	if ((trackMemory) && (rrrRanker1 != nullptr))
+		cerr << "@-" << rrrRanker1 << " discarding ranker1 for RrrBitVector(" << identity() << " " << this << ")" << endl;
+	if ((trackMemory) && (rrrSelector0 != nullptr))
+		cerr << "@-" << rrrSelector0 << " discarding selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
+
 	if (rrrRanker1   != nullptr) { delete rrrRanker1;    rrrRanker1   = nullptr; }
 	if (rrrSelector0 != nullptr) { delete rrrSelector0;  rrrSelector0 = nullptr; }
 	BitVector::discard_rank_select();

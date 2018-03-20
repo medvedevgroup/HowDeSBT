@@ -29,13 +29,18 @@ using std::endl;
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
-// debugging defines
+//----------
+//
+// debugging defines--
+//
+// In "normal" builds, the triggering defines here are *not* #defined, so that
+// no run-time penalty is incurred.
+//
+//----------
 
 //#define bloom_filter_supportDebug	// if this is #defined, extra code is added
 									// .. to allow debugging prints to be
-									// .. turned on and off; normally this is
-									// .. *not* #defined, so that no run-time
-									// .. penalty is incurred
+									// .. turned on and off;
 
 #ifndef bloom_filter_supportDebug
 #define dbgAdd_dump_pos_with_mer        ;
