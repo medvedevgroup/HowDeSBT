@@ -423,7 +423,10 @@ void BloomFilter::save()
 		header->info[bvIx].name       = 0;
 		header->info[bvIx].offset     = bytesWritten;
 		if (header->info[bvIx].compressor == bvcomp_rrr)
-			header->info[bvIx].compressor |= (RRR_BLOCK_SIZE << 8);
+			{
+			header->info[bvIx].compressor |= (RRR_BLOCK_SIZE  << 8);
+			header->info[bvIx].compressor |= (RRR_RANK_PERIOD << 16);
+			}
 
 		size_t numBytes = bv->serialized_out (out, filename, header->info[bvIx].offset);
 		bytesWritten += numBytes;
@@ -1693,7 +1696,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			       " offset to bitvector-" + std::to_string(1+bvIx)
 			     + " name is beyond header: " + std::to_string(nameOffset));
 
-		u32 rrrBlockSize;
+		u32 rrrBlockSize, rrrRankPeriod;
 		switch (bfInfo.compressor & 0x000000FF)
 			{
 			case bvcomp_uncompressed:
@@ -1712,6 +1715,15 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 					     + "\nthe file's block size is " + std::to_string(rrrBlockSize)
 					     + ", program's block size is " + std::to_string(RRR_BLOCK_SIZE)
 					     + "\n(see notes regarding RRR_BLOCK_SIZE in bit_vector.h)");
+				rrrRankPeriod = (bfInfo.compressor >> 16) & 0x000000FF;
+				if (rrrRankPeriod == 0) rrrRankPeriod = DEFAULT_RRR_RANK_PERIOD;
+				if (rrrRankPeriod != RRR_RANK_PERIOD)
+					fatal ("error: BloomFilter::identify_content(" + filename + ")"
+					       " bitvector-" + std::to_string(1+bvIx)
+					     + ", rrr rank period mismatch"
+					     + "\nthe file's rank period is " + std::to_string(rrrRankPeriod)
+					     + ", program's rank period is " + std::to_string(RRR_RANK_PERIOD)
+					     + "\n(see notes regarding RRR_RANK_PERIOD in bit_vector.h)");
 				bfInfo.compressor &= 0x000000FF;
 				break;
 			default:

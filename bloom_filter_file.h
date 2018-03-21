@@ -37,7 +37,11 @@ struct bfvectorinfo
     							//        .. information in the other bytes, as
     							//        .. folows:
     							//        ..   bvcomp_rrr: the second byte is
-    							//        ..               the RRR chunk size
+    							//        ..     .. the RRR chunk size, and the
+    							//        ..     .. third byte is the RRR rank
+    							//        ..     .. period (for backward
+    							//        ..     .. compatibility, period=0
+    							//        ..     .. means period=32)
 	std::uint32_t	name;		// [x+04] offset (from start of file) to the
     							//        .. name of of this bitvector; the name
     							//        .. is a zero-terminated string; if

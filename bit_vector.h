@@ -7,15 +7,45 @@
 #include <roaring/roaring.h>
 #include "bloom_filter_file.h"
 
-// Honor the deployer's choice of custom RRR block size; otherwise use 255.
-// RRR_block_SIZE is typically one of 255, 127, 63, etc. We prefer 255, but
-// past versions of sdsl-lite (before April 2017) when compiled with clang had
-// a bug that made RRR fail silently with block sizes above 127.
+// Honor the deployer's choice of custom RRR block size and rank period. This
+// choice can be specified on the build command line by defining RRR_BLOCK_SIZE
+// and/or RRR_RANK_PERIOD. If no choice has been specified we default to block
+// size 255 and rank period 32.
+// 
+// RRR_BLOCK_SIZE is the number of uncompressed bits in each block of an RRR
+// bit vector. This corresponds to the t_bs field of the rrr_vector type
+// template in include/sdsl/rrr_vector.hpp. It is typically one of 255, 127,
+// 63, etc. We prefer 255, but past versions of sdsl-lite (before April 2017),
+// when compiled with clang had a bug that made RRR fail silently with block
+// sizes above 127.
 //
-// To override this default of 255, add -DRRR_BLOCK_SIZE=127 to the Makefile
+// To override this default of 255, add -DRRR_BLOCK_SIZE=127 to the Makefile.
+//
+// RRR_RANK_PERIOD determines how often a rank sample is included in an RRR
+// vector. This corresponds to the t_k field of the rrr_vector type template in
+// include/sdsl/rrr_vector.hpp. The default is 32, meaning that one rank sample
+// is included for every 32nd block. The ability to override this allows us to
+// experiment with different rank frequencies and see how performance changes.
+// Though the sdsl-lite implementation appears to allow t_k>255, we limit it
+// at 255 because we store it in one byte in the bloom filter file.
+//
+// To override this default of 32, add e.g. -DRRR_RANK_PERIOD=16 to the Makefile.
 
 #ifndef RRR_BLOCK_SIZE
 #define RRR_BLOCK_SIZE 255
+#endif
+
+#define DEFAULT_RRR_RANK_PERIOD 32
+#ifndef RRR_RANK_PERIOD
+#define RRR_RANK_PERIOD DEFAULT_RRR_RANK_PERIOD
+#endif
+
+#if ((RRR_BLOCK_SIZE<3) || (RRR_BLOCK_SIZE>255))
+#error "invalid RRR_BLOCK_SIZE"
+#endif
+
+#if ((RRR_RANK_PERIOD<1) || (RRR_RANK_PERIOD>255))
+#error "invalid RRR_RANK_PERIOD"
 #endif
 
 using sdslbitvector = sdsl::bit_vector;
@@ -24,11 +54,13 @@ using sdslrank1     = sdsl::rank_support_v<1>;
 using sdslselect0   = sdsl::select_support_mcl<0>;
 using sdslselect1   = sdsl::select_support_mcl<1>;
 
-using rrrbitvector  = sdsl::rrr_vector<RRR_BLOCK_SIZE>;
-using rrrrank0      = sdsl::rank_support_rrr<0,RRR_BLOCK_SIZE>;
-using rrrrank1      = sdsl::rank_support_rrr<1,RRR_BLOCK_SIZE>;
-using rrrselect0    = sdsl::select_support_rrr<0,RRR_BLOCK_SIZE>;
-using rrrselect1    = sdsl::select_support_rrr<1,RRR_BLOCK_SIZE>;
+#define rrr_template_args RRR_BLOCK_SIZE,sdsl::int_vector<>,RRR_RANK_PERIOD
+using rrrbitvector  = sdsl::rrr_vector<rrr_template_args>;
+using rrrrank0      = sdsl::rank_support_rrr<0,rrr_template_args>;
+using rrrrank1      = sdsl::rank_support_rrr<1,rrr_template_args>;
+using rrrselect0    = sdsl::select_support_rrr<0,rrr_template_args>;
+using rrrselect1    = sdsl::select_support_rrr<1,rrr_template_args>;
+#undef rrr_template_args
 
 //using    roarbitvector = roaring_bitmap_t
 
