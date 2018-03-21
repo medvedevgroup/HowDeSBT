@@ -77,6 +77,8 @@ void QueryCommand::usage
 	s << "  --justcountkmers     just report the number of kmers in each query, and quit" << endl;
 	s << "  --countallkmerhits   report the number of kmers that 'hit', for each" << endl;
 	s << "                       query/leaf" << endl;
+	s << "  --stat:nodesexamined report the count of nodes examined for each query (as a" << endl;
+	s << "                       comment in the output" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
 	}
@@ -123,6 +125,7 @@ void QueryCommand::parse
 	checkConsistency      = false;
 	justReportKmerCounts  = false;
 	countAllKmerHits      = false;
+	reportNodesExamined   = false;
 	collectNodeStats      = false;
 
 	// skip command name
@@ -256,6 +259,16 @@ void QueryCommand::parse
 			{
 			justReportKmerCounts = false;
 			countAllKmerHits     = true;
+			continue;
+			}
+
+		// --stat:nodesexamined
+
+		if ((arg == "--stat:nodesexamined")
+		 || (arg == "--stats:nodesexamined")
+		 || (arg == "--nodesexamined"))
+			{
+			reportNodesExamined = true;
 			continue;
 			}
 
@@ -690,7 +703,8 @@ void QueryCommand::print_matches
 	for (auto& q : queries)
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
-        out << "# " << q->nodesExamined << " nodes examined" << endl;
+		if (reportNodesExamined)
+	        out << "# " << q->nodesExamined << " nodes examined" << endl;
 		for (auto& name : q->matches)
         	out << name << endl;
         }
