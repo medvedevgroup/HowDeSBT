@@ -1706,8 +1706,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 				if ((bfInfo.compressor & 0xFFFFFF00) != 0) goto bad_compressor_code;
 				break;
 			case bvcomp_rrr:
-				if ((bfInfo.compressor & 0xFFFF0000) != 0) goto bad_compressor_code;
-				rrrBlockSize = (bfInfo.compressor >> 8) & 0x000000FF;
+				if ((bfInfo.compressor & 0xFF000000) != 0) goto bad_compressor_code;
+				rrrBlockSize  = (bfInfo.compressor >> 8)  & 0x000000FF;
+				rrrRankPeriod = (bfInfo.compressor >> 16) & 0x000000FF;
 				if (rrrBlockSize != RRR_BLOCK_SIZE)
 					fatal ("error: BloomFilter::identify_content(" + filename + ")"
 					       " bitvector-" + std::to_string(1+bvIx)
@@ -1715,7 +1716,6 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 					     + "\nthe file's block size is " + std::to_string(rrrBlockSize)
 					     + ", program's block size is " + std::to_string(RRR_BLOCK_SIZE)
 					     + "\n(see notes regarding RRR_BLOCK_SIZE in bit_vector.h)");
-				rrrRankPeriod = (bfInfo.compressor >> 16) & 0x000000FF;
 				if (rrrRankPeriod == 0) rrrRankPeriod = DEFAULT_RRR_RANK_PERIOD;
 				if (rrrRankPeriod != RRR_RANK_PERIOD)
 					fatal ("error: BloomFilter::identify_content(" + filename + ")"
