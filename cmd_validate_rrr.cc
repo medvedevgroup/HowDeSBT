@@ -26,7 +26,7 @@ using std::endl;
 void ValidateRrrCommand::short_description
    (std::ostream& s)
 	{
-	s << commandName << "-- validate rrr correctness, regarding sdsl issue 365" << endl;
+	s << commandName << "-- validate rrr correctness, regarding sdsl-lite issue 365" << endl;
 	}
 
 void ValidateRrrCommand::usage

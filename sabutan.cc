@@ -12,22 +12,23 @@
 #include "support.h"
 #include "commands.h"
 // subcommands
-#include "cmd_make_bf.h"
-#include "cmd_compress_bf.h"
-#include "cmd_cluster.h"
+#include "cmd_bf_distance.h"
 #include "cmd_build_sbt.h"
+#include "cmd_bv_operate.h"
+#include "cmd_cluster.h"
 #include "cmd_combine_bf.h"
-#include "cmd_query.h"
-#include "cmd_validate_tree.h"
-#include "cmd_make_bv.h"
-#include "cmd_random_bv.h"
+#include "cmd_compress_bf.h"
 #include "cmd_dump_bf.h"
 #include "cmd_dump_bv.h"
-#include "cmd_bf_distance.h"
 #include "cmd_load_test.h"
+#include "cmd_make_bf.h"
+#include "cmd_make_bv.h"
+#include "cmd_query.h"
+#include "cmd_random_bv.h"
 #include "cmd_sabuhash_test.h"
+#include "cmd_tree_stats.h"
 #include "cmd_validate_rrr.h"
-#include "cmd_bv_operate.h"
+#include "cmd_validate_tree.h"
 
 using std::string;
 using std::vector;
@@ -94,22 +95,25 @@ int main
 	cmd->add_subcommand (new MakeBFCommand       ("makebf"));
 	cmd->add_command_alias                       ("bfmake");
 	cmd->add_command_alias                       ("makefilter");
+	cmd->add_subcommand (new ClusterCommand      ("cluster"));
+	cmd->add_subcommand (new BuildSBTCommand     ("build"));
 	cmd->add_subcommand (new CompressBFCommand   ("compressbf"));
 	cmd->add_command_alias                       ("bfcompress");
 	cmd->add_command_alias                       ("compressfilter");
 	cmd->add_command_alias                       ("compress");
-	cmd->add_subcommand (new ClusterCommand      ("cluster"));
-	cmd->add_subcommand (new BuildSBTCommand     ("build"));
+	cmd->add_subcommand (new QueryCommand        ("query"));
+
+	// accessory commands
+
+	cmd->add_subcommand (nullptr);  // marks start of secondary commands
+
 	cmd->add_subcommand (new CombineBFCommand    ("combinebf"));
 	cmd->add_command_alias                       ("bfcombine");
 	cmd->add_command_alias                       ("unitebf");
 	cmd->add_command_alias                       ("bfunite");
-	cmd->add_subcommand (new QueryCommand        ("query"));
+	cmd->add_subcommand (new TreeStatsCommand    ("treestats"));
 	cmd->add_subcommand (new ValidateTreeCommand ("validatetree"));
 	cmd->add_command_alias                       ("treevalidate");
-
-	// accessory commands
-
 	cmd->add_subcommand (new MakeBVCommand       ("makebv"));
 	cmd->add_subcommand (new RandomBVCommand     ("randombv"));
 	cmd->add_subcommand (new DumpBFCommand       ("dumpbf"));
@@ -224,15 +228,21 @@ void MainCommand::usage
 void MainCommand::usage_subcommands
    (ostream&	s)
 	{
-	s << "Available commands (general form is <command> [arguments]):" << endl;
-
 	vector<pair<string,string>> commandDescriptions;
 	string prefix;
 	string suffix;
 	size_t maxPrefixLen = 0;
 
+	// pre-scan command table, collecting prefix and suffix of each line
+
 	for (const auto& subCmd : subCommands)
 		{
+		if (subCmd == nullptr)
+			{
+			commandDescriptions.emplace_back("","");
+			continue;
+			}
+
 		std::stringstream ss;
 		subCmd->short_description(ss);
 		string description = strip_blank_suffix(strip_suffix(ss.str(),"\n"));
@@ -248,10 +258,19 @@ void MainCommand::usage_subcommands
 		if (prefix.length() > maxPrefixLen) maxPrefixLen = prefix.length();
 		}
 
+	// print command table, lining up the two columns
+
+	s << "Primary commands (general form is <command> [arguments]):" << endl;
+
 	for (const auto& prefixAndSuffix : commandDescriptions)
 		{
 		prefix = prefixAndSuffix.first;
 		suffix = prefixAndSuffix.second;
+		if (prefix == "")
+			{
+			s << endl << "Other commands (used less frequently):" << endl;
+			continue;
+			}
 		s << std::setw(maxPrefixLen+1) << std::left << prefix << suffix << endl;
 		}
 	}
@@ -372,6 +391,7 @@ void MainCommand::parse
 		help_for_all_subcommands:
 		    for (const auto& subCmd : subCommands)
 		    	{
+		    	if (subCmd == nullptr) continue;
 				cerr << "=== " << subCmd->commandName << " ===" << endl;
 				subCmd->usage (cerr);
 				}
@@ -408,7 +428,10 @@ Command* MainCommand::find_subcommand
    (const string& name)
 	{
 	for (const auto& subCmd : subCommands)
-		{ if (subCmd->commandName == name) return subCmd; }
+		{
+	   	if (subCmd == nullptr) continue;
+		if (subCmd->commandName == name) return subCmd;
+		}
 
 	for (const auto& nameAndCommand : commandAliases)
 		{ if (nameAndCommand.first == name) return nameAndCommand.second; }
