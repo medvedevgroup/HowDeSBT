@@ -101,6 +101,11 @@ public:
 	querystats* queryStats;				// querystats queryStats[queryStatsLen]
 
 public:
+	std::uint32_t depth;				// object variables for use by "user"
+	std::uint32_t height;				// .. processes
+	std::uint32_t subTreeSize;
+
+public:
 	bool dbgTraversal           = false;
 	bool dbgSortKmerPositions   = false;
 	bool dbgKmerPositions       = false;

@@ -148,16 +148,18 @@ int TreeStatsCommand::execute()
 	if (contains(debug,"topology"))
 		root->print_topology(cerr);
 
-	vector<BloomTree*> order;
-	root->post_order(order);
+	vector<BloomTree*> preOrder, postOrder;
+	root->pre_order(preOrder);
+	root->post_order(postOrder);
+
 	if (contains(debug,"load"))
 		{
-		for (const auto& node : order)
+		for (const auto& node : postOrder)
 			node->reportLoad = true;
 		}
 
 	bool hasOnlyChildren = false;
-	for (const auto& node : order)
+	for (const auto& node : postOrder)
 		{
 		node->dbgTraversal = (contains(debug,"traversal"));
 
@@ -171,7 +173,57 @@ int TreeStatsCommand::execute()
 	if (hasOnlyChildren)
 		fatal ("error: tree contains at least one only child");
 
-// $$$ compute stats here
+	// compute the stats
+
+	for (const auto& node : preOrder)
+		{
+		if (node->parent == nullptr)
+			node->depth = 1;
+		else
+			node->depth = 1+node->parent->depth;
+		}
+
+	for (const auto& node : postOrder)
+		{
+		if (node->num_children() == 0)
+			node->height = 1;
+		else
+			{
+			node->height = 0;
+			for (const auto& child : node->children)
+				{
+				if (1+child->height > node->height)
+					node->height = 1+child->height;
+				}
+			}
+		}
+
+	for (const auto& node : postOrder)
+		{
+		if (node->num_children() == 0)
+			node->subTreeSize = 1;
+		else
+			{
+			node->subTreeSize = 1;
+			for (const auto& child : node->children)
+				node->subTreeSize += child->subTreeSize;
+			}
+		}
+
+	// print stats
+
+	cout << "#node" << "\tdepth" << "\theight" << "\tsubtree" << endl;
+
+	for (const auto& node : preOrder)
+		{
+		cout << node->name
+		     << "\t" << node->depth
+		     << "\t" << node->height
+		     << "\t" << node->subTreeSize
+		     << endl;
+		}
+
+	// cleanup
 
 	FileManager::close_file();	// make sure the last bloom filter file we
 								// .. opened for read gets closed
