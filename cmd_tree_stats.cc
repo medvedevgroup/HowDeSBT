@@ -197,7 +197,8 @@ int TreeStatsCommand::execute()
 
 	for (const auto& node : preOrder)
 		{
-		if (node->parent == nullptr)
+		if ((node->parent == nullptr)
+		 || (node->parent->is_dummy()))
 			node->depth = 1;
 		else
 			node->depth = 1+node->parent->depth;
