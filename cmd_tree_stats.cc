@@ -21,6 +21,8 @@ using std::vector;
 using std::cout;
 using std::cerr;
 using std::endl;
+#define u32 std::uint32_t
+#define u64 std::uint64_t
 
 
 void TreeStatsCommand::short_description
@@ -43,6 +45,10 @@ void TreeStatsCommand::usage
 	s << "usage: " << commandName << " <filename> [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
 	s << "  <filename>           name of the tree toplogy file" << endl;
+	s << "  --noshow:occupancy   don't report the number of 1s in each bit vector" << endl;
+	s << "                       (by default we report this, but it can be slow to" << endl;
+	s << "                       compute for compressed bit vector types that don't)" << endl;
+	s << "                       support rank/select)" << endl;
 	}
 
 void TreeStatsCommand::debug_help
@@ -61,6 +67,10 @@ void TreeStatsCommand::parse
 	{
 	int		argc;
 	char**	argv;
+
+	// defaults
+
+	reportOccupancy = true;
 
 	// skip command name
 
@@ -96,6 +106,16 @@ void TreeStatsCommand::parse
 		 || (arg == "--help:debug")
 		 || (arg == "?debug"))
 			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
+
+		// --noshow:occupancy
+
+		if ((arg == "--noshow:occupancy")
+		 || (arg == "--nooccupancy")
+		 || (arg == "--no:occupancy"))
+			{ reportOccupancy = false;  continue; }
+
+		if (arg == "--show:occupancy")
+			{ reportOccupancy = true;  continue; }
 
 		// (unadvertised) --tree=<filename>, --topology=<filename>
 
@@ -136,6 +156,8 @@ void TreeStatsCommand::parse
 
 int TreeStatsCommand::execute()
 	{
+	bool dbgTraversal = (contains(debug,"traversal"));
+
 	if (contains(debug,"trackmemory"))
 		{
 		BloomTree::trackMemory   = true;
@@ -161,8 +183,6 @@ int TreeStatsCommand::execute()
 	bool hasOnlyChildren = false;
 	for (const auto& node : postOrder)
 		{
-		node->dbgTraversal = (contains(debug,"traversal"));
-
 		if (node->num_children() == 1)
 			{
 			hasOnlyChildren = true;
@@ -210,17 +230,96 @@ int TreeStatsCommand::execute()
 			}
 		}
 
-	// print stats
+	// read each node's file, and compute and print stats
 
-	cout << "#node" << "\tdepth" << "\theight" << "\tsubtree" << endl;
+	int maxBitVectors = 2;
+	int numNodes = preOrder.size();
 
+	cout << "#node" << "\tdepth" << "\theight" << "\tsubtree" << "\tsiblings";
+	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++)
+		cout << "\t" << "bf" << bvIx << ".bytes"
+		     << "\t" << "bf" << bvIx << ".bits"
+		     << "\t" << "bf" << bvIx << ".ones";
+	cout << endl;
+
+	int nodeNum = 0;
 	for (const auto& node : preOrder)
 		{
+		nodeNum++;
+		node->load();
+		BloomFilter* bf = node->bf;
+
+		if (dbgTraversal)
+			{
+			cerr << "inspecting "
+			     << "#" << nodeNum << " of " << numNodes
+			     << " " << node->name
+			     << " (";
+			for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
+				{
+				BitVector* bv = bf->get_bit_vector(bvIx);
+				if (bvIx > 0) cerr << "/";
+				cerr << bv->num_bits();
+				}
+			cerr << " bits)" << endl;
+			}
+
+		// print the stats line for this node
+
+		int siblings;
+		if (node->parent == nullptr)	// note that roots in a forest *do*
+			siblings = 0;				// .. have a parent
+		else
+			siblings = node->parent->num_children()-1;
+
 		cout << node->name
 		     << "\t" << node->depth
 		     << "\t" << node->height
 		     << "\t" << node->subTreeSize
-		     << endl;
+		     << "\t" << siblings;
+
+		for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
+			{
+			BitVector* bv = bf->get_bit_vector(bvIx);
+			u64 numBits = bv->num_bits();
+
+			cout << "\t" << bv->numBytes
+			     << "\t" << numBits;
+
+			if (not reportOccupancy)
+				cout << "\tNA";
+			else
+				{
+				u32 compressor = bv->compressor();
+				bool rankSupported = false;
+				u64 numOnes = 0;
+				if (compressor == bvcomp_uncompressed)
+					{
+					rankSupported = true;
+					sdslrank1 bvRanker1(bv->bits);
+					numOnes = bvRanker1(bv->numBits);
+					}
+				else if (compressor == bvcomp_rrr)
+					{
+					rankSupported = true;
+					RrrBitVector* rrrBv = (RrrBitVector*) bv;
+					rrrrank1 bvRanker1(rrrBv->rrrBits);
+					numOnes = bvRanker1(rrrBv->numBits);
+					}
+				else
+					{
+					for (u64 pos=0 ; pos<numBits ; pos++)
+						{ if ((*bv)[pos] == 1) numOnes++; }
+					}
+				cout << "\t" << numOnes;
+				}
+			}
+
+		for (int bvIx=bf->numBitVectors ; bvIx<maxBitVectors ; bvIx++)
+			cout << "\tNA\tNA\tNA";
+		cout << endl;
+
+		node->unloadable();
 		}
 
 	// cleanup

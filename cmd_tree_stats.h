@@ -20,6 +20,7 @@ public:
 	virtual int execute (void);
 
 	std::string inTreeFilename;
+	bool reportOccupancy;
 	};
 
 #endif // cmd_tree_stats_H

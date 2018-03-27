@@ -1522,15 +1522,16 @@ BloomFilter* BloomFilter::bloom_filter
 //
 // Returns:
 //	The contents; this is a vector of (name,bloom filter) pairs.  The name is
-//	the bloom filters name from the file header, if the header has one.  If not,
-//	it is derived from the file name.
+//	the bloom filter's name from the file header, if the header has one.  If
+//	not, it is derived from the file name.
 //
 //----------
 //
 // Notes:
 //	(1)	Each bloom filter created also has a bit vector created for it.  The
 //		bit vector has the proper information about where to find its bits
-//		(file, offset, compression type), but does not have its bits loaded.
+//		(file, offset, number of bytes, compression type), but does not have
+//		its bits loaded.
 //
 //----------
 
