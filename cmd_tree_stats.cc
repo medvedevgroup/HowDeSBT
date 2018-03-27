@@ -291,17 +291,14 @@ int TreeStatsCommand::execute()
 			else
 				{
 				u32 compressor = bv->compressor();
-				bool rankSupported = false;
 				u64 numOnes = 0;
 				if (compressor == bvcomp_uncompressed)
 					{
-					rankSupported = true;
 					sdslrank1 bvRanker1(bv->bits);
 					numOnes = bvRanker1(bv->numBits);
 					}
 				else if (compressor == bvcomp_rrr)
 					{
-					rankSupported = true;
 					RrrBitVector* rrrBv = (RrrBitVector*) bv;
 					rrrrank1 bvRanker1(rrrBv->rrrBits);
 					numOnes = bvRanker1(rrrBv->numBits);
