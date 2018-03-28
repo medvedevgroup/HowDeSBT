@@ -236,7 +236,12 @@ int TreeStatsCommand::execute()
 	int maxBitVectors = 2;
 	int numNodes = preOrder.size();
 
-	cout << "#node" << "\tdepth" << "\theight" << "\tsubtree" << "\tsiblings";
+	cout << "#node"
+	     << "\tdepth"
+	     << "\theight"
+	     << "\tsubtree"
+	     << "\tsiblings"
+	     << "\tniblings";
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++)
 		cout << "\t" << "bf" << bvIx << ".bytes"
 		     << "\t" << "bf" << bvIx << ".bits"
@@ -267,17 +272,25 @@ int TreeStatsCommand::execute()
 
 		// print the stats line for this node
 
-		int siblings;
+		int siblings, niblings;
 		if (node->parent == nullptr)	// note that roots in a forest *do*
-			siblings = 0;				// .. have a parent
+			{							// .. have a parent; this case only
+			siblings = niblings = 0;	// .. occurs when we have a single root
+			}
 		else
+			{
 			siblings = node->parent->num_children()-1;
+			niblings = 0;
+			for (const auto& child : node->parent->children)
+				{ if (child != node) niblings += child->num_children(); }
+			}
 
 		cout << node->name
 		     << "\t" << node->depth
 		     << "\t" << node->height
 		     << "\t" << node->subTreeSize
-		     << "\t" << siblings;
+		     << "\t" << siblings
+		     << "\t" << niblings;
 
 		for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
 			{
