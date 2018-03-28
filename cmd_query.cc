@@ -79,6 +79,7 @@ void QueryCommand::usage
 	s << "                       query/leaf" << endl;
 	s << "  --stat:nodesexamined report the count of nodes examined for each query (as a" << endl;
 	s << "                       comment in the output" << endl;
+	s << "  --time               report wall time and node i/o time" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
 	}
@@ -128,6 +129,7 @@ void QueryCommand::parse
 	countAllKmerHits      = false;
 	reportNodesExamined   = false;
 	collectNodeStats      = false;
+	reportTime            = false;
 
 	// skip command name
 
@@ -273,6 +275,15 @@ void QueryCommand::parse
 			continue;
 			}
 
+		// --time
+
+		if ((arg == "--time")
+		 || (arg == "--walltime"))
+			{
+			reportTime = true;
+			continue;
+			}
+
 		// --collectnodestats (unadvertised)
 
 		if (arg == "--collectnodestats")
@@ -302,7 +313,6 @@ void QueryCommand::parse
 
 		if (is_prefix_of (arg, "--"))
 			chastise ("unrecognized option: \"" + arg + "\"");
-
 
 		// <queryfilename>=<F> or <queryfilename>:<F>
 
@@ -362,6 +372,9 @@ QueryCommand::~QueryCommand()
 
 int QueryCommand::execute()
 	{
+	wall_time_ty startTime;
+	if (reportTime) startTime = get_wall_time();
+
 	if (contains(debug,"trackmemory"))
 		{
 		BloomTree::trackMemory   = true;
@@ -400,7 +413,7 @@ int QueryCommand::execute()
 		BitVector::reportLoadTime   = true;
 		}
 
-	if (contains(debug,"reporttotalloadtime"))
+	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
 		{
 		BloomFilter::reportTotalLoadTime = true;
 		BitVector::reportTotalLoadTime   = true;
@@ -663,7 +676,13 @@ int QueryCommand::execute()
 		     << endl;
 		}
 
-	if (contains(debug,"reporttotalloadtime"))
+	if (reportTime)
+		{
+		double elapsedTime = elapsed_wall_time(startTime);
+		cerr << "wallTime: " << elapsedTime << std::setprecision(6) << std::fixed << " secs" << endl;
+		}
+
+	if ((reportTime) || (contains(debug,"reporttotalloadtime")))
 		{
 		double totalLoadTime = BloomFilter::totalLoadTime + BitVector::totalLoadTime;
 		cerr << "totalLoadTime: " << totalLoadTime << std::setprecision(6) << std::fixed << " secs" << endl;

@@ -39,6 +39,7 @@ public:
 	bool countAllKmerHits;
 	bool reportNodesExamined;
 	bool collectNodeStats;
+	bool reportTime;
 
 	std::vector<Query*> queries;
 	};
