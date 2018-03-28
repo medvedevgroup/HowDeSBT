@@ -61,22 +61,26 @@ using std::endl;
 //
 //----------
 
-bool BitVector::reportLoadTime = false;
-bool BitVector::reportSaveTime = false;
+bool   BitVector::reportLoadTime      = false;
+bool   BitVector::reportSaveTime      = false;
+bool   BitVector::reportTotalLoadTime = false;
+bool   BitVector::reportTotalSaveTime = false;
+double BitVector::totalLoadTime       = 0.0;
+double BitVector::totalSaveTime       = 0.0;
 
-bool BitVector::trackMemory    = false;
-bool BitVector::reportCreation = false;
+bool   BitVector::trackMemory         = false;
+bool   BitVector::reportCreation      = false;
 
-bool BitVector::reportFileBytes    = false;
-bool BitVector::countFileBytes     = false;
-u64  BitVector::totalFileReads     = 0;
-u64  BitVector::totalFileBytesRead = 0;
+bool   BitVector::reportFileBytes     = false;
+bool   BitVector::countFileBytes      = false;
+u64    BitVector::totalFileReads      = 0;
+u64    BitVector::totalFileBytesRead  = 0;
 
-bool BitVector::reportRankSelect = false;
-u64  BitVector::totalRankNews    = 0;
-u64  BitVector::totalSelectNews  = 0;
-u64  BitVector::totalRankCalls   = 0;
-u64  BitVector::totalSelectCalls = 0;
+bool   BitVector::reportRankSelect    = false;
+u64    BitVector::totalRankNews       = 0;
+u64    BitVector::totalSelectNews     = 0;
+u64    BitVector::totalRankCalls      = 0;
+u64    BitVector::totalSelectCalls    = 0;
 
 //----------
 //
@@ -179,7 +183,7 @@ void BitVector::load()
 	if (reportLoad)
 		cerr << "loading " << identity() << endl;
 
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 	if (not *in)
 		fatal ("error: BitVector::load(" + identity() + ")"
@@ -193,10 +197,13 @@ void BitVector::load()
 			     + " failed to seek to " + std::to_string(offset)
 			     + " in \"" + filename + "\"");
 		}
-	if (reportLoadTime)
+	if (reportLoadTime || reportTotalLoadTime)
 		{
 		elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[" << class_identity() << " load-open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportLoadTime)
+			cerr << "[" << class_identity() << " load-open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportTotalLoadTime)
+			totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 		}
 
 	serialized_in (*in);
@@ -217,15 +224,17 @@ void BitVector::serialized_in
 	if (trackMemory)
 		cerr << "@+" << bits << " creating bits for BitVector(" << identity() << " " << this << ")" << endl;
 
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	sdsl::load (*bits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
-	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 	if (reportFileBytes)
 		cerr << "[" << class_identity() << " serialized_in] read " << numBytes << " bytes " << filename << "@" << offset << endl;
 	if (countFileBytes)
 		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	if (reportLoadTime)
 		cerr << "[" << class_identity() << " open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 	numBits = bits->size();
 	isResident = true;
 	}
@@ -245,17 +254,20 @@ void BitVector::save()
 		fatal ("internal error for " + identity()
 		     + "; attempt to save bit vector to non-zero file offset");
 
-	if (reportSaveTime) startTime = get_wall_time();
+	if (reportSaveTime || reportTotalSaveTime) startTime = get_wall_time();
 	std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
 	if (not out)
 		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
 		     + " failed to open \"" + filename + "\"");
 	serialized_out (out);
 	out.close();
-	if (reportSaveTime)
+	if (reportSaveTime || reportTotalSaveTime)
 		{
 		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportSaveTime)
+			cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportTotalSaveTime)
+			totalSaveTime += elapsedTime;  // $$$ danger of precision error?
 		}
 	}
 
@@ -661,15 +673,17 @@ void RrrBitVector::serialized_in
 	assert (rrrBits == nullptr);
 
 	rrrBits = new rrrbitvector();
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	sdsl::load (*rrrBits, in);  // $$$ ERROR_CHECK we need to check for errors inside sdsl
-	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 	if (reportFileBytes)
 		cerr << "[" << class_identity() << " serialized_in] read " << numBytes << " bytes " << filename << "@" << offset << endl;
 	if (countFileBytes)
 		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	if (reportLoadTime)
 		cerr << "[" << class_identity() << " load] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 	numBits = rrrBits->size();
 	isResident = true;
 
@@ -695,17 +709,20 @@ void RrrBitVector::save()
 		fatal ("internal error for " + identity()
 		     + "; attempt to save bit vector to non-zero file offset");
 
-	if (reportSaveTime) startTime = get_wall_time();
+	if (reportSaveTime || reportTotalSaveTime) startTime = get_wall_time();
 	std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
 	if (not out)
 		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
 		     + " failed to open \"" + filename + "\"");
 	serialized_out (out);
 	out.close();
-	if (reportSaveTime)
+	if (reportSaveTime || reportTotalSaveTime)
 		{
 		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportSaveTime)
+			cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportTotalSaveTime)
+			totalSaveTime += elapsedTime;  // $$$ danger of precision error?
 		}
 	}
 
@@ -998,9 +1015,9 @@ void RoarBitVector::serialized_in
 	assert (roarBits == nullptr);
 
 	roarfile header;
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read ((char*) &header, roarHeaderBytes);
-	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 	if (!in.good())
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading header from \"" + filename + "\"");
@@ -1018,9 +1035,9 @@ void RoarBitVector::serialized_in
 	if (trackMemory)
 		cerr << "@+" << serializedData << " allocating serializedData for RoarBitVector(" << identity() << " " << this << ")" << endl;
 
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read (serializedData, roarBytes);
-	if (reportLoadTime) elapsedTime += elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime += elapsed_wall_time(startTime);
 	if (!in.good())
 		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
 		     + " problem reading " + std::to_string(roarBytes) + " bytes"
@@ -1031,6 +1048,8 @@ void RoarBitVector::serialized_in
 		totalFileBytesRead += roarBytes; // (we intentionally don't do totalFileReads++)
 	if (reportLoadTime)
 		cerr << "[" << class_identity() << " load] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 
     roarBits = roaring_bitmap_portable_deserialize(serializedData);
 
@@ -1062,17 +1081,20 @@ void RoarBitVector::save()
 		fatal ("internal error for " + identity()
 		     + "; attempt to save bit vector to non-zero file offset");
 
-	if (reportSaveTime) startTime = get_wall_time();
+	if (reportSaveTime || reportTotalSaveTime) startTime = get_wall_time();
 	std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
 	if (not out)
 		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
 		     + " failed to open \"" + filename + "\"");
 	serialized_out (out);
 	out.close();
-	if (reportSaveTime)
+	if (reportSaveTime || reportTotalSaveTime)
 		{
 		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportSaveTime)
+			cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+		if (reportTotalSaveTime)
+			totalSaveTime += elapsedTime;  // $$$ danger of precision error?
 		}
 	}
 
@@ -1292,15 +1314,17 @@ void RawBitVector::serialized_in
 	u64* rawBits = bits->data();
 	u64 numBytes = (numBits+7) / 8;
 
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read ((char*) rawBits, numBytes);  // $$$ ERROR_CHECK we need to check for errors in the read
-	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 	if (reportFileBytes)
 		cerr << "[" << class_identity() << " serialized_in] read " << numBytes << " bytes " << filename << "@" << offset << endl;
 	if (countFileBytes)
 		{ totalFileReads++;  totalFileBytesRead += numBytes; }
 	if (reportLoadTime)
 		cerr << "[" << class_identity() << " load] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 	numBits = bits->size();
 	isResident = true;
 	}

@@ -139,15 +139,18 @@ void FileManager::preload_content
 	if (already_preloaded(filename)) return;
 
 	// $$$ add trackMemory for in
-	if (BloomFilter::reportLoadTime) startTime = get_wall_time();
+	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime) startTime = get_wall_time();
 	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 	if (not *in)
 		fatal ("error: FileManager::preload_content()"
 			   " failed to open \"" + filename + "\"");
-	if (BloomFilter::reportLoadTime)
+	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime)
 		{
 		double elapsedTime = elapsed_wall_time(startTime);
-		cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+		if (BloomFilter::reportLoadTime)
+			cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+		if (BloomFilter::reportTotalLoadTime)
+			BloomFilter::totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 		}
 
 	vector<pair<string,BloomFilter*>> content

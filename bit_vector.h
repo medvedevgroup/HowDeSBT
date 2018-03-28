@@ -133,6 +133,10 @@ public:
 	bool reportSave     = false;
 	static bool reportLoadTime;
 	static bool reportSaveTime;
+	static bool reportTotalLoadTime;
+	static bool reportTotalSaveTime;
+	static double totalLoadTime;
+	static double totalSaveTime;
 	static bool trackMemory;
 	static bool reportCreation;
 	static bool reportFileBytes;

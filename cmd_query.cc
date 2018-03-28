@@ -96,6 +96,7 @@ void QueryCommand::debug_help
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  reportloadtime" << endl;
+	s << "  reporttotalloadtime" << endl;
 	s << "  names" << endl;
 	s << "  input" << endl;
 	s << "  sort" << endl;
@@ -399,6 +400,12 @@ int QueryCommand::execute()
 		BitVector::reportLoadTime   = true;
 		}
 
+	if (contains(debug,"reporttotalloadtime"))
+		{
+		BloomFilter::reportTotalLoadTime = true;
+		BitVector::reportTotalLoadTime   = true;
+		}
+
 	if (contains(debug,"load"))
 		{
 		if (order.size() == 0)
@@ -654,6 +661,12 @@ int QueryCommand::execute()
 		     << BitVector::totalSelectCalls << "/" << BitVector::totalSelectNews
 		     << std::setprecision(1) << std::fixed << " (" << selectAvg << " avg)"
 		     << endl;
+		}
+
+	if (contains(debug,"reporttotalloadtime"))
+		{
+		double totalLoadTime = BloomFilter::totalLoadTime + BitVector::totalLoadTime;
+		cerr << "totalLoadTime: " << totalLoadTime << std::setprecision(6) << std::fixed << " secs" << endl;
 		}
 
 	return EXIT_SUCCESS;

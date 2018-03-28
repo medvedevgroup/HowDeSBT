@@ -128,17 +128,21 @@ using std::endl;
 //
 //----------
 
-bool BloomFilter::reportLoadTime = false;
-bool BloomFilter::reportSaveTime = false;
+bool   BloomFilter::reportLoadTime      = false;
+bool   BloomFilter::reportSaveTime      = false;
+bool   BloomFilter::reportTotalLoadTime = false;
+bool   BloomFilter::reportTotalSaveTime = false;
+double BloomFilter::totalLoadTime       = 0.0;
+double BloomFilter::totalSaveTime       = 0.0;
 
-bool BloomFilter::trackMemory    = false;
-bool BloomFilter::reportCreation = false;
-bool BloomFilter::reportManager  = false;
+bool   BloomFilter::trackMemory         = false;
+bool   BloomFilter::reportCreation      = false;
+bool   BloomFilter::reportManager       = false;
 
-bool BloomFilter::reportFileBytes    = false;
-bool BloomFilter::countFileBytes     = false;
-u64  BloomFilter::totalFileReads     = 0;
-u64  BloomFilter::totalFileBytesRead = 0;
+bool   BloomFilter::reportFileBytes     = false;
+bool   BloomFilter::countFileBytes      = false;
+u64    BloomFilter::totalFileReads      = 0;
+u64    BloomFilter::totalFileBytesRead  = 0;
 
 //----------
 //
@@ -278,16 +282,19 @@ void BloomFilter::preload(bool bypassManager)
 		{
 		wall_time_ty startTime;
 
-		if (reportLoadTime) startTime = get_wall_time();
+		if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
 		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
 
-		if (reportLoadTime)
+		if (reportLoadTime || reportTotalLoadTime)
 			{
 			double elapsedTime = elapsed_wall_time(startTime);
-			cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+			if (reportLoadTime)
+				cerr << "[BloomFilter open] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+			if (reportTotalLoadTime)
+				totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 			}
 
 		vector<pair<string,BloomFilter*>> content
@@ -1547,9 +1554,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	bffileprefix prefix;
 
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read ((char*) &prefix, sizeof(prefix));
-	if (reportLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
 
 	if (!in.good())
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1601,9 +1608,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		cerr << "@+" << header << " allocating bf file header for \"" << filename << "\"" << endl;
 
 	size_t remainingBytes = prefix.headerSize - sizeof(prefix);
-	if (reportLoadTime) startTime = get_wall_time();
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
 	in.read (((char*) header) + sizeof(prefix), remainingBytes);
-	if (reportLoadTime) elapsedTime += elapsed_wall_time(startTime);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime += elapsed_wall_time(startTime);
 	prevFilePos = currentFilePos;  currentFilePos += in.gcount();
 	if (currentFilePos != prefix.headerSize)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1615,6 +1622,8 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		totalFileBytesRead += remainingBytes; // (we intentionally don't do totalFileReads++)
 	if (reportLoadTime)
 		cerr << "[BloomFilter load-header] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << endl;
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
 
 	if ((header->bfKind != bfkind_simple)
 	 && (header->bfKind != bfkind_allsome)

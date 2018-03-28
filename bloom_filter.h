@@ -107,9 +107,17 @@ public:
 	bool reportSave = false;
 	static bool reportLoadTime;
 	static bool reportSaveTime;
+	static bool reportTotalLoadTime;
+	static bool reportTotalSaveTime;
+	static double totalLoadTime;
+	static double totalSaveTime;
 	static bool trackMemory;
 	static bool reportCreation;
 	static bool reportManager;
+	static bool reportFileBytes;
+	static bool countFileBytes;
+	static std::uint64_t totalFileReads;
+	static std::uint64_t totalFileBytesRead;
 
 public:
 	static std::string strip_filter_suffix
@@ -136,10 +144,6 @@ public:
 	bool dbgContains         = false;	// .. #defined in bloom_filter.cc
 	bool dbgAdjustPosList    = false;
 	bool dbgRankSelectLookup = false;
-	static bool reportFileBytes;
-	static bool countFileBytes;
-	static std::uint64_t totalFileReads;
-	static std::uint64_t totalFileBytesRead;
 
 public:
 	static const std::uint64_t npos = -1;
