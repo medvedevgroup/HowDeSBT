@@ -65,8 +65,11 @@ def main():
 	# convert the log file
 
 	if   (logType == "sabutan"):   converter = SabutanLogReader(showAs=showAs)
-	elif (logType == "allsome"):   converter = AllSomeLogReader(showAs=showAs)
-	elif (logType == "split-sbt"): converter = SplitSbtLogReader(showAs=showAs)
+	#elif (logType == "allsome"):   converter = AllSomeLogReader(showAs=showAs)
+	#elif (logType == "split-sbt"): converter = SplitSbtLogReader(showAs=showAs)
+	# $$$ change this, eventually
+	elif (logType == "allsome"):   converter = SabutanLogReader(showAs=showAs)
+	elif (logType == "split-sbt"): converter = SabutanLogReader(showAs=showAs)
 
 	converter.read_file(stdin)
 
@@ -159,8 +162,8 @@ class SabutanLogReader(object):
 
 class AllSomeLogReader(object):
 
-	def __init__(self):
-		pass
+	def __init__(self,showAs="HMS"):
+		self.showAs = showAs
 
 	def read_file(self,f):
 		raise ValueError
@@ -170,8 +173,8 @@ class AllSomeLogReader(object):
 
 class SplitSbtLogReader(object):
 
-	def __init__(self):
-		pass
+	def __init__(self,showAs="HMS"):
+		self.showAs = showAs
 
 	def read_file(self,f):
 		raise ValueError
