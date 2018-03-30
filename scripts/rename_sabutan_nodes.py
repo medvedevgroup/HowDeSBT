@@ -3,8 +3,8 @@
 Rename nodes an sabutan tree, so that higher nodes have lower node numbers.
 """
 
-from sys           import argv,stdin,stdout,stderr,exit
-from sabutan_parse import read_sabutan_tree_file
+from sys                import argv,stdin,stdout,stderr,exit
+from sabutan_tree_parse import read_sabutan_tree_file
 
 
 def usage(s=None):

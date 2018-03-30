@@ -3,8 +3,8 @@
 Find the maximum depth in a sabutan tree.
 """
 
-from sys           import argv,stdin,stdout,stderr,exit
-from sabutan_parse import read_sabutan_tree_file
+from sys                import argv,stdin,stdout,stderr,exit
+from sabutan_tree_parse import read_sabutan_tree_file
 
 
 def usage(s=None):

@@ -3,15 +3,15 @@
 Draw a picture of an sabutan tree, in svg.
 """
 
-from sys             import argv,stdin,stdout,stderr,exit
-from math            import ceil
-from struct          import unpack
-from sabutan_parse   import read_sabutan_tree_file
-from pysvg.structure import svg as Svg
-from pysvg.builders  import StyleBuilder
-from pysvg.shape     import rect as SvgRect
-from pysvg.text      import text as SvgText
-from pysvg.shape     import path as SvgPath
+from sys                import argv,stdin,stdout,stderr,exit
+from math               import ceil
+from struct             import unpack
+from sabutan_tree_parse import read_sabutan_tree_file
+from pysvg.structure    import svg as Svg
+from pysvg.builders     import StyleBuilder
+from pysvg.shape        import rect as SvgRect
+from pysvg.text         import text as SvgText
+from pysvg.shape        import path as SvgPath
 
 class DrawingControl: pass
 dc = DrawingControl()
