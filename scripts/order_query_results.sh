@@ -55,7 +55,7 @@ cat temp.${sabutanOutput}.leaf_to_queries \
       #
       cat ${queryFiles} \
         | python ${thisScriptDir}/pluck_from_fasta.py --sequences=${queries} \
-        | ${sabutan} query \
+        | sabutan query \
           --tree=temp.${sabutanOutput}.${leaf}.sbt --threshold=${specificity} \
           --countallkmerhits \
         | awk '/^[*]/  { }
