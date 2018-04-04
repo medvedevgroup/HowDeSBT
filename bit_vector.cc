@@ -739,6 +739,9 @@ void RrrBitVector::save()
 void RrrBitVector::unfinished()
 	{ writeAsUncompressed = true; }
 
+void RrrBitVector::finished()
+	{ writeAsUncompressed = false; }
+
 size_t RrrBitVector::serialized_out
    (std::ofstream& out)
 	{
@@ -1142,6 +1145,9 @@ void RoarBitVector::save()
 
 void RoarBitVector::unfinished()
 	{ writeAsUncompressed = true; }
+
+void RoarBitVector::finished()
+	{ writeAsUncompressed = false; }
 
 size_t RoarBitVector::serialized_out
    (std::ofstream& out)

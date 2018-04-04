@@ -88,6 +88,7 @@ public:
 	virtual void load();
 	virtual void serialized_in(std::ifstream& in);
 	virtual void unfinished() {};  // solely for RrrBitVector and RoarBitVector to override
+	virtual void finished() {};    // solely for RrrBitVector and RoarBitVector to override
 	virtual void save();
 	virtual size_t serialized_out(std::ofstream& out, const std::string& filename, const size_t offset=0);
 	virtual size_t serialized_out(std::ofstream& out);
@@ -181,6 +182,7 @@ public:
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
 	virtual void unfinished();
+	virtual void finished();
 	virtual size_t serialized_out(std::ofstream& out);
 
 	virtual void discard_bits();
@@ -221,6 +223,7 @@ public:
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
 	virtual void unfinished();
+	virtual void finished();
 	virtual size_t serialized_out(std::ofstream& out);
 
 	virtual void discard_bits();

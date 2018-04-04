@@ -36,7 +36,7 @@ public:
 
 	virtual void preload();
 	virtual void load();
-	virtual void save();
+	virtual void save(bool finished=true);
 	virtual void unloadable();
 
 	virtual void relay_debug_settings();
@@ -53,14 +53,13 @@ public:
 	virtual void post_order (std::vector<BloomTree*>& order);
 	virtual void leaves (std::vector<BloomTree*>& order);
 
-	virtual void print_topology(std::ostream& out, int level=0) const;
-	virtual void construct_union_nodes ();
-	virtual void construct_allsome_nodes ();
-	virtual void construct_determined_nodes ();
-	virtual void construct_determined_brief_nodes ();
-	virtual void construct_intersection_nodes ();
+	virtual void print_topology (std::ostream& out, int level=0) const;
+	virtual void construct_union_nodes (std::uint32_t compressor);
+	virtual void construct_allsome_nodes (std::uint32_t compressor);
+	virtual void construct_determined_nodes (std::uint32_t compressor);
+	virtual void construct_determined_brief_nodes (std::uint32_t compressor);
+	virtual void construct_intersection_nodes (std::uint32_t compressor);
 
-	virtual int lookup (const std::uint64_t pos) const;
 	virtual void batch_query (std::vector<Query*> queries,
 	                          bool isLeafOnly=false, bool distinctKmers=false);
 private:
@@ -74,6 +73,7 @@ private:
 	virtual void perform_batch_count_kmer_hits (std::vector<Query*> queries);
 
 public:
+	virtual int lookup (const std::uint64_t pos) const;
 	virtual void enable_query_stats(const std::uint32_t batchSize);
 	virtual void clear_query_stats(querystats& stats);
 	virtual bool report_query_stats(std::ostream& s,Query* q,bool quietly=true);

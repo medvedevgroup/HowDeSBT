@@ -122,9 +122,17 @@ void BloomTree::load()
 	bf->load();
 	}
 
-void BloomTree::save()
+void BloomTree::save(bool finished)
 	{
 	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
+
+	for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
+		{
+		BitVector* bv = bf->get_bit_vector(bvIx);
+		if (finished) bv->finished();
+		         else bv->unfinished();
+		}
+
 	relay_debug_settings();
 	bf->save();
 	}
@@ -240,8 +248,16 @@ void BloomTree::print_topology
 		child->print_topology (out, level+levelInc);
 	}
 
-void BloomTree::construct_union_nodes ()
+//~~~~~~~~~~
+// build union tree
+//~~~~~~~~~~
+
+void BloomTree::construct_union_nodes (u32 compressor)
 	{
+	if (compressor != bvcomp_uncompressed)
+		fatal ("internal error: compression isn't implemented for construct_union_nodes()");
+		// $$$ if compression is not uncompressed, we'll need to compress the leaves too
+
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
@@ -276,7 +292,7 @@ void BloomTree::construct_union_nodes ()
 	for (const auto& child : children)
 		{
 		if (not child->isLeaf)
-			child->construct_union_nodes();
+			child->construct_union_nodes(compressor);
 		}
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
@@ -347,16 +363,23 @@ void BloomTree::construct_union_nodes ()
 	save();
 	}
 
-void BloomTree::construct_allsome_nodes ()
+//~~~~~~~~~~
+// build allsome tree
+//~~~~~~~~~~
+
+void BloomTree::construct_allsome_nodes (u32 compressor)
 	{
+	if (compressor != bvcomp_uncompressed)
+		fatal ("internal error: compression isn't implemented for construct_allsome_nodes()");
+
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr = BloomFilter::filter_kind_to_string(bfkind_allsome);
-	string newBfFilename = name + "." + bfKindStr + ".bf";
+	string bfKindStr     = "." + BloomFilter::filter_kind_to_string(bfkind_allsome);
+	string newBfFilename = name + bfKindStr + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = B'all(x) = B(x)
@@ -398,7 +421,7 @@ void BloomTree::construct_allsome_nodes ()
 		}
 
 	for (const auto& child : children)
-		child->construct_allsome_nodes();
+		child->construct_allsome_nodes(compressor);
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
 	// children as unloadable
@@ -503,7 +526,11 @@ void BloomTree::construct_allsome_nodes ()
 	save();
 	}
 
-void BloomTree::construct_determined_nodes ()
+//~~~~~~~~~~
+// build determined tree
+//~~~~~~~~~~
+
+void BloomTree::construct_determined_nodes (u32 compressor)
 	{
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
@@ -511,8 +538,10 @@ void BloomTree::construct_determined_nodes ()
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr = BloomFilter::filter_kind_to_string(bfkind_determined);
-	string newBfFilename = name + "." + bfKindStr + ".bf";
+	string bfKindStr       = "." + BloomFilter::filter_kind_to_string(bfkind_determined);
+	string compressionDesc = "." + BitVector::compressor_to_string(compressor);
+	if (compressionDesc == ".uncompressed") compressionDesc = "";
+	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = Bdet(x) = all ones
@@ -540,9 +569,11 @@ void BloomTree::construct_determined_nodes ()
 		// $$$ we don't necessarily want to save it;  we want to mark it to be
 		//     .. saved, but keep it around if we have enough room, since we'll
 		//     .. need it to compute its parent, at which time we'll change it
+
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
-		save();
+		save(/*finished*/ false);
+		unloadable();
 		return;
 		}
 
@@ -557,7 +588,7 @@ void BloomTree::construct_determined_nodes ()
 		}
 
 	for (const auto& child : children)
-		child->construct_determined_nodes();
+		child->construct_determined_nodes(compressor);
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
 	// children as unloadable
@@ -656,7 +687,7 @@ void BloomTree::construct_determined_nodes ()
 			child->bf->intersect_with(bvs0,1);
 
 			child->bf->reportSave = reportSave;
-			child->save();
+			child->save(/*finished*/ true);
 			child->unloadable();
 			}
 		}
@@ -670,10 +701,12 @@ void BloomTree::construct_determined_nodes ()
 	//   bvs[1]  = Bhow(x) with uninformative bits zeroed = Bhow(x) intersect Ihow(x)
 	//                                                    = Bhow(x) intersect Bdet(x)
 
+	bool finished = false;
 	if ((parent == nullptr) || (parent->is_dummy()))
 		{
 		BitVector* bvDet = bf->get_bit_vector(0);
 		bf->intersect_with(bvDet,1);
+		finished = true;
 		}
 
 	// $$$ we don't necessarily want to save it;  we want to mark it to be
@@ -682,21 +715,27 @@ void BloomTree::construct_determined_nodes ()
 
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
-	save();
-// $$$ øøø testing viability of this  ... if it works move it to detbrief also
+	save(finished);
 	unloadable();
 	}
 
-void BloomTree::construct_determined_brief_nodes ()
+//~~~~~~~~~~
+// build determined,brief tree
+//~~~~~~~~~~
+
+void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	{
+	if (compressor != bvcomp_uncompressed)
+		fatal ("internal error: compression isn't implemented for construct_determined_nodes()");
+
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr = BloomFilter::filter_kind_to_string(bfkind_determined_brief);
-	string newBfFilename = name + "." + bfKindStr + ".bf";
+	string bfKindStr     = "." + BloomFilter::filter_kind_to_string(bfkind_determined_brief);
+	string newBfFilename = name + bfKindStr + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = Bdet(x) = all ones
@@ -744,7 +783,7 @@ void BloomTree::construct_determined_brief_nodes ()
 		}
 
 	for (const auto& child : children)
-		child->construct_determined_brief_nodes();
+		child->construct_determined_brief_nodes(compressor);
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
 	// children as unloadable
@@ -893,20 +932,27 @@ void BloomTree::construct_determined_brief_nodes ()
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
 	save();
-// $$$ øøø testing viability of this ... if it works move it to det also
 	unloadable();
 	}
 
-void BloomTree::construct_intersection_nodes () // to assist in debugging
+//~~~~~~~~~~
+// build intersection tree (to assist in debugging)
+//~~~~~~~~~~
+
+void BloomTree::construct_intersection_nodes (u32 compressor)
 	{
+	if (compressor != bvcomp_uncompressed)
+		fatal ("internal error: compression isn't implemented for construct_intersection_nodes()");
+		// $$$ if compression is not uncompressed, we'll need to compress the leaves too
+
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr = BloomFilter::filter_kind_to_string(bfkind_intersection);
-	string newBfFilename = name + "." + bfKindStr + ".bf";
+	string bfKindStr     = "." + BloomFilter::filter_kind_to_string(bfkind_intersection);
+	string newBfFilename = name + bfKindStr + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	// nota bene: we don't usually expect to be called for leaves, but we
@@ -936,7 +982,7 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	for (const auto& child : children)
 		{
 		if (not child->isLeaf)
-			child->construct_intersection_nodes();
+			child->construct_intersection_nodes(compressor);
 		}
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
@@ -1007,19 +1053,9 @@ void BloomTree::construct_intersection_nodes () // to assist in debugging
 	save();
 	}
 
-
-int BloomTree::lookup
-   (const u64 pos) const
-	{
-	int resolution = bf->lookup(pos);
-	if  (resolution != BloomFilter::unresolved)
-		return resolution;
-	else if (isLeaf)
-		return BloomFilter::present;
-	else
-		return BloomFilter::unresolved;
-	}
-
+//~~~~~~~~~~
+// query operations
+//~~~~~~~~~~
 
 void BloomTree::batch_query
    (vector<Query*>	queries,
@@ -1579,6 +1615,19 @@ void BloomTree::perform_batch_count_kmer_hits
 	// we don't need this node's filter to be resident any more
 
 	unloadable();
+	}
+
+
+int BloomTree::lookup
+   (const u64 pos) const
+	{
+	int resolution = bf->lookup(pos);
+	if  (resolution != BloomFilter::unresolved)
+		return resolution;
+	else if (isLeaf)
+		return BloomFilter::present;
+	else
+		return BloomFilter::unresolved;
 	}
 
 

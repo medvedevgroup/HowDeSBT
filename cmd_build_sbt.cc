@@ -54,6 +54,10 @@ void BuildSBTCommand::usage
 	s << "  --determined         create tree nodes as determined/how bloom filters" << endl;
 	s << "  --determined,brief   create tree nodes as determined/how, but only store" << endl;
 	s << "                       informative bits" << endl;
+	s << "  --uncompressed       create the nodes as uncompressed bit vector(s)" << endl;
+	s << "                       (this is the default)" << endl;
+	s << "  --rrr                create the nodes as rrr-compressed bit vector(s)" << endl;
+	s << "  --roar               create the nodes as roar-compressed bit vector(s)" << endl;
 	}
 
 void BuildSBTCommand::debug_help
@@ -81,7 +85,8 @@ void BuildSBTCommand::parse
 
 	// defaults
 
-	bfKind = bfkind_simple;
+	bfKind     = bfkind_simple;
+	compressor = bvcomp_uncompressed;
 
 	// skip command name
 
@@ -166,6 +171,19 @@ void BuildSBTCommand::parse
 		 || (arg == "--intersection")
 		 || (arg == "--cap"))
 			{ bfKind = bfkind_intersection;  continue; }
+
+		// compression type
+
+		if (arg == "--uncompressed")
+			{ compressor = bvcomp_uncompressed;  continue; }
+
+		if ((arg == "--rrr")
+		 || (arg == "--RRR"))
+			{ compressor = bvcomp_rrr;  continue; }
+
+		if ((arg == "--roar")
+		 || (arg == "--roaring"))
+			{ compressor = bvcomp_roar;  continue; }
 
 		// (unadvertised) --tree=<filename>, --topology=<filename>
 
@@ -276,19 +294,19 @@ int BuildSBTCommand::execute()
 	switch (bfKind)
 		{
 		case bfkind_simple:
-			root->construct_union_nodes ();
+			root->construct_union_nodes (compressor);
 			break;
 		case bfkind_allsome:
-			root->construct_allsome_nodes ();
+			root->construct_allsome_nodes (compressor);
 			break;
 		case bfkind_determined:
-			root->construct_determined_nodes ();
+			root->construct_determined_nodes (compressor);
 			break;
 		case bfkind_determined_brief:
-			root->construct_determined_brief_nodes ();
+			root->construct_determined_brief_nodes (compressor);
 			break;
 		case bfkind_intersection:   // to assist in debugging
-			root->construct_intersection_nodes ();
+			root->construct_intersection_nodes (compressor);
 			break;
 		default:
 			fatal ("error: in BuildSBTCommand::execute():"

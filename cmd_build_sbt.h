@@ -22,6 +22,7 @@ public:
 	std::string inTreeFilename;
 	std::string outTreeFilename;
 	std::uint32_t bfKind;
+	std::uint32_t compressor;
 	};
 
 #endif // cmd_build_sbt_H
