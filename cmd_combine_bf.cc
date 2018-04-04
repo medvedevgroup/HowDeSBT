@@ -502,7 +502,8 @@ string CombineBFCommand::combine_bloom_filters ()
 		//cout << bv->filename << " " << bv->offset << endl;
 
 		header->info[bfIx].compressor = bv->compressor();
-		if (header->info[bfIx].compressor == bvcomp_rrr)
+		if ((header->info[bfIx].compressor == bvcomp_rrr)
+		 || (header->info[bfIx].compressor == bvcomp_unc_rrr))
 			header->info[bfIx].compressor |= (RRR_BLOCK_SIZE << 8);
 		header->info[bfIx].offset     = bytesWritten;
 

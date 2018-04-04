@@ -36,12 +36,12 @@ struct bfvectorinfo
     							//        .. compressor types define additional
     							//        .. information in the other bytes, as
     							//        .. folows:
-    							//        ..   bvcomp_rrr: the second byte is
-    							//        ..     .. the RRR chunk size, and the
-    							//        ..     .. third byte is the RRR rank
-    							//        ..     .. period (for backward
-    							//        ..     .. compatibility, period=0
-    							//        ..     .. means period=32)
+    							//        ..   bvcomp_rrr and bvcomp_unc_rrr:
+    							//        ..     .. the second byte is the RRR
+    							//        ..     .. chunk size, and the third
+    							//        ..     .. byte is the RRR rank period;
+    							//        ..     .. for backward compatibility,
+    							//        ..     .. period=0 means period=32
 	std::uint32_t	name;		// [x+04] offset (from start of file) to the
     							//        .. name of of this bitvector; the name
     							//        .. is a zero-terminated string; if
@@ -64,7 +64,11 @@ enum
 	bvcomp_zeros        = 2,	// all zeros; no bit data stored in the file
 	bvcomp_ones         = 3,	// all ones; no bit data stored in the file
 	bvcomp_rrr          = 4,
-	bvcomp_roar         = 5
+	bvcomp_roar         = 5,
+	bvcomp_unc_rrr      = 6,	// rrr data type (RrrBitVector), but still in
+								// .. uncompressed form
+	bvcomp_unc_roar     = 7		// roar data type (RoarBitVector), but still in
+								// .. uncompressed form
 	};
 
 // header record

@@ -29,6 +29,7 @@
 #include "cmd_tree_stats.h"
 #include "cmd_validate_rrr.h"
 #include "cmd_validate_tree.h"
+#include "cmd_version.h"
 
 using std::string;
 using std::vector;
@@ -128,6 +129,7 @@ int main
 	cmd->add_command_alias                       ("rrrvalidate");
 	cmd->add_subcommand (new BVOperateCommand    ("bvoperate"));
 	cmd->add_command_alias                       ("bvop");
+	cmd->add_subcommand (new VersionCommand      ("version"));
 
 	// perform the user's command; if it was succesful, collect any additional
 	// command(s) it would like us to perform

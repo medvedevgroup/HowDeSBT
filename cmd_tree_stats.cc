@@ -306,7 +306,9 @@ int TreeStatsCommand::execute()
 				{
 				u32 compressor = bv->compressor();
 				u64 numOnes = 0;
-				if (compressor == bvcomp_uncompressed)
+				if ((compressor == bvcomp_uncompressed)
+				 || (compressor == bvcomp_unc_rrr)
+				 || (compressor == bvcomp_unc_roar))
 					{
 					sdslrank1 bvRanker1(bv->bits);
 					numOnes = bvRanker1(bv->numBits);

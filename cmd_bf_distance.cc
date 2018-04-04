@@ -242,7 +242,8 @@ int BFDistanceCommand::execute()
 
 	for (const auto& bfFilename : bfFilenames)
 		{
-		std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+		std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in,
+		                                           /* positionAtStart*/ true);
 		if (not *in)
 			fatal ("error: failed to open \"" + bfFilename + "\"");
 		vector<pair<string,BloomFilter*>> content

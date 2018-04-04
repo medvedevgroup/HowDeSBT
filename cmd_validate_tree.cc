@@ -170,7 +170,8 @@ int ValidateTreeCommand::execute()
 		{
 		string filename = iter.first;
 
-		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
+		                                           /* positionAtStart*/ true);
 		if (not *in)
 			fatal ("error: failed to open \"" + filename + "\"");
 

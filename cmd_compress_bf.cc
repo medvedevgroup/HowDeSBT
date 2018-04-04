@@ -148,6 +148,14 @@ void CompressBFCommand::parse
 		 || (arg == "--roaring"))
 			{ compressor = bvcomp_roar;  continue; }
 
+		// (unadvertised) special compressor types
+
+		if (arg == "--uncrrr")
+			{ compressor = bvcomp_unc_rrr;  continue; }
+
+		if (arg == "--uncroar")
+			{ compressor = bvcomp_unc_roar;  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -326,7 +334,8 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	srcBf->load();
 
 	// make sure all vectors in the source filter have the same compression
-	// type;  and if this is the type the user wants, we're already done
+	// type;  if any of them is rrr or roar in uncompressed form, modify the
+	// compression type to reflect that fact
 
 	if (srcBf->numBitVectors == 0)
 		fatal ("error: \"" + filename + "\" contains no bit vectors");
@@ -338,6 +347,25 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 			fatal ("error: not converting \"" + filename + "\""
 			    + " (its bit vectors are inconsistently compressed)");
 		}
+
+	if (srcCompressor == bvcomp_rrr)
+		{
+		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
+			{
+			if (srcBf->bvs[whichBv]->bits != nullptr)
+				{ srcCompressor = bvcomp_unc_rrr;  break; }
+			}
+		}
+	else if (srcCompressor == bvcomp_roar)
+		{
+		for (int whichBv=1 ; whichBv<srcBf->numBitVectors ; whichBv++)
+			{
+			if (srcBf->bvs[whichBv]->bits != nullptr)
+				{ srcCompressor = bvcomp_unc_roar;  break; }
+			}
+		}
+
+	// if the compression type is the type the user wants, we're already done
 
 	if (compressor == srcCompressor)
 		{
@@ -361,7 +389,7 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		{
 		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
 			{
-			// ……… improve this for RRR by decoding chunk by chunk
+			// $$$ improve this for RRR by decoding chunk by chunk
 			dstBf->new_bits (compressor, whichBv);
 			BitVector* srcBv = srcBf->bvs[whichBv];
 			BitVector* dstBv = dstBf->bvs[whichBv];
@@ -372,6 +400,16 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 
 	// save the destination filter; note that the bit vector will automatically
 	// be compressed (if necessary) as part of the save process
+
+	if ((compressor == bvcomp_unc_rrr)
+	 || (compressor == bvcomp_unc_roar))
+		{
+		for (int whichBv=0 ; whichBv<dstBf->numBitVectors ; whichBv++)
+			{
+			BitVector* dstBv = dstBf->bvs[whichBv];
+			dstBv->unfinished();
+			}
+		}
 
 	dstBf->reportSave = true;
 	dstBf->save();

@@ -283,7 +283,8 @@ void BloomFilter::preload(bool bypassManager)
 		wall_time_ty startTime;
 
 		if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
-		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+		std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
+		                                           /* positionAtStart*/ true);
 		if (not *in)
 			fatal ("error: " + class_identity() + "::preload()"
 				   " failed to open \"" + filename + "\"");
@@ -429,7 +430,8 @@ void BloomFilter::save()
 		header->info[bvIx].compressor = bv->compressor();
 		header->info[bvIx].name       = 0;
 		header->info[bvIx].offset     = bytesWritten;
-		if (header->info[bvIx].compressor == bvcomp_rrr)
+		if ((header->info[bvIx].compressor == bvcomp_rrr)
+		 || (header->info[bvIx].compressor == bvcomp_unc_rrr))
 			{
 			header->info[bvIx].compressor |= (RRR_BLOCK_SIZE  << 8);
 			header->info[bvIx].compressor |= (RRR_RANK_PERIOD << 16);
@@ -1574,12 +1576,13 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	if (prefix.magic == bffileheaderMagicUn)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " incorrect magic number for a bloom filter file"
-		       " (it seems the file was not completely written");
+		       " looks like an incomplete bloom filter file"
+		       " (it seems the file was not completely written)");
 
 	if (prefix.magic != bffileheaderMagic)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " incorrect magic number for a bloom filter file");
+		       " doesn't look like a bloom filter file"
+		       " (incorrect magic number)");
 
 	if (prefix.version != bffileheaderVersion)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1711,11 +1714,13 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			{
 			case bvcomp_uncompressed:
 			case bvcomp_roar:
+			case bvcomp_unc_roar:
 			case bvcomp_zeros:
 			case bvcomp_ones:
 				if ((bfInfo.compressor & 0xFFFFFF00) != 0) goto bad_compressor_code;
 				break;
 			case bvcomp_rrr:
+			case bvcomp_unc_rrr:
 				if ((bfInfo.compressor & 0xFF000000) != 0) goto bad_compressor_code;
 				rrrBlockSize  = (bfInfo.compressor >> 8)  & 0x000000FF;
 				rrrRankPeriod = (bfInfo.compressor >> 16) & 0x000000FF;

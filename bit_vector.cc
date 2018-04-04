@@ -191,7 +191,7 @@ void BitVector::load()
 
 	if (offset != 0)
 		{
-		in->seekg (offset, in->beg);
+		in->seekg(offset, in->beg);
 		if (not *in)
 			fatal ("error: BitVector::load(" + identity() + ")"
 			     + " failed to seek to " + std::to_string(offset)
@@ -595,8 +595,11 @@ string BitVector::to_complement_string () const
 RrrBitVector::RrrBitVector
    (const string& _filename,
 	const size_t _offset,
-	const size_t _numBytes)
+	const size_t _numBytes,
+	bool _readAsUncompressed)
 	  :	BitVector(_filename, _offset, _numBytes),
+		readAsUncompressed(_readAsUncompressed),
+		writeAsUncompressed(false),
 		rrrBits(nullptr),
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
@@ -608,6 +611,8 @@ RrrBitVector::RrrBitVector
 RrrBitVector::RrrBitVector
    (const BitVector* srcBv)
 	  :	BitVector(nullptr),
+		readAsUncompressed(false),
+		writeAsUncompressed(false),
 		rrrBits(nullptr),
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
@@ -643,6 +648,8 @@ RrrBitVector::RrrBitVector
 RrrBitVector::RrrBitVector
    (const u64 _numBits)
 	  :	BitVector(_numBits),
+		readAsUncompressed(false),
+		writeAsUncompressed(false),
 		rrrBits(nullptr),
 		rrrRanker1(nullptr),
 		rrrSelector0(nullptr)
@@ -671,6 +678,9 @@ void RrrBitVector::serialized_in
 
 	assert (bits    == nullptr);
 	assert (rrrBits == nullptr);
+
+	if (readAsUncompressed)
+		{ BitVector::serialized_in(in); return; }
 
 	rrrBits = new rrrbitvector();
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
@@ -726,12 +736,25 @@ void RrrBitVector::save()
 		}
 	}
 
+void RrrBitVector::unfinished()
+	{ writeAsUncompressed = true; }
+
 size_t RrrBitVector::serialized_out
    (std::ofstream& out)
 	{
 	if ((rrrBits == nullptr) and (bits == nullptr))
 		fatal ("internal error for " + identity()
 		     + "; attempt to serialize null bit vector");
+	if ((writeAsUncompressed) and (rrrBits != nullptr))
+		fatal ("internal error for " + identity()
+		     + "; attempt to serialize rrr bit vector in uncompressed form");
+
+	// if we're to write it in compressed form, do so
+
+	if (writeAsUncompressed)
+		return BitVector::serialized_out(out);
+
+	// compress (if needed) and serialize
 
 	if ((rrrBits == nullptr) and (bits != nullptr))
 		compress();
@@ -785,12 +808,21 @@ void RrrBitVector::copy_from
 		discard_rank_select();
 		}
 
-	rrrBits = new rrrbitvector (*srcBits);
-	numBits = rrrBits->size();
-	isResident = true;
+	// $$$ used to be implemented like this, essentially compressing as it
+	//     copies; but we really want to keep it uncompressed until something
+	//     needs it to be compressed
+	//rrrBits = new rrrbitvector (*srcBits);
+	//numBits = rrrBits->size();
+	//isResident = true;
+	//
+	//if (trackMemory)
+	//	cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
 
+	bits = new sdslbitvector (*srcBits);
 	if (trackMemory)
-		cerr << "@+" << rrrBits << " creating rrrBits for RrrBitVector(" << identity() << " " << this << ")" << endl;
+		cerr << "@+" << bits << " creating bits for RrrBitVector(" << identity() << " " << this << ")" << endl;
+	numBits = bits->size();
+	isResident = true;
 	}
 
 void RrrBitVector::copy_from
@@ -944,8 +976,11 @@ struct roarfile
 RoarBitVector::RoarBitVector
    (const string& _filename,
 	const size_t _offset,
-	const size_t _numBytes)
+	const size_t _numBytes,
+	bool _readAsUncompressed)
 	  :	BitVector(_filename, _offset, _numBytes),
+		readAsUncompressed(_readAsUncompressed),
+		writeAsUncompressed(false),
 		roarBits(nullptr)
 	{
 	if (trackMemory)
@@ -955,6 +990,8 @@ RoarBitVector::RoarBitVector
 RoarBitVector::RoarBitVector
    (const BitVector* srcBv)
 	  :	BitVector(nullptr),
+		readAsUncompressed(false),
+		writeAsUncompressed(false),
 		roarBits(nullptr)
 	{
 	bits = nullptr;
@@ -988,6 +1025,8 @@ RoarBitVector::RoarBitVector
 RoarBitVector::RoarBitVector
    (const u64 _numBits)
 	  :	BitVector(_numBits),
+		readAsUncompressed(false),
+		writeAsUncompressed(false),
 		roarBits(nullptr)
 	{
 	if (trackMemory)
@@ -1013,6 +1052,9 @@ void RoarBitVector::serialized_in
 
 	assert (bits     == nullptr);
 	assert (roarBits == nullptr);
+
+	if (readAsUncompressed)
+		{ BitVector::serialized_in(in); return; }
 
 	roarfile header;
 	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
@@ -1098,12 +1140,25 @@ void RoarBitVector::save()
 		}
 	}
 
+void RoarBitVector::unfinished()
+	{ writeAsUncompressed = true; }
+
 size_t RoarBitVector::serialized_out
    (std::ofstream& out)
 	{
 	if ((roarBits == nullptr) and (bits == nullptr))
 		fatal ("internal error for " + identity()
 		     + "; attempt to serialize null bit vector");
+	if ((writeAsUncompressed) and (roarBits != nullptr))
+		fatal ("internal error for " + identity()
+		     + "; attempt to serialize roar bit vector in uncompressed form");
+
+	// if we're to write it in compressed form, do so
+
+	if (writeAsUncompressed)
+		return BitVector::serialized_out(out);
+
+	// compress (if needed) and serialize
 
 	if ((roarBits == nullptr) and (bits != nullptr))
 		compress();
@@ -1172,11 +1227,13 @@ void RoarBitVector::copy_from
 	bits = new sdslbitvector (*srcBits);
 	if (trackMemory)
 		cerr << "@+" << bits << " creating bits for RoarBitVector(" << identity() << " " << this << ")" << endl;
-
 	numBits = bits->size();
 	isResident = true;
 
-	compress();
+	// $$$ used to be implemented like this, compressing it after copying it;
+	//     but we really want to keep it uncompressed until something needs it
+	//     to be compressed
+	// compress();
 	}
 
 void RoarBitVector::copy_from
@@ -1596,12 +1653,16 @@ string BitVector::compressor_to_string
 	{
 	switch (compressor)
 		{
+		case bvcomp_unc_rrr:
 		case bvcomp_rrr:          return "rrr";
+		case bvcomp_unc_roar:
 		case bvcomp_roar:         return "roar";
 		case bvcomp_zeros:        return "zeros";
 		case bvcomp_ones:         return "ones";
-		default: // ……… should default be an error?
 		case bvcomp_uncompressed: return "uncompressed";
+		default:
+			fatal ("internal(?) error:"
+			       " bad compressor code: " + std::to_string(compressor));
 		}
 
 	return "";  // should never get here
@@ -1775,12 +1836,14 @@ BitVector* BitVector::bit_vector
 		cerr << "creating bit_vector type \"" << kind << "\""
 		     << " at offset " << offset << " in \"" << filename << "\"" << endl;
 
-	if      (kind == "bv")    return new BitVector      (filename, offset, numBytes);
-	else if (kind == "rrr")   return new RrrBitVector   (filename, offset, numBytes);
-	else if (kind == "roar")  return new RoarBitVector  (filename, offset, numBytes);
-	else if (kind == "raw")   return new RawBitVector   (filename, offset, numBits); // (numBits is correct)
-	else if (kind == "zeros") return new ZerosBitVector (filename, offset, numBytes);
-	else if (kind == "ones")  return new OnesBitVector  (filename, offset, numBytes);
+	if      (kind == "bv")      return new BitVector      (filename, offset, numBytes);
+	else if (kind == "rrr")     return new RrrBitVector   (filename, offset, numBytes);
+	else if (kind == "uncrrr")  return new RrrBitVector   (filename, offset, numBytes, /*uncompressed*/ true);
+	else if (kind == "roar")    return new RoarBitVector  (filename, offset, numBytes);
+	else if (kind == "uncroar") return new RoarBitVector  (filename, offset, numBytes, /*uncompressed*/ true);
+	else if (kind == "raw")     return new RawBitVector   (filename, offset, numBits); // (numBits is correct)
+	else if (kind == "zeros")   return new ZerosBitVector (filename, offset, numBytes);
+	else if (kind == "ones")    return new OnesBitVector  (filename, offset, numBytes);
 	else
 		fatal ("(for \"" + filename + "\")"
 		     + " bad compression type: \"" + kind + "\"");
@@ -1806,18 +1869,22 @@ BitVector* BitVector::bit_vector
 	switch (compressor)
 		{
 		case bvcomp_uncompressed:
-			return new BitVector (filename, offset, numBytes);
+			return new BitVector      (filename, offset, numBytes);
 		case bvcomp_rrr:
-			return new RrrBitVector (filename, offset, numBytes);
+			return new RrrBitVector   (filename, offset, numBytes);
+		case bvcomp_unc_rrr:
+			return new RrrBitVector   (filename, offset, numBytes, /*uncompressed*/ true);
 		case bvcomp_roar:
-			return new RoarBitVector (filename, offset, numBytes);
+			return new RoarBitVector  (filename, offset, numBytes);
+		case bvcomp_unc_roar:
+			return new RoarBitVector  (filename, offset, numBytes, /*uncompressed*/ true);
 		case bvcomp_zeros:
 			return new ZerosBitVector (filename, offset, numBytes);
 		case bvcomp_ones:
 			return new OnesBitVector  (filename, offset, numBytes);
 		default:
 			fatal ("(for \"" + filename + "\")"
-			     + " bad compressor code: \"" + std::to_string(compressor) + "\"");
+			     + " bad compressor code: " + std::to_string(compressor));
 		}
 
 	return nullptr;  // execution never reaches here
@@ -1833,12 +1900,14 @@ BitVector* BitVector::bit_vector
 	switch (compressor)
 		{
 		case bvcomp_uncompressed: return new BitVector      (numBits);
+		case bvcomp_unc_rrr:      /* fall thru */
 		case bvcomp_rrr:          return new RrrBitVector   (numBits);
+		case bvcomp_unc_roar:     /* fall thru */
 		case bvcomp_roar:         return new RoarBitVector  (numBits);
 		case bvcomp_zeros:        return new ZerosBitVector (numBits);
 		case bvcomp_ones:         return new OnesBitVector  (numBits);
 		default:
-			fatal ("error: BitVector::bit_vector(\"" + std::to_string(compressor) + "\",numBits)"
+			fatal ("error: BitVector::bit_vector(" + std::to_string(compressor) + ",numBits)"
 			     + " is not implemented");
 		}
 
@@ -1857,11 +1926,13 @@ BitVector* BitVector::bit_vector
 
 	switch (compressor)
 		{
-		case bvcomp_uncompressed: return new BitVector      (srcBv);
-		case bvcomp_rrr:          return new RrrBitVector   (srcBv);
-		case bvcomp_roar:         return new RoarBitVector  (srcBv);
+		case bvcomp_uncompressed: return new BitVector(srcBv);
+		case bvcomp_unc_rrr:      /* fall thru */
+		case bvcomp_rrr:          return new RrrBitVector(srcBv);
+		case bvcomp_unc_roar:     /* fall thru */
+		case bvcomp_roar:         return new RoarBitVector(srcBv);
 		default:
-			fatal ("error: BitVector::bit_vector(\"" + std::to_string(compressor) + "\",srcBv)"
+			fatal ("error: BitVector::bit_vector(" + std::to_string(compressor) + ",srcBv)"
 			     + " is not implemented");
 		}
 

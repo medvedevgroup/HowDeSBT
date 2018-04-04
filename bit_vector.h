@@ -87,6 +87,7 @@ public:
 	virtual std::uint32_t compressor() const { return bvcomp_uncompressed; }
 	virtual void load();
 	virtual void serialized_in(std::ifstream& in);
+	virtual void unfinished() {};  // solely for RrrBitVector and RoarBitVector to override
 	virtual void save();
 	virtual size_t serialized_out(std::ofstream& out, const std::string& filename, const size_t offset=0);
 	virtual size_t serialized_out(std::ofstream& out);
@@ -170,15 +171,16 @@ public:
 class RrrBitVector: public BitVector
 	{
 public:
-	RrrBitVector(const std::string& filename, const size_t offset=0, size_t numBytes=0);
+	RrrBitVector(const std::string& filename, const size_t offset=0, size_t numBytes=0, bool readAsUncompressed=false);
 	RrrBitVector(const BitVector* srcBv);
 	RrrBitVector(std::uint64_t numBits=0);
 	virtual ~RrrBitVector();
 
 	virtual std::string class_identity() const { return "RrrBitVector"; }
-	virtual std::uint32_t compressor() const { return bvcomp_rrr; }
+	virtual std::uint32_t compressor() const { return (writeAsUncompressed)? bvcomp_unc_rrr : bvcomp_rrr; }
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
+	virtual void unfinished();
 	virtual size_t serialized_out(std::ofstream& out);
 
 	virtual void discard_bits();
@@ -194,25 +196,31 @@ public:
 	virtual std::uint64_t select0(std::uint64_t pos);
 	virtual void discard_rank_select();
 
-	rrrbitvector* rrrBits;   // exclusive of BitVector.bits; at most one of
-	                         // .. bits and rrrBits is non-null at a given time
-	rrrrank1*   rrrRanker1;  // exclusive of BitVector.ranker1
-	rrrselect0* rrrSelector0;// exclusive of BitVector.selector0
+	bool readAsUncompressed;	// true => input file contains the vector still
+								// .. in uncompressed form
+	bool writeAsUncompressed;	// true => output file is to contain the vector
+								// .. still in uncompressed form
+	rrrbitvector* rrrBits;		// exclusive of BitVector.bits; at most one of
+								// .. bits and rrrBits is non-null at a given
+								// .. time
+	rrrrank1*   rrrRanker1;		// exclusive of BitVector.ranker1
+	rrrselect0* rrrSelector0;	// exclusive of BitVector.selector0
 	};
 
 
 class RoarBitVector: public BitVector
 	{
 public:
-	RoarBitVector(const std::string& filename, const size_t offset=0, size_t numBytes=0);
+	RoarBitVector(const std::string& filename, const size_t offset=0, size_t numBytes=0, bool readAsUncompressed=false);
 	RoarBitVector(const BitVector* srcBv);
 	RoarBitVector(std::uint64_t numBits=0);
 	virtual ~RoarBitVector();
 
 	virtual std::string class_identity() const { return "RoarBitVector"; }
-	virtual std::uint32_t compressor() const { return bvcomp_roar; }
+	virtual std::uint32_t compressor() const { return (writeAsUncompressed)? bvcomp_unc_roar : bvcomp_roar; }
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
+	virtual void unfinished();
 	virtual size_t serialized_out(std::ofstream& out);
 
 	virtual void discard_bits();
@@ -227,9 +235,13 @@ public:
 	virtual std::uint64_t rank1(std::uint64_t pos);
 	virtual std::uint64_t select0(std::uint64_t pos);
 
-	roaring_bitmap_t* roarBits; // exclusive of BitVector.bits; at most one of
-	                            // .. bits and roarBits is non-null at a given
-	                            // .. time
+	bool readAsUncompressed;	// true => input file contains the vector still
+								// .. in uncompressed form
+	bool writeAsUncompressed;	// true => output file is to contain the vector
+								// .. still in uncompressed form
+	roaring_bitmap_t* roarBits;	// exclusive of BitVector.bits; at most one of
+								// .. bits and roarBits is non-null at a given
+								// .. time
 	};
 
 

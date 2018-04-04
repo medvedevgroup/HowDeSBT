@@ -140,7 +140,8 @@ void FileManager::preload_content
 
 	// $$$ add trackMemory for in
 	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime) startTime = get_wall_time();
-	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in);
+	std::ifstream* in = FileManager::open_file(filename,std::ios::binary|std::ios::in,
+	                                           /* positionAtStart*/ true);
 	if (not *in)
 		fatal ("error: FileManager::preload_content()"
 			   " failed to open \"" + filename + "\"");
@@ -239,10 +240,15 @@ void FileManager::load_content
 
 std::ifstream* FileManager::open_file
    (const string&			filename,
-	std::ios_base::openmode	mode)
+	std::ios_base::openmode	mode, 
+	bool                    positionAtStart)
 	{
 	if ((openedFile != nullptr) && (filename == openedFilename))
+		{
+		if (positionAtStart)
+			openedFile->seekg(0,openedFile->beg);
 		return openedFile;
+		}
 
 	if (openedFile != nullptr)
 		{

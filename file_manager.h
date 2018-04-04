@@ -50,7 +50,8 @@ public:
 public:
 	static bool reportOpenClose;
 	static std::ifstream* open_file  (const std::string& filename,
-	                                  std::ios_base::openmode mode=std::ios::in);
+	                                  std::ios_base::openmode mode=std::ios::in,
+	                                  bool positionAtStart=false);
 	static void           close_file (std::ifstream* in=nullptr, bool really=false);
 
 public:

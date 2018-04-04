@@ -298,7 +298,8 @@ int DumpBFCommand::execute()
 
 		else
 			{
-			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in,
+			                                           /* positionAtStart*/ true);
 			if (not *in)
 				fatal ("error: failed to open \"" + bfFilename + "\"");
 			vector<pair<string,BloomFilter*>> content
@@ -350,7 +351,8 @@ int DumpBFCommand::execute()
 			}
 		else
 			{
-			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in);
+			std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in,
+			                                           /* positionAtStart*/ true);
 			if (not *in)
 				fatal ("error: failed to open \"" + bfFilename + "\"");
 			vector<pair<string,BloomFilter*>> content
@@ -504,7 +506,9 @@ void DumpBFCommand::dump_one_bloom_filter
 			if (startPos > 0) select1Ss << "...";
 
 			bool rankSupported = false;
-			if (compressor == bvcomp_uncompressed)
+			if ((compressor == bvcomp_uncompressed)
+			 || (compressor == bvcomp_rrr)
+			 || (compressor == bvcomp_roar))
 				{
 				rankSupported = true;
 

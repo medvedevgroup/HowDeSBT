@@ -307,7 +307,7 @@ void MakeBFCommand::parse
 			continue;
 			}
 
-		// (unadvertised) special bit vector type
+		// (unadvertised) special bit vector types
 
 		if ((arg == "--zeros")
 		 || (arg == "--allzeros")
@@ -325,6 +325,20 @@ void MakeBFCommand::parse
 		 || (arg == "--all-ones"))
 			{
 			compressor    = bvcomp_ones;
+			compressorSet = true;
+			continue;
+			}
+
+		if (arg == "--uncrrr")
+			{
+			compressor    = bvcomp_unc_rrr;
+			compressorSet = true;
+			continue;
+			}
+
+		if (arg == "--uncroar")
+			{
+			compressor    = bvcomp_unc_roar;
 			compressorSet = true;
 			continue;
 			}
@@ -564,6 +578,13 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 
 	jellyfish::mer_dna::k(savedKmerSize);	// restore jellyfish kmer size
 
+	if ((compressor == bvcomp_unc_rrr)
+	 || (compressor == bvcomp_unc_roar))
+		{
+		BitVector* bv = bf->bvs[0];
+		bv->unfinished();
+		}
+
 	bf->reportSave = true;
 	bf->save();
 	delete bf;
@@ -616,6 +637,13 @@ void MakeBFCommand::make_bloom_filter_kmers()
 
 			bf->add (kmer);
 			}
+		}
+
+	if ((compressor == bvcomp_unc_rrr)
+	 || (compressor == bvcomp_unc_roar))
+		{
+		BitVector* bv = bf->bvs[0];
+		bv->unfinished();
 		}
 
 	bf->reportSave = true;
