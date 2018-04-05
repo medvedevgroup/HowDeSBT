@@ -334,8 +334,7 @@ void BloomTree::construct_union_nodes (u32 compressor)
 		if (childBv == nullptr)
 			fatal ("internal error: failed to load bit vector for " + child->bfFilename);
 		if (childBv->compressor() != bvcomp_uncompressed)
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << endl;
@@ -369,44 +368,58 @@ void BloomTree::construct_union_nodes (u32 compressor)
 
 void BloomTree::construct_allsome_nodes (u32 compressor)
 	{
-	if (compressor != bvcomp_uncompressed)
-		fatal ("internal error: compression isn't implemented for construct_allsome_nodes()");
-
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr     = "." + BloomFilter::filter_kind_to_string(bfkind_allsome);
-	string newBfFilename = name + bfKindStr + ".bf";
+	string bfKindStr       = "." + BloomFilter::filter_kind_to_string(bfkind_allsome);
+	string compressionDesc = "." + BitVector::compressor_to_string(compressor);
+	if (compressionDesc == ".uncompressed") compressionDesc = "";
+	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = B'all(x) = B(x)
 	//   bvs[1] = B'some(x) = all zeros
+	// Note that both of these will be modified when the parent is constructed
 
 	if (isLeaf)
 		{
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for allsome) " << name << " ===" << endl;
 
-		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
+		if (bfInput->numBitVectors!=1)
+			fatal ("error: " + bfFilename + " contains more than one bit vector");
+		BitVector* bvInput = bfInput->get_bit_vector(0);
+		if (bvInput->is_compressed())
+			fatal ("error: " + bfFilename + " contains a compressed bit vector");
+
 		bf = new AllSomeFilter(newBfFilename);
 		bf->copy_properties(bfInput);
-		bf->steal_bits(bfInput,0);
+		bf->steal_bits(bfInput,/*src*/0,/*dst*/0,compressor);
 		delete bfInput;
 
 		bf->new_bits(bvcomp_zeros,1);
 
-		// $$$ we don't necessarily want to save it;  we want to mark it
-		//     .. to be saved, but keep it around if we have enough room,
-		//     .. since we'll need it for its parent
+		// $$$ we don't necessarily want to save it;  we want to mark it to be
+		//     .. saved, but keep it around if we have enough room, since we'll
+		//     .. need it to compute its parent, at which time we'll change it
+
+		if ((parent == nullptr) || (parent->is_dummy()))
+			{
+			fatal ("error: " + bfFilename + " contains a leaf with no parent");
+			// $$$ the right thing to do would be to finish the node, like we
+			//     do for other parentless nodes
+			}
+
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
-		save();
+		save(/*finished*/ false);
+		unloadable();
 		return;
 		}
 
@@ -434,17 +447,19 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		return;
 		}
 
-	// create the filter from the child filters
+	// create this filter from its child filters
 
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	               // $$$ add sanity check, bf should already be nullptr
-	bf = nullptr;  // $$$ use bool isFirstChild instead
+	if (bf != nullptr)
+		fatal ("internal error: unexpected non-null filter for " + bfFilename);
+
+	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
-			cerr << "loading " << child->name << endl;
+			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -453,26 +468,25 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		BitVector* childBvSome = child->bf->get_bit_vector(1);
 		if ((childBvAll == nullptr) or (childBvSome == nullptr))
 			fatal ("internal error: failed to load bit vector(s) for " + child->bfFilename);
-		if (childBvAll->compressor() != bvcomp_uncompressed)
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
-		if ((childBvSome->compressor() != bvcomp_uncompressed)
+		if (childBvAll->is_compressed())
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
+		if ((childBvSome->is_compressed())
 		 && (childBvSome->compressor() != bvcomp_zeros)
 		 && (childBvSome->compressor() != bvcomp_ones))
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
-			cerr << "incorporating " << child->name << endl;
+			cerr << "incorporating " << child->name << " into parent" << endl;
 
-		if (bf == nullptr) // incorporate first child's filters
+		if (isFirstChild) // incorporate first child's filters
 			{
 			// bvs[0] = Bcap(x) = B'all(child)
 			// bvs[1] = Bcup(x) = B'all(child) union B'some(child)
 			bf = new AllSomeFilter(child->bf,newBfFilename);
-			bf->new_bits(childBvAll,bvcomp_uncompressed,0);
-			bf->new_bits(childBvAll,bvcomp_uncompressed,1);
+			bf->new_bits(childBvAll,compressor,0);
+			bf->new_bits(childBvAll,compressor,1);
 			bf->union_with(childBvSome,1);
+			isFirstChild = false;
 			}
 		else // incorporate later child's filters
 			{
@@ -506,24 +520,31 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 		for (const auto& child : children)
 			{
 			if (dbgTraversal)
-				cerr << "loading " << child->name << endl;
+				cerr << "loading " << child->name << " for update" << endl;
 			child->load();
 
 			child->bf->mask_with(bvAll,0);
 
 			child->bf->reportSave = reportSave;
-			child->save();
+			child->save(/*finished*/ true);
 			child->unloadable();
 			}
 		}
 
-	// $$$ we don't necessarily want to save here;  we want to mark it
-	//     .. to be saved, but keep it around if we have enough room,
-	//     .. since we'll need it for its parent
+	// if this node has no parent, we need to finish it now
+
+	bool finished = false;
+	if ((parent == nullptr) || (parent->is_dummy()))
+		finished = true;
+
+	// $$$ we don't necessarily want to save it;  we want to mark it to be
+	//     .. saved, but keep it around if we have enough room, since we'll
+	//     .. need it to compute its parent, at which time we'll change it
 
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
-	save();
+	save(finished);
+	unloadable();
 	}
 
 //~~~~~~~~~~
@@ -640,8 +661,7 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		if ((childBvHow == nullptr) or (childBvDet == nullptr))
 			fatal ("internal error: failed to load bit vector(s) for " + child->bfFilename);
 		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << " into parent" << endl;
@@ -849,8 +869,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		if ((childBvHow == nullptr) or (childBvDet == nullptr))
 			fatal ("internal error: failed to load bit vector(s) for " + child->bfFilename);
 		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << " into parent" << endl;
@@ -1054,8 +1073,7 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 		if (childBv == nullptr)
 			fatal ("internal error: failed to load bit vector for " + child->bfFilename);
 		if (childBv->compressor() != bvcomp_uncompressed)
-			fatal ("error: " + child->bfFilename
-				 + " contains compressed bit vector(s)");
+			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << endl;
