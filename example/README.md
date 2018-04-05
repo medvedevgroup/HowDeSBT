@@ -72,7 +72,7 @@ bloom filters are actually created in this step.
 
 (4) Build the "determined,brief" tree, compressed as RRR.
 
-_Note that in earlier version of sabutan this was performed in two steps, but
+_Note that in earlier versions of sabutan this was performed in two steps, but
 now RRR can be created directly without having to build the uncompressed tree._
 
 ```bash  
