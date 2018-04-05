@@ -85,6 +85,7 @@ public:
 	virtual std::string identity() const;
 	virtual bool modifiable() { return (bits != nullptr); }
 	virtual std::uint32_t compressor() const { return bvcomp_uncompressed; }
+	virtual bool is_compressed() const { return false; }
 	virtual void load();
 	virtual void serialized_in(std::ifstream& in);
 	virtual void unfinished() {};  // solely for RrrBitVector and RoarBitVector to override
@@ -179,6 +180,7 @@ public:
 
 	virtual std::string class_identity() const { return "RrrBitVector"; }
 	virtual std::uint32_t compressor() const { return (writeAsUncompressed)? bvcomp_unc_rrr : bvcomp_rrr; }
+	virtual bool is_compressed() const { return (rrrBits != nullptr); }
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
 	virtual void unfinished();
@@ -220,6 +222,7 @@ public:
 
 	virtual std::string class_identity() const { return "RoarBitVector"; }
 	virtual std::uint32_t compressor() const { return (writeAsUncompressed)? bvcomp_unc_roar : bvcomp_roar; }
+	virtual bool is_compressed() const { return (roarBits != nullptr); }
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
 	virtual void unfinished();
@@ -270,6 +273,7 @@ public:
 
 	virtual std::string class_identity() const { return "ZerosBitVector"; }
 	virtual std::uint32_t compressor() const { return bvcomp_zeros; }
+	virtual bool is_compressed() const { return true; }
 	virtual void serialized_in(std::ifstream& in);
 	virtual void save();
 	virtual size_t serialized_out(std::ofstream& out, const std::string& filename, const size_t offset=0);
@@ -304,6 +308,7 @@ public:
 
 	virtual std::string class_identity() const { return "OnesBitVector"; }
 	virtual std::uint32_t compressor() const { return bvcomp_ones; }
+	virtual bool is_compressed() const { return true; }
 
 	virtual int operator[](std::uint64_t pos) const { return 1; }
 	};

@@ -546,29 +546,41 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = Bdet(x) = all ones
 	//   bvs[1] = Bhow(x) = B(x)
-	// Note that both of these may be modified when the parent is constructed
+	// Note that both of these will be modified when the parent is constructed
 
 	if (isLeaf)
 		{
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for determined) " << name << " ===" << endl;
 
-		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
+		if (bfInput->numBitVectors!=1)
+			fatal ("error: " + bfFilename + " contains more than one bit vector");
+		BitVector* bvInput = bfInput->get_bit_vector(0);
+		if (bvInput->is_compressed())
+			fatal ("error: " + bfFilename + " contains a compressed bit vector");
+
 		bf = new DeterminedFilter(newBfFilename);
 		bf->copy_properties(bfInput);
-		bf->steal_bits(bfInput,/*src*/0,/*dst*/1);
+		bf->steal_bits(bfInput,/*src*/0,/*dst*/1,compressor);
 		delete bfInput;
 
-		bf->new_bits(bvcomp_uncompressed,0);
+		bf->new_bits(compressor,0);
 		BitVector* bvDet = bf->get_bit_vector(0);
 		bvDet->fill(1);
 
 		// $$$ we don't necessarily want to save it;  we want to mark it to be
 		//     .. saved, but keep it around if we have enough room, since we'll
 		//     .. need it to compute its parent, at which time we'll change it
+
+		if ((parent == nullptr) || (parent->is_dummy()))
+			{
+			fatal ("error: " + bfFilename + " contains a leaf with no parent");
+			// $$$ the right thing to do would be to finish the node, like we
+			//     do for other parentless nodes
+			}
 
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
@@ -611,12 +623,14 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	               // $$$ add sanity check, bf should already be nullptr
-	bf = nullptr;  // $$$ use bool isFirstChild instead
+	if (bf != nullptr)
+		fatal ("internal error: unexpected non-null filter for " + bfFilename);
+
+	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
-			cerr << "loading " << child->name << endl;
+			cerr << "loading " << child->name << " to compute parent" << endl;
 		child->load();
 
 		if (child->bf == nullptr)
@@ -625,22 +639,22 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		BitVector* childBvHow = child->bf->get_bit_vector(1);
 		if ((childBvHow == nullptr) or (childBvDet == nullptr))
 			fatal ("internal error: failed to load bit vector(s) for " + child->bfFilename);
-		if ((childBvHow->compressor() != bvcomp_uncompressed)
-		 || (childBvDet->compressor() != bvcomp_uncompressed))
+		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
 			fatal ("error: " + child->bfFilename
 				 + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
-			cerr << "incorporating " << child->name << endl;
+			cerr << "incorporating " << child->name << " into parent" << endl;
 
-		if (bf == nullptr) // incorporate first child's filters
+		if (isFirstChild) // incorporate first child's filters
 			{
 			// bvs[0] = z       = Bdet(c) intersect complement of Bhow(c)
 			// bvs[1] = Bhow(x) = Bhow(c)
 			bf = new DeterminedFilter(child->bf,newBfFilename);
-			bf->new_bits(childBvDet,bvcomp_uncompressed,0);
+			bf->new_bits(childBvDet,compressor,0);
 			bf->intersect_with_complement(childBvHow,0);
-			bf->new_bits(childBvHow,bvcomp_uncompressed,1);
+			bf->new_bits(childBvHow,compressor,1);
+			isFirstChild = false;
 			}
 		else // incorporate later child's filters
 			{
@@ -679,7 +693,7 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		for (const auto& child : children)
 			{
 			if (dbgTraversal)
-				cerr << "loading " << child->name << endl;
+				cerr << "loading " << child->name << " for update" << endl;
 			child->load();
 
 			child->bf->intersect_with_complement(bvDet,0);
@@ -725,17 +739,16 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 
 void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	{
-	if (compressor != bvcomp_uncompressed)
-		fatal ("internal error: compression isn't implemented for construct_determined_nodes()");
-
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	string bfKindStr     = "." + BloomFilter::filter_kind_to_string(bfkind_determined_brief);
-	string newBfFilename = name + bfKindStr + ".bf";
+	string bfKindStr       = "." + BloomFilter::filter_kind_to_string(bfkind_determined_brief);
+	string compressionDesc = "." + BitVector::compressor_to_string(compressor);
+	if (compressionDesc == ".uncompressed") compressionDesc = "";
+	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
 	// if this is a leaf, create and pre-load its filter
 	//   bvs[0] = Bdet(x) = all ones
@@ -747,16 +760,21 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		if (dbgTraversal)
 			cerr << "\n=== constructing leaf (for determined,brief) " << name << " ===" << endl;
 
-		// …… we should require that bfInput has only one bit vector, uncompressed
 		BloomFilter* bfInput = BloomFilter::bloom_filter(bfFilename);
 		bfInput->load();
 
+		if (bfInput->numBitVectors!=1)
+			fatal ("error: " + bfFilename + " contains more than one bit vector");
+		BitVector* bvInput = bfInput->get_bit_vector(0);
+		if (bvInput->is_compressed())
+			fatal ("error: " + bfFilename + " contains a compressed bit vector");
+
 		bf = new DeterminedBriefFilter(newBfFilename);
 		bf->copy_properties(bfInput);
-		bf->steal_bits(bfInput,/*src*/0,/*dst*/1);
+		bf->steal_bits(bfInput,/*src*/0,/*dst*/1,compressor);
 		delete bfInput;
 
-		bf->new_bits(bvcomp_uncompressed,0);
+		bf->new_bits(compressor,0);
 		BitVector* bvDet = bf->get_bit_vector(0);
 		bvDet->fill(1);
 		bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::notSqueezed;
@@ -765,10 +783,18 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		// $$$ we don't necessarily want to save it;  we want to mark it to be
 		//     .. saved, but keep it around if we have enough room, since we'll
 		//     .. need it to compute its parent, at which time we'll change it
+
+		if ((parent == nullptr) || (parent->is_dummy()))
+			{
+			fatal ("error: " + bfFilename + " contains a leaf with no parent");
+			// $$$ the right thing to do would be to finish the node, like we
+			//     do for other parentless nodes
+			}
+
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
-		save();
-// $$$ øøø we could do unloadable() here
+		save(/*finished*/ false);
+		unloadable();
 		return;
 		}
 
@@ -806,8 +832,10 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	               // $$$ add sanity check, bf should already be nullptr
-	bf = nullptr;  // $$$ use bool isFirstChild instead
+	if (bf != nullptr)
+		fatal ("internal error: unexpected non-null filter for " + bfFilename);
+
+	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
 		if (dbgTraversal)
@@ -820,24 +848,24 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		BitVector* childBvHow = child->bf->get_bit_vector(1);
 		if ((childBvHow == nullptr) or (childBvDet == nullptr))
 			fatal ("internal error: failed to load bit vector(s) for " + child->bfFilename);
-		if ((childBvHow->compressor() != bvcomp_uncompressed)
-		 || (childBvDet->compressor() != bvcomp_uncompressed))
+		if ((childBvHow->is_compressed()) || (childBvDet->is_compressed()))
 			fatal ("error: " + child->bfFilename
 				 + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << " into parent" << endl;
 
-		if (bf == nullptr) // incorporate first child's filters
+		if (isFirstChild) // incorporate first child's filters
 			{
 			// bvs[0] = z       = Bdet(c) intersect complement of Bhow(c)
 			// bvs[1] = Bhow(x) = Bhow(c)
 			bf = new DeterminedBriefFilter(child->bf,newBfFilename);
-			bf->new_bits(childBvDet,bvcomp_uncompressed,0);
+			bf->new_bits(childBvDet,compressor,0);
 			bf->intersect_with_complement(childBvHow,0);
-			bf->new_bits(childBvHow,bvcomp_uncompressed,1);
+			bf->new_bits(childBvHow,compressor,1);
 			bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::notSqueezed;
 			bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::notSqueezed;
+			isFirstChild = false;
 			}
 		else // incorporate later child's filters
 			{
@@ -898,7 +926,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 			child->bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
 
 			child->bf->reportSave = reportSave;
-			child->save();
+			child->save(/*finished*/ true);
 			child->unloadable();
 			}
 
@@ -916,6 +944,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	//   bvs[1]  = Bhow(x) with uninformative bits removed = Bhow(x) squeeze Ihow(x)
 	//                                                     = Bhow(x) squeeze Bdet(x)
 
+	bool finished = false;
 	if ((parent == nullptr) || (parent->is_dummy()))
 		{
 		BitVector* bvDet = bf->get_bit_vector(0);
@@ -923,6 +952,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 
 		bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
 		bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
+		finished = true;
 		}
 
 	// $$$ we don't necessarily want to save it;  we want to mark it to be
@@ -931,7 +961,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 
 	bfFilename = newBfFilename;
 	bf->reportSave = reportSave;
-	save();
+	save(finished);
 	unloadable();
 	}
 

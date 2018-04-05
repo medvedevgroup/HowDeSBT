@@ -41,7 +41,7 @@ public:
 	virtual void copy_properties(const BloomFilter* templateBf);
 	virtual void steal_bits(BloomFilter* templateBf);
 	virtual void steal_bits(BloomFilter* templateBf, int whichBv);
-	virtual void steal_bits(BloomFilter* templateBf, int whichSrcBv, int whichDstBv);
+	virtual void steal_bits(BloomFilter* templateBf, int whichSrcBv, int whichDstBv, std::uint32_t compressor=bvcomp_uncompressed);
 
 	virtual bool is_consistent_with (const BloomFilter* bf, bool beFatal=false) const;
 
