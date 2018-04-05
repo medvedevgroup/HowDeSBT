@@ -654,9 +654,14 @@ void BloomFilter::new_bits
 		     + "; request to set bitvector " + std::to_string(whichBv));
 
 	if (bvs[whichBv] != nullptr) delete bvs[whichBv];
+
 	if (srcBv->bits == nullptr)
-		fatal ("internal error for " + identity()
-		     + "; attempt to copy bits from null or compressed bitvector " + srcBv->identity());
+		{
+		u32 srcCompressor = srcBv->compressor();
+		if ((srcCompressor != bvcomp_zeros) && (srcCompressor != bvcomp_ones))
+			fatal ("internal error for " + identity()
+			     + "; attempt to copy bits from null or compressed bitvector " + srcBv->identity());
+		}
 
 	bvs[whichBv] = BitVector::bit_vector(compressor,srcBv);
 	}
