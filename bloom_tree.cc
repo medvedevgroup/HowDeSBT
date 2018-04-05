@@ -254,32 +254,61 @@ void BloomTree::print_topology
 
 void BloomTree::construct_union_nodes (u32 compressor)
 	{
-	if (compressor != bvcomp_uncompressed)
-		fatal ("internal error: compression isn't implemented for construct_union_nodes()");
-		// $$$ if compression is not uncompressed, we'll need to compress the leaves too
-
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)
 
 	if (bf != nullptr)
 		{ bf->preload();  return; }
 
-	// if this is a leaf, create and pre-load its filter
-	// nota bene: we don't usually expect to be called for leaves, but we
-	//            handle it anyway
+	// if we're compressing, compose a filename for the compressed version of
+	// the node;  note that we keep that new name separate from the node's
+	// simple name until after we're done with the node;  we write directly to
+	// the new name, and by finally installing the new name in the node, the
+	// calling program can scan the tree for an accurate topology
+
+	if (compressor != bvcomp_uncompressed)
+		{
+		string bfKindStr       = "." + BloomFilter::filter_kind_to_string(bfkind_simple);
+		string compressionDesc = "." + BitVector::compressor_to_string(compressor);
+		if (bfKindStr == ".") bfKindStr = "";
+		if (compressionDesc == ".uncompressed") compressionDesc = "";
+		futureBfFilename = name + bfKindStr + compressionDesc + ".bf";
+		}
+
+	// if this is a leaf, create and load its filter;  if we're NOT compressing
+	// we're done;  but if we ARE compressing we write a compressed copy to the
+	// new file
 
 	if (isLeaf)
 		{
 		if (dbgTraversal)
-			cerr << "pre-loading " << name << " (#" << (++dbgTraversalCounter) << ")" << endl;
+			{
+			cerr << "\n=== loading leaf " << name << " (#" << (++dbgTraversalCounter) << ") ===" << endl;
+			if (compressor != bvcomp_uncompressed)
+				cerr << "constructing compressed leaf for " << name << endl;
+			}
+
 		bf = BloomFilter::bloom_filter(bfFilename);
-		bf->preload();
+		bf->load();
+
+		if (compressor != bvcomp_uncompressed)
+			{
+			if (bf->numBitVectors!=1)
+				fatal ("error: " + bfFilename + " contains more than one bit vector");
+			BitVector* bvInput = bf->get_bit_vector(0);
+			if (bvInput->is_compressed())
+				fatal ("error: " + bfFilename + " contains a compressed bit vector");
+
+			BloomFilter newBf(bf,futureBfFilename);
+			newBf.new_bits(bvInput,compressor);
+			newBf.reportSave = reportSave;
+			newBf.save();
+			}
+
 		return;
 		}
 
-	// otherwise this is an internal node; first construct its descendants;
-	// note that we ignore leaf children at this point, to reduce our worst
-	// case memory footprint
+	// otherwise this is an internal node; first construct its descendants
 
 	if (dbgTraversal)
 		{
@@ -290,10 +319,7 @@ void BloomTree::construct_union_nodes (u32 compressor)
 		}
 
 	for (const auto& child : children)
-		{
-		if (not child->isLeaf)
 			child->construct_union_nodes(compressor);
-		}
 
 	// if this is a dummy node, we don't need to build it, but we do mark its
 	// children as unloadable
@@ -302,31 +328,32 @@ void BloomTree::construct_union_nodes (u32 compressor)
 	if (is_dummy())
 		{
 		for (const auto& child : children)
+			{
 			child->unloadable();
+			if (not child->futureBfFilename.empty())
+				{
+				child->bfFilename = child->futureBfFilename;
+				child->futureBfFilename = "";
+				}
+			}
 		return;
 		}
 
-	// create the filter from the union of the child filters, then mark the
+	// create this filter from the union of the child filters, then mark the
 	// children as unloadable
 
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	               // $$$ add sanity check, bf should already be nullptr
-	bf = nullptr;  // $$$ use bool isFirstChild instead
+	if (bf != nullptr)
+		fatal ("internal error: unexpected non-null filter for " + bfFilename);
+
+	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
-		if (child->isLeaf)
-			{
-			if (dbgTraversal)
-				cerr << "pre-loading " << child->name << endl;
-			child->bf = BloomFilter::bloom_filter(child->bfFilename);
-			child->bf->preload();
-			}
-
 		if (dbgTraversal)
 			cerr << "loading " << child->name << endl;
-		child->load();
+		child->load();  // nota bene: child should have already been loaded
 
 		if (child->bf == nullptr)
 			fatal ("internal error: failed to load " + child->bfFilename);
@@ -337,12 +364,13 @@ void BloomTree::construct_union_nodes (u32 compressor)
 			fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
 
 		if (dbgTraversal)
-			cerr << "incorporating " << child->name << endl;
+			cerr << "incorporating " << child->name << " into parent" << endl;
 
-		if (bf == nullptr) // copy first child's filter
+		if (isFirstChild) // incorporate first child's filters
 			{
 			bf = BloomFilter::bloom_filter(child->bf,bfFilename);
 			bf->new_bits(childBv);
+			isFirstChild = false;
 			}
 		else // union with later child's filter
 			{
@@ -351,6 +379,11 @@ void BloomTree::construct_union_nodes (u32 compressor)
 			}
 
 		child->unloadable();
+		if (not child->futureBfFilename.empty())
+			{
+			child->bfFilename = child->futureBfFilename;
+			child->futureBfFilename = "";
+			}
 		}
 
 	if (bf == nullptr)
@@ -358,8 +391,32 @@ void BloomTree::construct_union_nodes (u32 compressor)
 		       " in construct_union_nodes(\"" + name + "\")"
 		     + ", non-leaf node has no children");
 
-	bf->reportSave = reportSave;
-	save();
+	// save the node;  if we're compressing we write a compressed copy to the
+	// new file
+
+	if (compressor == bvcomp_uncompressed)
+		{
+		bf->reportSave = reportSave;
+		save(/*finished*/ true);
+		}
+	else
+		{
+		BitVector* bvInput = bf->get_bit_vector(0);
+		BloomFilter newBf(bf,futureBfFilename);
+		newBf.new_bits(bvInput,compressor);
+		newBf.reportSave = reportSave;
+		newBf.save();
+		}
+
+	if (parent == nullptr)
+		{
+		unloadable();
+		if (not futureBfFilename.empty())
+			{
+			bfFilename = futureBfFilename;
+			futureBfFilename = "";
+			}
+		}
 	}
 
 //~~~~~~~~~~
@@ -379,7 +436,7 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 	if (compressionDesc == ".uncompressed") compressionDesc = "";
 	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
-	// if this is a leaf, create and pre-load its filter
+	// if this is a leaf, create and load its filter
 	//   bvs[0] = B'all(x) = B(x)
 	//   bvs[1] = B'some(x) = all zeros
 	// Note that both of these will be modified when the parent is constructed
@@ -564,7 +621,7 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	if (compressionDesc == ".uncompressed") compressionDesc = "";
 	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
-	// if this is a leaf, create and pre-load its filter
+	// if this is a leaf, create and load its filter
 	//   bvs[0] = Bdet(x) = all ones
 	//   bvs[1] = Bhow(x) = B(x)
 	// Note that both of these will be modified when the parent is constructed
@@ -770,7 +827,7 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	if (compressionDesc == ".uncompressed") compressionDesc = "";
 	string newBfFilename = name + bfKindStr + compressionDesc + ".bf";
 
-	// if this is a leaf, create and pre-load its filter
+	// if this is a leaf, create and load its filter
 	//   bvs[0] = Bdet(x) = all ones
 	//   bvs[1] = Bhow(x) = B(x)
 	// Note that both of these will be modified when the parent is constructed
@@ -991,8 +1048,11 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 void BloomTree::construct_intersection_nodes (u32 compressor)
 	{
 	if (compressor != bvcomp_uncompressed)
+		{
 		fatal ("internal error: compression isn't implemented for construct_intersection_nodes()");
-		// $$$ if compression is not uncompressed, we'll need to compress the leaves too
+		// $$$ implementation would parallel construct_union_nodes; but we
+		//     just don't need to perform compression on this type of tree
+		}
 
 	// if we already have a filter, just make sure it is in the pre-loaded
 	// state (or beyond)

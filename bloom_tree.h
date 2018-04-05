@@ -83,6 +83,7 @@ public:
 										// .. be a dummy, to allow for forests
 	std::string name;
 	std::string bfFilename;
+	std::string futureBfFilename;
 	BloomFilter* bf;
 	bool isLeaf;
 	BloomTree* parent;
