@@ -38,20 +38,34 @@ public:
 	std::string name;
 	std::string seq;		// nucleotide sequence
 	double threshold;		// search threshold
-	std::vector<std::uint64_t> kmerPositions;
+	std::vector<std::uint64_t> kmerPositions; // the kmers (converted to hash
+										// values) corresponding to this query;
+										// the first numUnresolved entries are
+										// the yet-to-be-resolved kmers; the
+										// resolved kmers are moved to the tail
 
-	std::uint64_t numPositions;
-	std::uint64_t neededToPass;
-	std::uint64_t neededToFail;
-	std::uint64_t numUnresolved;
-	std::uint64_t numPassed;
-	std::uint64_t numFailed;
-	std::uint64_t nodesExamined;
-    std::vector<std::string> matches;  // names of leaves that match this query
+	std::uint64_t numPositions;			// total size of kmerPositions
+	std::uint64_t neededToPass;			// number of kmers required, to judge
+										// .. the query as a "pass"
+	std::uint64_t neededToFail;			// number of kmers required, to judge
+										// .. the query as a "fail"
+	std::uint64_t numUnresolved;		// number of kmers not yet known to be
+										// .. present or absent in all leaves
+										// .. of the current subtree
+	std::uint64_t numPassed;			// number of kmers known to be present
+										// .. in all leaves of the subtree
+	std::uint64_t numFailed;			// number of kmers known to be absent
+										// .. in all leaves of the subtree
+	std::uint64_t nodesExamined;		// number of nodes that were "examined"
+										// by this query
+    std::vector<std::string> matches;	// names of leaves that match this query
     std::vector<std::uint64_t> matchesNumPassed;  // numPassed corresponding to
-	                                   // .. each match (only used by
-	                                   // .. BloomTree::batch_count_kmer_hits)
+										// .. each match (only used by
+										// .. BloomTree::batch_count_kmer_hits)
 
+										// stacks to maintain numUnresolved,
+										// .. numPassed, and numFailed as we
+										// .. move up and down the tree
     std::vector<std::uint64_t> numUnresolvedStack;
     std::vector<std::uint64_t> numPassedStack;
     std::vector<std::uint64_t> numFailedStack;
