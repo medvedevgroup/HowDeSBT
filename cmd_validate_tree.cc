@@ -104,7 +104,13 @@ void ValidateTreeCommand::parse
 		if ((is_prefix_of (arg, "--tree="))
 		 ||	(is_prefix_of (arg, "--intree="))
 		 ||	(is_prefix_of (arg, "--topology=")))
-			{ inTreeFilename = argVal;  continue; }
+			{
+			if (not inTreeFilename.empty())
+				chastise ("unrecognized option: \"" + arg + "\""
+				          "\ntree topology file was already given as \"" + inTreeFilename + "\"");
+			inTreeFilename = argVal;
+			continue;
+			}
 
 		// (unadvertised) debug options
 
@@ -125,6 +131,9 @@ void ValidateTreeCommand::parse
 
 		// <filename>
 
+		if (not inTreeFilename.empty())
+			chastise ("unrecognized option: \"" + arg + "\""
+			          "\ntree topology file was already given as \"" + inTreeFilename + "\"");
 		inTreeFilename = arg;
 		}
 

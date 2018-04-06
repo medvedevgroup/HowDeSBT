@@ -334,16 +334,23 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	srcBf->load();
 
 	// make sure all vectors in the source filter have the same compression
-	// type;  if any of them is rrr or roar in uncompressed form, modify the
-	// compression type to reflect that fact
+	// type excluding any super-compressed vectors (all-zeros or all-ones) from
+	// this test;  if any of them is rrr or roar in uncompressed form, modify
+	// the compression type to reflect that fact
 
 	if (srcBf->numBitVectors == 0)
 		fatal ("error: \"" + filename + "\" contains no bit vectors");
 
-	u32 srcCompressor = srcBf->bvs[0]->compressor();
-	for (int whichBv=1 ; whichBv<srcBf->numBitVectors ; whichBv++)
+	u32 srcCompressor = bvcomp_unknown;
+	for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
 		{
-		if (srcBf->bvs[whichBv]->compressor() != srcCompressor)
+		u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+		if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+			continue;
+
+		if (srcCompressor == bvcomp_unknown)
+			srcCompressor = bvCompressor;
+		else if (bvCompressor != srcCompressor)
 			fatal ("error: not converting \"" + filename + "\""
 			    + " (its bit vectors are inconsistently compressed)");
 		}
@@ -352,6 +359,9 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		{
 		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
 			{
+			u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+				continue;
 			if (srcBf->bvs[whichBv]->bits != nullptr)
 				{ srcCompressor = bvcomp_unc_rrr;  break; }
 			}
@@ -360,12 +370,16 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 		{
 		for (int whichBv=1 ; whichBv<srcBf->numBitVectors ; whichBv++)
 			{
+			u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+				continue;
 			if (srcBf->bvs[whichBv]->bits != nullptr)
 				{ srcCompressor = bvcomp_unc_roar;  break; }
 			}
 		}
 
-	// if the compression type is the type the user wants, we're already done
+	// if the filter's compression type is the type the user wants, we're
+	// already done
 
 	if (compressor == srcCompressor)
 		{
@@ -383,18 +397,30 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	if (srcCompressor == bvcomp_uncompressed)
 		{
 		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
-			dstBf->new_bits (srcBf->bvs[whichBv], compressor, whichBv);
+			{
+			u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+				dstBf->new_bits(bvCompressor,whichBv);
+			else
+				dstBf->new_bits(srcBf->bvs[whichBv],compressor,whichBv);
+			}
 		}
 	else
 		{
 		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
 			{
-			// $$$ improve this for RRR by decoding chunk by chunk
-			dstBf->new_bits (compressor, whichBv);
-			BitVector* srcBv = srcBf->bvs[whichBv];
-			BitVector* dstBv = dstBf->bvs[whichBv];
-			for (u64 pos=0 ; pos<srcBf->numBits ; pos++)
-				{ if ((*srcBv)[pos] == 1) dstBv->write_bit(pos); }
+			u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+				dstBf->new_bits(bvCompressor,whichBv);
+			else
+				{
+				// $$$ improve this for RRR by decoding chunk by chunk
+				dstBf->new_bits(compressor,whichBv);
+				BitVector* srcBv = srcBf->bvs[whichBv];
+				BitVector* dstBv = dstBf->bvs[whichBv];
+				for (u64 pos=0 ; pos<srcBf->numBits ; pos++)
+					{ if ((*srcBv)[pos] == 1) dstBv->write_bit(pos); }
+				}
 			}
 		}
 

@@ -136,7 +136,13 @@ void ClusterCommand::parse
 		// --list=<filename>
 
 		if (is_prefix_of (arg, "--list="))
-			{ listFilename = argVal;  continue; }
+			{
+			if (not listFilename.empty())
+				chastise ("unrecognized option: \"" + arg + "\""
+				          "\nbloom filters list file was already given as \"" + listFilename + "\"");
+			listFilename = argVal;
+			continue;
+			}
 
 		// --out=<filename>, --tree=<filename>, etc.
 
@@ -243,6 +249,9 @@ void ClusterCommand::parse
 
 		// <filename>
 
+		if (not listFilename.empty())
+			chastise ("unrecognized option: \"" + arg + "\""
+			          "\nbloom filters list file was already given as \"" + listFilename + "\"");
 		listFilename = arg;
 		}
 

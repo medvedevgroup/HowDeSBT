@@ -504,7 +504,8 @@ void BloomFilter::steal_bits
 void BloomFilter::steal_bits
    (BloomFilter*	templateBf,
 	int				whichSrcBv,
-	int				whichDstBv)
+	int				whichDstBv,
+	u32				compressor)
 	{
 	if ((whichDstBv < 0) || (whichDstBv >= numBitVectors))
 		fatal ("internal error for " + identity()
@@ -515,8 +516,16 @@ void BloomFilter::steal_bits
 
 	discard_bits(whichDstBv);
 
-	bvs[whichDstBv] = templateBf->bvs[whichSrcBv];
+	BitVector* srcBv = templateBf->bvs[whichSrcBv];
 	templateBf->bvs[whichSrcBv] = nullptr;
+
+	if (compressor == srcBv->compressor())
+		bvs[whichDstBv] = srcBv;
+	else
+		{
+		bvs[whichDstBv] = BitVector::bit_vector(compressor,srcBv);
+		delete srcBv;
+		}
 
 	ready = true;
 	}
@@ -645,9 +654,14 @@ void BloomFilter::new_bits
 		     + "; request to set bitvector " + std::to_string(whichBv));
 
 	if (bvs[whichBv] != nullptr) delete bvs[whichBv];
+
 	if (srcBv->bits == nullptr)
-		fatal ("internal error for " + identity()
-		     + "; attempt to copy bits from null or compressed bitvector " + srcBv->identity());
+		{
+		u32 srcCompressor = srcBv->compressor();
+		if ((srcCompressor != bvcomp_zeros) && (srcCompressor != bvcomp_ones))
+			fatal ("internal error for " + identity()
+			     + "; attempt to copy bits from null or compressed bitvector " + srcBv->identity());
+		}
 
 	bvs[whichBv] = BitVector::bit_vector(compressor,srcBv);
 	}

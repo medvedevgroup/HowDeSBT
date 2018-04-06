@@ -70,42 +70,20 @@ sabutan cluster --list=leafnames --bits=${cluster_bits} \
 The result of this step is a tree topology file, example.sbt. Note that no
 bloom filters are actually created in this step.
 
-(4) Build the "determined,brief" tree.
+(4) Build the "determined,brief" tree, compressed as RRR.
+
+_Note that in earlier versions of sabutan this was performed in two steps, but
+now RRR can be created directly without having to build the uncompressed tree._
 
 ```bash  
-sabutan build --determined,brief --tree=example.sbt --outtree=detbrief.sbt
-```
-
-The result of this step is bloom filter files for the leaves and internal nodes,
-in "determined,brief" format, and a new topology file named detbrief.sbt. The
-bloom filter files are named experiment1.detbrief.bf, ..., node1.detbrief.bf,
-etc.
-
-(4b) Convert the "determined,brief" tree to RRR.
-
-_Note that eventually this step will be combined with step 4, and you'll just
-get the RRR files directly._
-
-```bash  
-cat detbrief.sbt \
-  | sed "s/\.detbrief\.bf/.detbrief.rrr.bf/" \
-  > detbrief.rrr.sbt
-
-cat detbrief.rrr.sbt \
-  | tr -d "*" \
-  | sed "s/\.detbrief\.rrr\.bf//" \
-  | while read node ; do
-      nodeNum=$((nodeNum+1))
-      echo "=== RRR-compressing ${node} ==="
-      sabutan compressbf ${node}.detbrief.bf --rrr
-      done
+sabutan build --determined,brief --rrr --tree=example.sbt \
+  --outtree=detbrief.rrr.sbt
 ```
 
 The result of this step is bloom filter files for the leaves and internal nodes,
 in "determined,brief" format and compressed with RRR. And a new topology file
 named detbrief.rrr.sbt. The bloom filter files are named experiment1.detbrief.rrr.bf,
-..., node1.detbrief.rrr.bf,
-etc.
+..., node1.detbrief.rrr.bf, etc.
 
 (5) Run a batch of queries.
 
