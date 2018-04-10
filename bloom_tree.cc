@@ -1111,8 +1111,10 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 	if (dbgTraversal)
 		cerr << "\n=== constructing " << name << " ===" << endl;
 
-	               // $$$ add sanity check, bf should already be nullptr
-	bf = nullptr;  // $$$ use bool isFirstChild instead
+	if (bf != nullptr)
+		fatal ("internal error: unexpected non-null filter for " + bfFilename);
+
+	bool isFirstChild = true;
 	for (const auto& child : children)
 		{
 		if (child->isLeaf)
@@ -1138,10 +1140,11 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 		if (dbgTraversal)
 			cerr << "incorporating " << child->name << endl;
 
-		if (bf == nullptr) // copy first child's filter
+		if (isFirstChild) // copy first child's filter
 			{
 			bf = BloomFilter::bloom_filter(child->bf,newBfFilename);
 			bf->new_bits(childBv);
+			isFirstChild = false;
 			}
 		else // intersection with later child's filter
 			{
