@@ -98,16 +98,16 @@ int main
 	cmd->add_command_alias                       ("makefilter");
 	cmd->add_subcommand (new ClusterCommand      ("cluster"));
 	cmd->add_subcommand (new BuildSBTCommand     ("build"));
+	cmd->add_subcommand (new QueryCommand        ("query"));
+
+	// secondary commands
+
+	cmd->add_subcommand (nullptr);  // marks start of secondary commands
+
 	cmd->add_subcommand (new CompressBFCommand   ("compressbf"));
 	cmd->add_command_alias                       ("bfcompress");
 	cmd->add_command_alias                       ("compressfilter");
 	cmd->add_command_alias                       ("compress");
-	cmd->add_subcommand (new QueryCommand        ("query"));
-
-	// accessory commands
-
-	cmd->add_subcommand (nullptr);  // marks start of secondary commands
-
 	cmd->add_subcommand (new CombineBFCommand    ("combinebf"));
 	cmd->add_command_alias                       ("bfcombine");
 	cmd->add_command_alias                       ("unitebf");
