@@ -20,6 +20,7 @@
 
 using std::string;
 using std::vector;
+using std::pair;
 using std::cin;
 using std::cout;
 using std::cerr;
@@ -64,6 +65,10 @@ void QueryCommand::usage
 	s << "                       this only applies to query files for which <F> is not" << endl;
 	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
 	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
+	s << "  --sort               sort matched leaves by the number of query kmers present," << endl;
+	s << "                       and report the number of kmers present" << endl;
+	s << "                       (by default we just report the matched leaves without" << endl;
+	s << "                       regard to which matches are better)" << endl;
 	s << "  --leafonly           disregard internal tree nodes and perform the query only" << endl;
 	s << "                       at the leaves" << endl;
 	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
@@ -121,6 +126,7 @@ void QueryCommand::parse
 	// defaults
 
 	generalQueryThreshold = -1.0;		// (unassigned threshold)
+	sortByKmerCounts      = false;
 	onlyLeaves            = false;
 	distinctKmers         = false;
 	useFileManager        = false;
@@ -210,6 +216,11 @@ void QueryCommand::parse
 			generalQueryThreshold = string_to_probability(argVal);
 			continue;
 			}
+
+		// --sort
+
+		if (arg == "--sort")
+			{ sortByKmerCounts = true;  continue; }
 
 		// --leafonly, etc.
 
@@ -348,6 +359,9 @@ void QueryCommand::parse
 		if (countAllKmerHits)
 			chastise ("--collectnodestats cannot be used with --countallkmerhits");
 		}
+
+	if ((justReportKmerCounts) and (sortByKmerCounts))
+		chastise ("--sort cannot be used with --justcountkmers");
 
 	// assign threshold to any unassigned queries
 
@@ -588,6 +602,9 @@ int QueryCommand::execute()
 
 		// report results
 
+		if (sortByKmerCounts)
+			sort_matches_by_kmer_counts();
+
 		if (matchesFilename.empty())
 			print_kmer_hit_counts (cout);
 		else
@@ -600,16 +617,28 @@ int QueryCommand::execute()
 		{
 		// perform the query
 
-		root->batch_query(queries,onlyLeaves,distinctKmers);
+		root->batch_query(queries,onlyLeaves,distinctKmers,
+		                  /*completeKmerCounts*/ sortByKmerCounts);
 
 		// report results
 
+		if (sortByKmerCounts)
+			sort_matches_by_kmer_counts();
+
 		if (matchesFilename.empty())
-			print_matches (cout);
+			{
+			if (sortByKmerCounts)
+				print_matches_with_kmer_counts (cout);
+			else
+				print_matches (cout);
+			}
 		else
 			{
 			std::ofstream out(matchesFilename);
-			print_matches (out);
+			if (sortByKmerCounts)
+				print_matches_with_kmer_counts (out);
+			else
+				print_matches (out);
 			}
 
 		// report per-node query stats
@@ -725,6 +754,40 @@ void QueryCommand::read_queries()
 
 //----------
 //
+// sort_matches_by_kmer_counts--
+//	Sort query matches by decreasing kmer hit counts.
+//	
+//----------
+
+void QueryCommand::sort_matches_by_kmer_counts (void)
+	{
+	for (auto& q : queries)
+		{
+		vector<pair<u64,string>> matches;
+		int ix = 0;
+		for (auto& name : q->matches)
+			{
+			u64 numPassed = q->matchesNumPassed[ix++];
+			matches.emplace_back(-(numPassed+1),name);  // negated so we get the sort order we want
+			}
+
+		sort(matches.begin(),matches.end());
+
+		ix = 0;
+		for (const auto& matchPair : matches)
+			{
+			u64    negNumPassed = matchPair.first;
+			string name         = matchPair.second;
+
+			q->matches         [ix] = name;
+			q->matchesNumPassed[ix] = (-negNumPassed) - 1;
+			ix++;
+			}
+		}
+	}
+
+//----------
+//
 // print_matches--
 //	
 //----------
@@ -736,10 +799,41 @@ void QueryCommand::print_matches
 		{
 		out << "*" << q->name << " " << q->matches.size() << endl;
 		if (reportNodesExamined)
-	        out << "# " << q->nodesExamined << " nodes examined" << endl;
+			out << "# " << q->nodesExamined << " nodes examined" << endl;
 		for (auto& name : q->matches)
-        	out << name << endl;
-        }
+			out << name << endl;
+		}
+	}
+
+//----------
+//
+// print_matches_with_kmer_counts--
+//	
+//----------
+
+void QueryCommand::print_matches_with_kmer_counts
+   (std::ostream& out) const
+	{
+	for (auto& q : queries)
+		{
+		out << "*" << q->name << " " << q->matches.size() << endl;
+		if (reportNodesExamined)
+			out << "# " << q->nodesExamined << " nodes examined" << endl;
+
+		int ix = 0;
+		for (auto& name : q->matches)
+			{
+			u64 numPassed = q->matchesNumPassed[ix++];
+
+			out << name
+			    << " " << numPassed << "/" << q->numPositions;
+			if (q->numPositions == 0)
+				out << " 0"; // instead of dividing by zero
+			else
+				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
+			out << endl;
+			}
+		}
 	}
 
 //----------
@@ -761,27 +855,27 @@ void QueryCommand::print_kmer_hit_counts
 			u64 numPassed = q->matchesNumPassed[ix];
 			bool queryPasses = (numPassed >= q->neededToPass);
 			if (queryPasses) matchCount++;
-        	}
+			}
 
 		out << "*" << q->name << " " << matchCount << endl;
 
-        int ix = 0;
+		int ix = 0;
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[ix];
 			bool queryPasses = (numPassed >= q->neededToPass);
 
 			out << q->name << " vs " << name
-	            << " " << numPassed << "/" << q->numPositions;
-	        if (q->numPositions == 0)
-				out << " NA";
+				<< " " << numPassed << "/" << q->numPositions;
+			if (q->numPositions == 0)
+				out << " 0"; // instead of dividing by zero
 			else
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
 			if (queryPasses) out << " hit";
-		    out << endl;
-	        ix++;
-        	}
-        }
+			out << endl;
+			ix++;
+			}
+		}
 
 	out.flags(saveOutFlags);
 	}

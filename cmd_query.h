@@ -23,7 +23,9 @@ public:
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 	virtual void read_queries (void);
+	virtual void sort_matches_by_kmer_counts (void);
 	virtual void print_matches(std::ostream& out) const;
+	virtual void print_matches_with_kmer_counts(std::ostream& out) const;
 	virtual void print_kmer_hit_counts(std::ostream& out) const;
 
 	std::string treeFilename;
@@ -37,6 +39,7 @@ public:
 	bool checkConsistency;			// only meaningful if useFileManager is false
 	bool justReportKmerCounts;
 	bool countAllKmerHits;
+	bool sortByKmerCounts;
 	bool reportNodesExamined;
 	bool collectNodeStats;
 	bool reportTime;

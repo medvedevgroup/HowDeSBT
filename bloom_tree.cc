@@ -1168,7 +1168,8 @@ void BloomTree::construct_intersection_nodes (u32 compressor)
 void BloomTree::batch_query
    (vector<Query*>	queries,
 	bool			isLeafOnly,
-	bool			distinctKmers)
+	bool			distinctKmers,
+	bool			completeKmerCounts)
 	{
 	// preload a root, and make sure that a leaf-only operation can work with
 	// the type of filter we have
@@ -1231,12 +1232,13 @@ void BloomTree::batch_query
 
 	u64 activeQueries = localQueries.size();
 	if (activeQueries > 0)
-		perform_batch_query (activeQueries, localQueries);
+		perform_batch_query(activeQueries,localQueries,completeKmerCounts);
 	}
 
 void BloomTree::perform_batch_query
    (u64				activeQueries,
-	vector<Query*>	queries)
+	vector<Query*>	queries,
+	bool			completeKmerCounts)
 	{
 	u64				incomingQueries = activeQueries;
 	u64				qIx;
@@ -1249,7 +1251,7 @@ void BloomTree::perform_batch_query
 			cerr << "(skipping through dummy node)" << endl;
 
 		for (const auto& child : children)
-			child->perform_batch_query (activeQueries, queries);
+			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
 		return;
 		}
 
@@ -1334,18 +1336,18 @@ void BloomTree::perform_batch_query
 				}
 			else if (resolution == BloomFilter::present)
 				{
+				// if we're NOT computing complete kmer counts, we can check
+				// whether we've observed enough hits to pass this node early
+
 				if (dbgLookups)
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " pass=" << (q->numPassed+1) << endl;
-				if (++q->numPassed >= q->neededToPass)
+				q->numPassed++;
+				if ((not completeKmerCounts) and (q->numPassed >= q->neededToPass))
 					{ queryPasses = true;  break; }
 				}
 			else // if (resolution == BloomFilter::unresolved)
 				{
-				// $$$ if we have enough unresolveds we can prove that we
-				//     .. won't be able to get enough absents to fail the node,
-				//     .. therefor we should pass it (but only at an internal
-				//     .. node)
 				if (dbgLookups)
 					cerr << "  " << q->name << ".lookup(" << bfFilename << "," << pos << ")"
 					     << " unres" << endl;
@@ -1400,7 +1402,12 @@ void BloomTree::perform_batch_query
 			}
 
 		// if the query passes, add it to the list of matches for all leaves in
-		// this subtree (nb: this 'subtree' may just be a leaf)
+		// this subtree (nb: this 'subtree' may just be a leaf); note that if
+		// we're computing complete kmer counts, we have to check whether the
+		// node passes here because we avoided that test earlier
+
+		if ((completeKmerCounts) and (isLeaf) and (q->numPassed >= q->neededToPass))
+			queryPasses = true;
 
 		if (queryPasses)
 			query_matches_leaves (q);
@@ -1493,7 +1500,7 @@ void BloomTree::perform_batch_query
 	if (activeQueries > 0)
 		{
 		for (const auto& child : children)
-			child->perform_batch_query (activeQueries, queries);
+			child->perform_batch_query(activeQueries,queries,completeKmerCounts);
 		}
 
 	// restore kmer/position lists as we move up the tree
@@ -1563,7 +1570,10 @@ void BloomTree::query_matches_leaves
    (Query* q)
 	{
 	if (isLeaf)
+		{
 		q->matches.emplace_back (name);
+		q->matchesNumPassed.emplace_back (q->numPassed);
+		}
 	else
 		{
 		for (const auto& child : children)
