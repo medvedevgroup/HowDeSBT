@@ -84,6 +84,8 @@ void QueryCommand::usage
 	s << "                       query/leaf" << endl;
 	s << "  --stat:nodesexamined report the count of nodes examined for each query (as a" << endl;
 	s << "                       comment in the output" << endl;
+	s << "  --backwardcompatible (only for --sort) output is backward compatible with" << endl;
+	s << "                       order_query_results.sh" << endl;
 	s << "  --time               report wall time and node i/o time" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
@@ -125,17 +127,18 @@ void QueryCommand::parse
 
 	// defaults
 
-	generalQueryThreshold = -1.0;		// (unassigned threshold)
-	sortByKmerCounts      = false;
-	onlyLeaves            = false;
-	distinctKmers         = false;
-	useFileManager        = false;
-	checkConsistency      = false;
-	justReportKmerCounts  = false;
-	countAllKmerHits      = false;
-	reportNodesExamined   = false;
-	collectNodeStats      = false;
-	reportTime            = false;
+	generalQueryThreshold   = -1.0;		// (unassigned threshold)
+	sortByKmerCounts        = false;
+	onlyLeaves              = false;
+	distinctKmers           = false;
+	useFileManager          = false;
+	checkConsistency        = false;
+	justReportKmerCounts    = false;
+	countAllKmerHits        = false;
+	reportNodesExamined     = false;
+	collectNodeStats        = false;
+	reportTime              = false;
+	backwardCompatibleStyle = false;
 
 	// skip command name
 
@@ -281,19 +284,18 @@ void QueryCommand::parse
 		if ((arg == "--stat:nodesexamined")
 		 || (arg == "--stats:nodesexamined")
 		 || (arg == "--nodesexamined"))
-			{
-			reportNodesExamined = true;
-			continue;
-			}
+			{ reportNodesExamined = true;  continue; }
+
+		// --backwardcompatible
+
+		if (arg == "--backwardcompatible")
+			{ backwardCompatibleStyle = true;  continue; }
 
 		// --time
 
 		if ((arg == "--time")
 		 || (arg == "--walltime"))
-			{
-			reportTime = true;
-			continue;
-			}
+			{ reportTime = true;  continue; }
 
 		// --collectnodestats (unadvertised)
 
@@ -362,6 +364,9 @@ void QueryCommand::parse
 
 	if ((justReportKmerCounts) and (sortByKmerCounts))
 		chastise ("--sort cannot be used with --justcountkmers");
+
+	if ((backwardCompatibleStyle) and (not sortByKmerCounts))
+		chastise ("--backwardcompatible cannot be used without --sort");
 
 	// assign threshold to any unassigned queries
 
@@ -816,14 +821,20 @@ void QueryCommand::print_matches_with_kmer_counts
 	{
 	for (auto& q : queries)
 		{
-		out << "*" << q->name << " " << q->matches.size() << endl;
-		if (reportNodesExamined)
-			out << "# " << q->nodesExamined << " nodes examined" << endl;
+		if (not backwardCompatibleStyle)
+			{
+			out << "*" << q->name << " " << q->matches.size() << endl;
+			if (reportNodesExamined)
+				out << "# " << q->nodesExamined << " nodes examined" << endl;
+			}
 
 		int ix = 0;
 		for (auto& name : q->matches)
 			{
 			u64 numPassed = q->matchesNumPassed[ix++];
+
+			if (backwardCompatibleStyle)
+				out << q->name << " ";
 
 			out << name
 			    << " " << numPassed << "/" << q->numPositions;

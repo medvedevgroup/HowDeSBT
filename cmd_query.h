@@ -33,16 +33,17 @@ public:
 	std::vector<double> queryThresholds;
 	std::string matchesFilename;
 	double generalQueryThreshold;
+	bool sortByKmerCounts;
 	bool onlyLeaves;
 	bool distinctKmers;
 	bool useFileManager;
 	bool checkConsistency;			// only meaningful if useFileManager is false
 	bool justReportKmerCounts;
 	bool countAllKmerHits;
-	bool sortByKmerCounts;
 	bool reportNodesExamined;
 	bool collectNodeStats;
 	bool reportTime;
+	bool backwardCompatibleStyle;
 
 	std::vector<Query*> queries;
 	};
