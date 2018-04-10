@@ -13,7 +13,7 @@ April 2017; earlier versions had a problem with RRR in certain configurations)
 To install subutan from the source:  
 1. Download the latest version of subutan using Github  
 ```bash  
-     git clone https://github.com/medvedevgroup/subutan  
+     git clone https://github.com/medvedevgroup/sabutan  
 ```  
 2. Compile:  
 ```bash  
