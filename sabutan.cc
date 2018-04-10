@@ -400,6 +400,19 @@ void MainCommand::parse
 			exit (EXIT_SUCCESS);
 			}
 
+		// --version
+
+		if ((arg == "--version")
+		 || (arg == "--v")
+		 || (arg == "--V")
+		 || (arg == "-v")
+		 || (arg == "-V"))
+			{
+			VersionCommand cmd("version");
+			cmd.execute();
+			exit (EXIT_SUCCESS);
+			}
+
 		// unrecognized argument
 
 		chastise ("unrecognized argument: \"" + arg + "\"");
