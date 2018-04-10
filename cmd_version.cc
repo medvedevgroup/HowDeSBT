@@ -46,17 +46,7 @@ void VersionCommand::parse
    (int		_argc,
 	char**	_argv)
 	{
-	int		argc;
-	char**	argv;
-
-	// skip command name
-
-	argv = _argv+1;  argc = _argc - 1;
-	// if (argc <= 0) chastise ();   for this command, this is not a problem
-
-	if (argc > 0)
-		chastise("give me no arguments");
-
+	if (_argc > 1) chastise("give me no arguments");
 	return;
 	}
 
