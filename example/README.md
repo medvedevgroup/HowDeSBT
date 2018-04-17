@@ -86,7 +86,7 @@ bloom filters are actually created in this step.
 
 (4) Build the "determined,brief" tree, compressed as RRR.
 
-We use "sabutan cluster" to build the filter files for the tree. We have a
+We use "sabutan build" to build the filter files for the tree. We have a
 choice of several filter arrangements (a simple union tree, an allsome tree,
 a determined tree, or a determined,brief tree), and how the files should be
 compressed (RRR, roaring bit strings, or no compression).
@@ -103,9 +103,9 @@ experiment1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, etc.
 
 (5) Run a batch of queries.
 
-We use "sabutan query" to search for "hits" for query sequences. The input here
-is in fasta format, including headers for each sequence. Names from the headers
-are used in the output to identify a query.
+We use "sabutan query" to search the tree for "hits" for query sequences. The
+input here is in fasta format, including headers for each sequence. Names from
+the headers are used in the output to identify a query.
 
 For backward compatibility with earlier tools, sabutan can also recognize a
 fasta-like file that contains no headers. In that case, each input line is
