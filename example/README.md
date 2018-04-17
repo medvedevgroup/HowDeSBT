@@ -15,8 +15,8 @@ file, could be used.
 We don't specify the output file name here. We let sabutan use the default
 naming convention, which for example will produce expriment1.bf from
 expriment1.fa. (Note that the echo command in this loop assumes that.) The
-makebf command does have an option to assign a different name. If you so that,
-you should make sure the name ends in ".bf".
+makebf command does have an option to assign a different name. If you do that,
+be sure the name ends in ".bf".
 
 ```bash  
 bf_size=500000
@@ -63,14 +63,16 @@ ls experiment*.kmers \
 
 (3) Create a tree topology.
 
-_Difference vs bloomtree-allsome: bfcluster/sbuild did both the clustering
-*and* built all the uncompressed nodes. Here we just cluster and leave the
-building of nodes for later steps._
+We use "sabutan cluster" to create a tree topology in which the experiments'
+bloom filters correspond to leaves. Similar leaves are grouped together to
+improve the performance of later operations. Note that this step does not
+actually create any of the bloom filters for the tree -- it only creates the
+topology.
 
-_Also, ../bfcluster/sbuild hardwired the number of bits to 500K (used for
-determining Hamming distance between filters). In this example I'm using 50K,
-but to reproduce what you got with bloomtree-allsome you'd want 500K._
-
+The cluster command estimates the similarity from a subset of the bits in the
+filters. In this example we use 50K bits (10% of the 500K bits in each filter).
+This significantly reduces the program's memory and I/O footprints, as well as
+runtime, while still providing a reasonably good estimate of similarity.
 
 ```bash  
 cluster_bits=50000
@@ -84,26 +86,35 @@ bloom filters are actually created in this step.
 
 (4) Build the "determined,brief" tree, compressed as RRR.
 
-_Note that in earlier versions of sabutan this was performed in two steps, but
-now RRR can be created directly without having to build the uncompressed tree._
+We use "sabutan cluster" to build the filter files for the tree. We have a
+choice of several filter arrangements (a simple union tree, an allsome tree,
+a determined tree, or a determined,brief tree), and how the files should be
+compressed (RRR, roaring bit strings, or no compression).
 
 ```bash  
 sabutan build --determined,brief --rrr --tree=example.sbt \
   --outtree=detbrief.rrr.sbt
 ```
 
-The result of this step is bloom filter files for the leaves and internal nodes,
-in "determined,brief" format and compressed with RRR. And a new topology file
-named detbrief.rrr.sbt. The bloom filter files are named experiment1.detbrief.rrr.bf,
-..., node1.detbrief.rrr.bf, etc.
+The result of this step is bloom filter files for the leaves and internal
+nodes, in "determined,brief" format and compressed with RRR. And a new topology
+file named detbrief.rrr.sbt. The bloom filter files are named
+experiment1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, etc.
 
 (5) Run a batch of queries.
 
-_Note that our example has queries as fasta, where the bloomtree-allsome example
-just had queries as separate lines of the input file. Sabutan can accept that
-format (if there's no fasta header, it assumes queries are one per line). But
-if fasta input is used, the output identifies the queries by their fasta
-headers._
+We use "sabutan query" to search for "hits" for query sequences. The input here
+is in fasta format, including headers for each sequence. Names from the headers
+are used in the output to identify a query.
+
+For backward compatibility with earlier tools, sabutan can also recognize a
+fasta-like file that contains no headers. In that case, each input line is
+considered as a separate query sequence, and in the output the sequence itself
+is used in place of the query name.
+
+Here we give each query file its own threshold (called "theta" in the SBT
+literature). Alternatively, the query command allows a single threshold to be
+applied to all query files.
 
 ```bash  
 sabutan query --tree=detbrief.rrr.sbt \
@@ -113,10 +124,12 @@ sabutan query --tree=detbrief.rrr.sbt \
 
 The resulting queryresults should be identical to queryresults.expected.
 
+_I need to describe the output format_
+
 (6) Ordering query results by how good they are.
 
-_Note that this describes a short term solution that we plan to improve upon.
-It requires that the query files are real fasta files with sequence headers._
+_This section needs to be rewritten, as order_query_results is no longer
+used._
 
 ```bash  
 ../scripts/order_query_results.sh \
