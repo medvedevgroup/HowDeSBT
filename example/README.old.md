@@ -7,16 +7,8 @@ _This section is not yet written. For now, we magically assume the size is
 
 (2) Convert the fasta files to bloom filter bit vectors.
 
-We use "sabutan makebf" independently on each fasta file. As shown here, we
-use the same minimim abundance for each bloom filter. However, this is not
-necessary, and an abundance cutoff derived from, say, the size of the fasta
-file, could be used.
-
-We don't specify the output file name here. We let sabutan use the default
-naming convention, which for example will produce expriment1.bf from
-expriment1.fa. (Note that the echo command in this loop assumes that.) The
-makebf command does have an option to assign a different name. If you so that,
-you should make sure the name ends in ".bf".
+_Difference vs bloomtree-allsome: here you have to set the minimum abundance.
+The default was 3 in bloomtree-allsome, in sabutan the default is 1._
 
 ```bash  
 bf_size=500000
@@ -34,22 +26,18 @@ expriment1.bf, expriment2.bf, etc.
 
 (2-ALT) Convert kmer files to bloom filter bit vectors.
 
-Kmer files can be used as input instead of fasta or fastq files. This option is
-useful if you have some scheme for deciding which kmers belong in the bloom
-filter that's inconsistent with sabutan's simplistic abundance cutoff.
-
-In this case, each line of the sequence input file(s) is a single kmer, as the
-first field in the line. Any additional fields on the line are ignored. For
-example, with K=20 this might be
+Kmer files can be used as input instead of fasta or fastq files. In this case,
+each line of the sequence input files is a single kmer, as the first field in
+the line. Any additional fields on the line are ignored. For example, with
+--k=20 this might be
 ```bash  
 ATGACCAGATATGTACTTGC
 TCTGCGAACCCAGACTTGGT
 CAAGACCTATGAGTAGAACG
- ...
 ```
 
-A loop converting a collection of kmer files to bloom filters might look like
-this.
+_Note that any minimum abundance is expected to have been applied when the kmer
+list was created._
 
 ```bash  
 bf_size=500000
