@@ -95,6 +95,7 @@ public:
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
+	static bool inhibitBvSimplify;
 	static bool trackMemory;
 	static bool reportUnload;
 	static int  dbgTraversalCounter;

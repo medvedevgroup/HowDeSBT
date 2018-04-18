@@ -52,6 +52,7 @@ public:
 	virtual void new_bits (const std::string& filename);
 	virtual BitVector* get_bit_vector(int whichBv=0) const;
 	virtual BitVector* surrender_bit_vector(int whichBv);
+	virtual BitVector* simplify_bit_vector(int whichBv);
 
 	virtual void complement (int whichDstBv=0);
 	virtual void union_with (BitVector* srcBv, int whichDstBv=0);
@@ -105,6 +106,7 @@ public:
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
+	static bool reportSimplify;
 	static bool reportLoadTime;
 	static bool reportSaveTime;
 	static bool reportTotalLoadTime;

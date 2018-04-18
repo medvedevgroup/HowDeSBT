@@ -30,6 +30,7 @@ using std::endl;
 //
 //----------
 
+bool BloomTree::inhibitBvSimplify   = false;
 bool BloomTree::trackMemory         = false;
 bool BloomTree::reportUnload        = false;
 int  BloomTree::dbgTraversalCounter = -1;
@@ -129,8 +130,14 @@ void BloomTree::save(bool finished)
 	for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
 		{
 		BitVector* bv = bf->get_bit_vector(bvIx);
-		if (finished) bv->finished();
-		         else bv->unfinished();
+		if (finished)
+			{
+			if (not inhibitBvSimplify)
+				bv = bf->simplify_bit_vector(bvIx);
+			bv->finished();
+			}
+		else
+			bv->unfinished();
 		}
 
 	relay_debug_settings();

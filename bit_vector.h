@@ -99,6 +99,8 @@ public:
 	virtual void replace_bits(sdslbitvector* srcBits);
 	virtual void copy_from(const sdslbitvector* srcBits);
 
+	virtual bool is_all_zeros();
+	virtual bool is_all_ones();
 	virtual void fill(int bitVal);
 	virtual void complement();
 	virtual void union_with(const sdslbitvector* srcBits);
@@ -111,7 +113,7 @@ public:
 	virtual void write_bit(std::uint64_t pos, int val=1);
 
 	virtual std::uint64_t rank1(std::uint64_t pos);
-	virtual std::uint64_t select0(std::uint64_t pos);
+	virtual std::uint64_t select0(std::uint64_t rank);
 	virtual void discard_rank_select();
 
 	virtual std::uint64_t num_bits() const { return numBits; }
@@ -193,11 +195,14 @@ public:
 	virtual void copy_from(const rrrbitvector* srcRrrBits);
 	virtual void compress();
 
+	virtual bool is_all_zeros();
+	virtual bool is_all_ones();
+
 	virtual int operator[](std::uint64_t pos) const;
 	virtual void write_bit(std::uint64_t pos, int val=1);
 
 	virtual std::uint64_t rank1(std::uint64_t pos);
-	virtual std::uint64_t select0(std::uint64_t pos);
+	virtual std::uint64_t select0(std::uint64_t rank);
 	virtual void discard_rank_select();
 
 	bool readAsUncompressed;	// true => input file contains the vector still
@@ -235,11 +240,15 @@ public:
 	virtual void copy_from(const roaring_bitmap_t* srcRoarBits);
 	virtual void compress();
 
+	virtual bool is_all_zeros();
+	virtual bool is_all_ones();
+
 	virtual int operator[](std::uint64_t pos) const;
 	virtual void write_bit(std::uint64_t pos, int val=1);
 
 	virtual std::uint64_t rank1(std::uint64_t pos);
-	virtual std::uint64_t select0(std::uint64_t pos);
+	virtual std::uint64_t select0(std::uint64_t rank);
+	virtual void discard_rank_select();
 
 	bool readAsUncompressed;	// true => input file contains the vector still
 								// .. in uncompressed form
@@ -285,6 +294,8 @@ public:
 	virtual void copy_from(const rrrbitvector* srcRrrBits);
 	virtual void copy_from(const roaring_bitmap_t* srcRoarBits);
 
+	virtual bool is_all_zeros() { return true; }
+	virtual bool is_all_ones() { return false; }
 	virtual void fill(int bitVal);
 	virtual void complement();
 	virtual void union_with(const sdslbitvector* srcBits);
@@ -295,7 +306,8 @@ public:
 	virtual void write_bit(std::uint64_t pos, int val=1);
 
 	virtual std::uint64_t rank1(std::uint64_t pos);
-	virtual std::uint64_t select0(std::uint64_t pos);
+	virtual std::uint64_t select0(std::uint64_t rank);
+	virtual void discard_rank_select();
 	};
 
 
@@ -310,6 +322,13 @@ public:
 	virtual std::uint32_t compressor() const { return bvcomp_ones; }
 	virtual bool is_compressed() const { return true; }
 
+	virtual bool is_all_zeros() { return false; }
+	virtual bool is_all_ones() { return true; }
+
 	virtual int operator[](std::uint64_t pos) const { return 1; }
+
+	virtual std::uint64_t rank1(std::uint64_t pos);
+	virtual std::uint64_t select0(std::uint64_t rank);
+	virtual void discard_rank_select();
 	};
 #endif // bit_vector_H

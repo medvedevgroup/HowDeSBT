@@ -61,8 +61,8 @@ enum
 	{
 	bvcomp_unknown      = 0,
 	bvcomp_uncompressed = 1,
-	bvcomp_zeros        = 2,	// all zeros; no bit data stored in the file
-	bvcomp_ones         = 3,	// all ones; no bit data stored in the file
+	bvcomp_zeros        = 2,	// all zeros; very little bit data stored in file
+	bvcomp_ones         = 3,	// all ones; very little bit data stored in file
 	bvcomp_rrr          = 4,
 	bvcomp_roar         = 5,
 	bvcomp_unc_rrr      = 6,	// rrr data type (RrrBitVector), but still in

@@ -367,6 +367,34 @@ void BitVector::copy_from
 	isResident = true;
 	}
 
+bool BitVector::is_all_zeros ()
+	{
+	if (bits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-zeros");
+
+	// nota bene: we use bitwise_is_all_zeros instead of a rank operation,
+	//            because creating the rank object would have to scan the
+	//            entire bit array, and bitwise_is_all_zeros stops as soon as
+	//            it sees any one
+
+	return bitwise_is_all_zeros(bits->data(),bits->size());
+	}
+
+bool BitVector::is_all_ones ()
+	{
+	if (bits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-ones");
+
+	// nota bene: we use bitwise_is_all_ones instead of a rank operation,
+	//            because creating the rank object would have to scan the
+	//            entire bit array, and bitwise_is_all_ones stops as soon as
+	//            it sees any zero
+
+	return bitwise_is_all_ones(bits->data(),bits->size());
+	}
+
 void BitVector::fill
    (int bitVal)
 	{
@@ -511,6 +539,9 @@ void BitVector::write_bit
 u64 BitVector::rank1
    (u64 pos)
 	{
+	// rank1(n) = the number of 1 bits in the first n positions
+	//          = sum of bits[i] for 0<=i<n
+
 	if (bits == nullptr)
 		fatal ("internal error for " + identity()
 		     + "; request for rank1(" + std::to_string(pos) + ")"
@@ -529,11 +560,18 @@ u64 BitVector::rank1
 	}
 
 u64 BitVector::select0
-   (u64 pos)
+   (u64 rank)
 	{
+	// select0(i) = the position of the ith zero in the vector, counting from 1
+	//            = 1 + min{n s.t. rank0(n)=i}
+	//
+	// note that the SDSL-LITE implements this slightly differently, with
+	//   sdsl.select0(i) = min{n s.t. rank0(n)=i}
+	// so we add 1 to their result
+
 	if (bits == nullptr)
 		fatal ("internal error for " + identity()
-		     + "; request for select0(" + std::to_string(pos) + ")"
+		     + "; request for select0(" + std::to_string(rank) + ")"
 		     + " in null bit vector");
 
 	if (selector0 == nullptr)
@@ -545,7 +583,7 @@ u64 BitVector::select0
 		}
 
 	dbgRankSelect_CountSelect;
-	return selector0->select(pos+1);  // (pos+1 compensates for SDSL API)
+	return selector0->select(rank+1);  // (pos+1 compensates for SDSL API)
 	}
 
 void BitVector::discard_rank_select ()
@@ -877,6 +915,28 @@ void RrrBitVector::compress
 	discard_rank_select();
 	}
 
+bool RrrBitVector::is_all_zeros ()
+	{
+	if (bits != nullptr)
+		return BitVector::is_all_zeros();
+	if (rrrBits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-zeros");
+
+	return (rank1(numBits) == 0);
+	}
+
+bool RrrBitVector::is_all_ones ()
+	{
+	if (bits != nullptr)
+		return BitVector::is_all_ones();
+	if (rrrBits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-ones");
+
+	return (rank1(numBits) == numBits);
+	}
+
 int RrrBitVector::operator[]
    (u64 pos) const
 	{
@@ -898,6 +958,8 @@ void RrrBitVector::write_bit
 u64 RrrBitVector::rank1
    (u64 pos)
 	{
+	// see BitVector::rank1() for our mathematical definition of rank1
+
 	if (rrrBits == nullptr)
 		fatal ("internal error for " + identity()
 		     + "; request for rank1(" + std::to_string(pos) + ")"
@@ -915,11 +977,13 @@ u64 RrrBitVector::rank1
 	}
 
 u64 RrrBitVector::select0
-   (u64 pos)
+   (u64 rank)
 	{
+	// see BitVector::select0() for our mathematical definition of select0
+
 	if (rrrBits == nullptr)
 		fatal ("internal error for " + identity()
-		     + "; request for select0(" + std::to_string(pos) + ")"
+		     + "; request for select0(" + std::to_string(rank) + ")"
 		     + " in null bit vector");
 
 	if (rrrSelector0 == nullptr)
@@ -930,7 +994,7 @@ u64 RrrBitVector::select0
 			cerr << "@+" << rrrSelector0 << " creating selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
 		}
 	dbgRankSelect_CountSelect;
-	return rrrSelector0->select(pos+1);  // (pos+1 compensates for SDSL API)
+	return rrrSelector0->select(rank+1);  // (pos+1 compensates for SDSL API)
 	}
 
 void RrrBitVector::discard_rank_select ()
@@ -1280,6 +1344,32 @@ void RoarBitVector::compress
 	// note that numBits does not change
 	}
 
+bool RoarBitVector::is_all_zeros ()
+	{
+	if (bits != nullptr)
+		return BitVector::is_all_zeros();
+	if (roarBits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-zeros");
+
+	fatal ("internal error for " + identity()
+	     + "; is_all_zeros is not yet implemented for RoarBitVector");
+	return false; // never gets here
+	}
+
+bool RoarBitVector::is_all_ones ()
+	{
+	if (bits != nullptr)
+		return BitVector::is_all_ones();
+	if (roarBits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to check null bit vector for all-ones");
+
+	fatal ("internal error for " + identity()
+	     + "; is_all_ones is not yet implemented for RoarBitVector");
+	return false; // never gets here
+	}
+
 int RoarBitVector::operator[]
    (u64 pos) const
 	{
@@ -1307,12 +1397,17 @@ u64 RoarBitVector::rank1
 	}
 
 u64 RoarBitVector::select0
-   (u64 pos)
+   (u64 rank)
 	{
 	fatal ("internal error for " + identity()
-	     + "; request for select0(" + std::to_string(pos) + ")"
+	     + "; request for select0(" + std::to_string(rank) + ")"
 	     + " in roar-compressed bit vector");
 	return 0;  // execution never reaches here
+	}
+
+void RoarBitVector::discard_rank_select ()
+	{
+	// do nothing
 	}
 
 //----------
@@ -1441,11 +1536,32 @@ ZerosBitVector::~ZerosBitVector()
 void ZerosBitVector::serialized_in
    (std::ifstream& in)
 	{
-	// do nothing
+	wall_time_ty startTime;
+	double       elapsedTime = 0.0;
+
+	if (reportLoadTime || reportTotalLoadTime) startTime = get_wall_time();
+
+	size_t bytesToRead = sizeof(numBits);
+	in.read ((char*)&numBits,bytesToRead);
+	if (reportLoadTime || reportTotalLoadTime) elapsedTime = elapsed_wall_time(startTime);
+	if (!in.good())
+		fatal ("error: " + class_identity() + "::serialized_in(" + identity() + ")"
+		     + " problem reading header from \"" + filename + "\"");
+	if (reportFileBytes)
+		cerr << "[" << class_identity() << " serialized_in] read " << bytesToRead << " bytes " << filename << "@" << offset << endl;
+	if (countFileBytes)
+		{ totalFileReads++;  totalFileBytesRead += bytesToRead; }
+
+	if (reportTotalLoadTime)
+		totalLoadTime += elapsedTime;  // $$$ danger of precision error?
+
+	isResident = true;
 	}
 
 void ZerosBitVector::save()
 	{
+	fatal ("internal error for " + identity()
+	     + "; ZerosBitVector::save() is not implemented yet");
 	// do nothing
 	}
 
@@ -1456,13 +1572,20 @@ size_t ZerosBitVector::serialized_out
 	{
 	filename = _filename;
 	offset   = _offset;
-	return 0;
+
+	return serialized_out(out);
 	}
 
 size_t ZerosBitVector::serialized_out
    (std::ofstream& out)
 	{
-	return 0;
+	size_t bytesToWrite = sizeof(numBits);
+	out.write ((char*)&numBits,bytesToWrite);
+	if (not out)
+		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
+		     + " failed to open \"" + filename + "\"");
+
+	return bytesToWrite;
 	}
 
 void ZerosBitVector::discard_bits()
@@ -1551,19 +1674,24 @@ void ZerosBitVector::write_bit
 u64 ZerosBitVector::rank1
    (u64 pos)
 	{
-	fatal ("internal error for " + identity()
-	     + "; request for rank1(" + std::to_string(pos) + ")"
-	     + " in write-protected bit vector");
-	return 0;  // execution never reaches here
+	// see BitVector::rank1() for our mathematical definition of rank1
+
+	dbgRankSelect_CountRank;
+	return 0;
 	}
 
 u64 ZerosBitVector::select0
-   (u64 pos)
+   (u64 rank)
 	{
-	fatal ("internal error for " + identity()
-	     + "; request for select0(" + std::to_string(pos) + ")"
-	     + " in write-protected bit vector");
-	return 0;  // execution never reaches here
+	// see BitVector::select0() for our mathematical definition of select0
+
+	dbgRankSelect_CountRank;
+	return rank+1;
+	}
+
+void ZerosBitVector::discard_rank_select ()
+	{
+	// do nothing
 	}
 
 //----------
@@ -1603,6 +1731,34 @@ OnesBitVector::~OnesBitVector()
 	if (bits != nullptr)
 		fatal ("internal error for " + identity()
 		     + "; destructor encountered non-null bit vector");
+	}
+
+u64 OnesBitVector::rank1
+   (u64 pos)
+	{
+	// see BitVector::rank1() for our mathematical definition of rank1
+
+	dbgRankSelect_CountRank;
+	return pos;
+	}
+
+u64 OnesBitVector::select0
+   (u64 rank)
+	{
+	// see BitVector::select0() for our mathematical definition of select0
+	//
+	// but note that there are no zeros in the vector, so select0(n) is
+	// ill-defined; returning any value greater than numBits seems to match
+	// what SDSL-LITE returns (their behavior is different for RRR than it is
+	// for uncompressed bit vectors)
+
+	dbgRankSelect_CountRank;
+	return numBits+1;
+	}
+
+void OnesBitVector::discard_rank_select ()
+	{
+	// do nothing
 	}
 
 //----------

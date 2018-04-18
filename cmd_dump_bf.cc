@@ -238,10 +238,17 @@ void DumpBFCommand::parse
 		std::size_t separatorIx = arg.find ("..");
 		if (separatorIx != string::npos)
 			{
-			startPosition = string_to_unitized_u64(arg.substr (0, separatorIx));
-			endPosition   = string_to_unitized_u64(arg.substr (separatorIx+2));
-			if (endPosition <= startPosition)
-				chastise ("bad interval: " + arg + " (end <= start)");
+			try
+				{
+				startPosition = string_to_unitized_u64(arg.substr (0, separatorIx));
+				endPosition   = string_to_unitized_u64(arg.substr (separatorIx+2));
+				if (endPosition <= startPosition)
+					chastise ("bad interval: " + arg + " (end <= start)");
+				}
+			catch (const std::invalid_argument& ex)
+				{
+				chastise ("bad interval: " + arg + " (parsing error: \"" + ex.what() + "\")");
+				}
 			intervalSet = true;
 			continue;
 			}

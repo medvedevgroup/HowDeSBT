@@ -39,6 +39,76 @@ static const u8 popCount8[256] =
 
 //----------
 //
+// bitwise_is_all_zeros, bitwise_is_all_ones --
+//	Determine if a bit array is full of zeros (or ones).
+//
+//----------
+//
+// Arguments:
+//	const void*	bits:		Bit array to read.
+//	u64			numBits:	The length of the bit array, counted in *bits*.
+//							.. See note (1) below.
+//
+// Returns:
+//	True if every bit in the array is zero (or, for bitwise_all_ones, one);
+//	false otherwise.
+//
+//----------
+//
+// Notes:
+//	(1)	The number of bytes in the bit arrays is ceil(numBits/8). When numBits
+//		is not a multiple of 8, the remaining bits are read from the least
+//		significant bits of the final byte.
+//
+//----------
+
+bool bitwise_is_all_zeros
+   (const void*	bits,
+	const u64	numBits)
+	{
+	u64*		scan = (u64*) bits;
+	u64			n;
+
+	for (n=numBits ; n>=64 ; n-=64)
+		{ if (*(scan++) != 0) return false; }
+
+	if (n == 0) return true;
+
+	u8*	scanb = (u8*) scan;
+	for ( ; n>=8 ; n-=8)
+		{ if (*(scanb++) != 0) return false; }
+
+	if (n == 0) return true;
+
+	u8 mask = least_significant(u8,n);
+	return (((*scanb) & mask) == 0);
+	}
+
+
+bool bitwise_is_all_ones
+   (const void*	bits,
+	const u64	numBits)
+	{
+	u64*		scan = (u64*) bits;
+	u64			n;
+
+	for (n=numBits ; n>=64 ; n-=64)
+		{ if (*(scan++) != ((u64) -1)) return false; }
+
+	if (n == 0) return true;
+
+	u8*	scanb = (u8*) scan;
+	for ( ; n>=8 ; n-=8)
+		{ if (*(scanb++) != ((u8) -1)) return false; }
+
+	if (n == 0) return true;
+
+	u8 mask = least_significant(u8,n);
+	return (*scanb == mask);
+	}
+
+//----------
+//
 // bitwise_and, bitwise_mask, bitwise_or, bitwise_or_not, bitwise_xor,
 // and bitwise_xnor--
 //	Create the bitwise AND, ANDNOT, OR, XOR, or XNOR of two bit arrays.

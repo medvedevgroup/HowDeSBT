@@ -128,6 +128,8 @@ using std::endl;
 //
 //----------
 
+bool   BloomFilter::reportSimplify      = false;
+
 bool   BloomFilter::reportLoadTime      = false;
 bool   BloomFilter::reportSaveTime      = false;
 bool   BloomFilter::reportTotalLoadTime = false;
@@ -695,6 +697,41 @@ BitVector* BloomFilter::surrender_bit_vector
 
 	BitVector* bv = bvs[whichBv];
 	bvs[whichBv] = nullptr;
+
+	return bv;
+	}
+
+BitVector* BloomFilter::simplify_bit_vector
+   (int	 whichBv)
+	{
+	// if possible, replace the bit vector with a simpler version, such as
+	// all-zeros or all-ones
+	if ((whichBv < 0) || (whichBv >= numBitVectors))
+		fatal ("internal error for " + identity()
+		     + "; request to simplify bitvector " + std::to_string(whichBv));
+
+	BitVector* bv = bvs[whichBv];
+
+	// $$$ this test should include a test to see if bv is already a simple
+	//     type, in which case we should not bother to change it
+
+	if (bv->is_all_zeros())
+		{
+		if (reportSimplify)
+			cerr << "Simplifying " << filename << "." << whichBv << " to all-zeros" << endl;
+		bvs[whichBv] = new ZerosBitVector(bv->bits->size());
+		delete bv;
+		return bvs[whichBv];
+		}
+
+	if (bv->is_all_ones())
+		{
+		if (reportSimplify)
+			cerr << "Simplifying " << filename << "." << whichBv << " to all-ones" << endl;
+		bvs[whichBv] = new OnesBitVector(bv->bits->size());
+		delete bv;
+		return bvs[whichBv];
+		}
 
 	return bv;
 	}

@@ -66,6 +66,7 @@ void BuildSBTCommand::debug_help
 	s << "--debug= options" << endl;
 	s << "  trackmemory" << endl;
 	s << "  reportrankselect" << endl;
+	s << "  bfsimplify" << endl;
 	s << "  btunload" << endl;
 	s << "  bfcreation" << endl;
 	s << "  bfmanager" << endl;
@@ -87,6 +88,7 @@ void BuildSBTCommand::parse
 
 	bfKind     = bfkind_simple;
 	compressor = bvcomp_uncompressed;
+	BloomTree::inhibitBvSimplify = true;  // $$$ change this
 
 	// skip command name
 
@@ -198,6 +200,14 @@ void BuildSBTCommand::parse
 			continue;
 			}
 
+		// (unadvertised) --nobvsimplify
+
+		if (arg == "--nobvsimplify")
+			{ BloomTree::inhibitBvSimplify = true;  continue; }
+
+		if (arg == "--bvsimplify")  // $$$ remove this
+			{ BloomTree::inhibitBvSimplify = false;  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -261,6 +271,8 @@ int BuildSBTCommand::execute()
 		}
 	if (contains(debug,"reportrankselect"))
 		BitVector::reportRankSelect = true;
+	if (contains(debug,"bfsimplify"))
+		BloomFilter::reportSimplify = true;
 	if (contains(debug,"btunload"))
 		BloomTree::reportUnload = true;
 	if (contains(debug,"bfcreation"))
