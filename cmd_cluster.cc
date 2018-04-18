@@ -49,8 +49,8 @@ void ClusterCommand::usage
 	s << "  --out=<filename>  name for tree toplogy file" << endl;
 	s << "                    (by default this is derived from the list filename)" << endl;
 	s << "  --tree=<filename> same as --out=<filename>" << endl;
-	s << "  --node=<template> filename template for internal tree nodes" << endl;
-	s << "                    this must contain the substring {node}" << endl;
+	s << "  --nodename=<template> filename template for internal tree nodes" << endl;
+	s << "                    this must contain the substring {number}" << endl;
 	s << "                    (by default this is derived from the list filename)" << endl;
 	s << "  <start>..<end>    interval of bits to use from each filter; the clustering" << endl;
 	s << "                    algorithm only considers this subset of each filter's bits" << endl;
@@ -153,21 +153,46 @@ void ClusterCommand::parse
 		 ||	(is_prefix_of (arg, "--topology=")))
 			{ treeFilename = argVal;  continue; }
 
-		// --node=<template>
+		// --nodename=<template>
+		// (and, for backward compatibility, --node=<template>)
 
-		if ((is_prefix_of (arg, "--node="))
-		 ||	(is_prefix_of (arg, "--nodes="))
-		 ||	(is_prefix_of (arg, "--nodename="))
-		 ||	(is_prefix_of (arg, "--nodenames=")))
+		if ((is_prefix_of (arg, "--nodename="))
+		 ||	(is_prefix_of (arg, "--nodenames="))
+		 || (is_prefix_of (arg, "--node="))
+		 ||	(is_prefix_of (arg, "--nodes=")))
 			{
 			nodeTemplate = argVal; 
-			std::size_t fieldIx = nodeTemplate.find ("{node}");
+
+			std::size_t fieldIx = nodeTemplate.find ("{number}");
 			if (fieldIx == string::npos)
-				fieldIx = nodeTemplate.find ("{node:1}");
+				fieldIx = nodeTemplate.find ("{number:1}");
 			if (fieldIx == string::npos)
-				fieldIx = nodeTemplate.find ("{node:0}");
+				fieldIx = nodeTemplate.find ("{number:0}");
+
+			// for backward compatibility, we allow {node} instead of {number}
 			if (fieldIx == string::npos)
-				chastise ("--node is required to contain the substring \"{node}\", or a variant of it");
+				{
+				string field = "{node}";
+				fieldIx = nodeTemplate.find (field);
+				if (fieldIx != string::npos)
+					nodeTemplate.replace(fieldIx,field.length(),"{number}");
+				}
+			if (fieldIx == string::npos)
+				{
+				string field = "{node:1}";
+				fieldIx = nodeTemplate.find (field);
+				if (fieldIx != string::npos)
+					nodeTemplate.replace(fieldIx,field.length(),"{number:1}");
+				}
+			if (fieldIx == string::npos)
+				{
+				string field = "{node:1}";
+				fieldIx = nodeTemplate.find (field);
+				if (fieldIx != string::npos)
+					nodeTemplate.replace(fieldIx,field.length(),"{number:0}");
+				}
+			if (fieldIx == string::npos)
+				chastise ("--node is required to contain the substring \"{number}\", or a variant of it");
 			continue;
 			}
 
@@ -277,9 +302,9 @@ void ClusterCommand::parse
 		{
 		string::size_type dotIx = listFilename.find_last_of(".");
 		if (dotIx == string::npos)
-			nodeTemplate = listFilename + "{node}.bf";
+			nodeTemplate = listFilename + "{number}.bf";
 		else
-			nodeTemplate = listFilename.substr(0,dotIx) + "{node}.bf";
+			nodeTemplate = listFilename.substr(0,dotIx) + "{number}.bf";
 		}
 
 	return;
@@ -1000,23 +1025,23 @@ void ClusterCommand::print_topology
 
 			nodeName = nodeTemplate;
 			bool countFromZero = false;
-			string field = "{node}";
+			string field = "{number}";
 			std::size_t fieldIx = nodeName.find(field);
 			if (fieldIx == string::npos)
 				{
-				field = "{node:1}";
+				field = "{number:1}";
 				fieldIx = nodeName.find(field);
 				}
 			if (fieldIx == string::npos)
 				{
-				field = "{node:0}";
+				field = "{number:0}";
 				fieldIx = nodeName.find(field);
 				countFromZero = (fieldIx != string::npos);
 				}
 
 			if (fieldIx == string::npos)
 				fatal ("internal error: nodeTemplate=\"" + nodeTemplate + "\""
-					 + "does not contain \"{node}\", nor a variant of it");
+					 + "does not contain \"{number}\", nor a variant of it");
 
 			if (countFromZero) nodeId--;
 			nodeName.replace (fieldIx, field.length(), std::to_string(nodeId));

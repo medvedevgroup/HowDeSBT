@@ -78,7 +78,7 @@ runtime, while still providing a reasonably good estimate of similarity.
 cluster_bits=50000
 ls experiment*.bf > leafnames
 sabutan cluster --list=leafnames --bits=${cluster_bits} \
-  --tree=example.sbt --node=node{node}.bf
+  --tree=example.sbt --nodename=node{number}.bf
 ```
 
 The result of this step is a tree topology file, example.sbt. Note that no
