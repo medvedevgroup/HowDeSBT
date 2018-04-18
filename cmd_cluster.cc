@@ -193,6 +193,9 @@ void ClusterCommand::parse
 				}
 			if (fieldIx == string::npos)
 				chastise ("--node is required to contain the substring \"{number}\", or a variant of it");
+
+			if (not is_suffix_of(nodeTemplate,".bf"))
+				nodeTemplate = nodeTemplate + ".bf";
 			continue;
 			}
 
