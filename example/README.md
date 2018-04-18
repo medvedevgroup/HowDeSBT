@@ -52,7 +52,7 @@ A loop converting a collection of kmer files to bloom filters might look like
 this.
 
 ```bash  
-bf_size=500000
+bf_size=500K
 ls experiment*.kmers \
   | while read f ; do
       bf=`echo ${f} | sed "s/\.kmers/.bf/"`
@@ -79,7 +79,7 @@ nodes in the tree. This must contain "{number}", which will be replaced by a
 number from 1 to the count of internal nodes.
 
 ```bash  
-cluster_bits=50000
+cluster_bits=50K
 ls experiment*.bf > leafnames
 sabutan cluster --list=leafnames --bits=${cluster_bits} \
   --tree=example.sbt --nodename=node{number}.bf
