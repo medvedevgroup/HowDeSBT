@@ -74,6 +74,10 @@ filters. In this example we use 50K bits (10% of the 500K bits in each filter).
 This significantly reduces the program's memory and I/O footprints, as well as
 runtime, while still providing a reasonably good estimate of similarity.
 
+The --nodename option specifies that the names that will be used for internal
+nodes in the tree. This must contain "{number}", which will be replaced by a
+number from 1 to the count of internal nodes.
+
 ```bash  
 cluster_bits=50000
 ls experiment*.bf > leafnames
