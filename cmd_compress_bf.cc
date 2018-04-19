@@ -42,6 +42,13 @@ void CompressBFCommand::usage
 	s << "usage: " << commandName << " <filename> [<filename>..] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
 	s << "  <filename>           (cumulative) a bloom filter file (usually .bf)" << endl;
+	s << "  --out=<template>     filename template for resulting bloom filter files;" << endl;
+	s << "                       this must contain the substring {in}, which is replaced" << endl;
+	s << "                       by the root of the input filename; this option is" << endl;
+	s << "                       usually only needed if the output filename would be the;" << endl;
+	s << "                       same as the input filename otherwise" << endl;
+	s << "                       (by default, we derive a filename from the input file;" << endl;
+	s << "                       using simple rules)" << endl;
 	s << "  --list=<filename>    file containing a list of bloom filters to compress;" << endl;
 	s << "                       this is used in place of the <filename>s on the command" << endl;
 	s << "                       line" << endl;
@@ -76,9 +83,9 @@ void CompressBFCommand::parse
 
 	// defaults
 
-	listFilename = "";
-	compressor   = bvcomp_rrr;
-	inhibitBvSimplify = true;  // $$$ change this to false
+	listFilename        = "";
+	dstCompressor       = bvcomp_rrr;
+	inhibitBvSimplify   = false;
 
 	bool inhibitOutTree = false;
 
@@ -117,6 +124,20 @@ void CompressBFCommand::parse
 		 || (arg == "?debug"))
 			{ debug_help(cerr);  std::exit (EXIT_SUCCESS); }
 
+		// --out=<template>
+
+		if (is_prefix_of (arg, "--out="))
+			{
+			dstFilenameTemplate = argVal; 
+
+			std::size_t fieldIx = dstFilenameTemplate.find ("{in}");
+			if (fieldIx == string::npos)
+				chastise ("--out is required to contain the substring \"{in}\", or a variant of it");
+
+			dstFilenameTemplate = BloomFilter::strip_filter_suffix(strip_file_path(dstFilenameTemplate),false);
+			continue;
+			}
+
 		// --list=<filename>
 
 		if (is_prefix_of (arg, "--list="))
@@ -140,31 +161,28 @@ void CompressBFCommand::parse
 		// compression type
 
 		if (arg == "--uncompressed")
-			{ compressor = bvcomp_uncompressed;  continue; }
+			{ dstCompressor = bvcomp_uncompressed;  continue; }
 
 		if ((arg == "--rrr")
 		 || (arg == "--RRR"))
-			{ compressor = bvcomp_rrr;  continue; }
+			{ dstCompressor = bvcomp_rrr;  continue; }
 
 		if ((arg == "--roar")
 		 || (arg == "--roaring"))
-			{ compressor = bvcomp_roar;  continue; }
+			{ dstCompressor = bvcomp_roar;  continue; }
 
 		// (unadvertised) special compressor types
 
 		if (arg == "--uncrrr")
-			{ compressor = bvcomp_unc_rrr;  continue; }
+			{ dstCompressor = bvcomp_unc_rrr;  continue; }
 
 		if (arg == "--uncroar")
-			{ compressor = bvcomp_unc_roar;  continue; }
+			{ dstCompressor = bvcomp_unc_roar;  continue; }
 
 		// (unadvertised) --nobvsimplify
 
 		if (arg == "--nobvsimplify")
 			{ inhibitBvSimplify = true;  continue; }
-
-		if (arg == "--bvsimplify")  // $$$ remove this
-			{ inhibitBvSimplify = false;  continue; }
 
 		// (unadvertised) debug options
 
@@ -211,7 +229,7 @@ void CompressBFCommand::parse
 
 	if ((not inTreeFilename.empty()) and (outTreeFilename.empty()) and (not inhibitOutTree))
 		{
-		string compressorStr = BitVector::compressor_to_string(compressor);
+		string compressorStr = BitVector::compressor_to_string(dstCompressor);
 		outTreeFilename = strip_file_path(inTreeFilename);
 		string::size_type dotIx = outTreeFilename.find_last_of(".");
 		if (dotIx == string::npos)
@@ -320,8 +338,21 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	// always create this in the current directory, even if the source filter
 	// is from another directory
 
-	string dstFilename     = BloomFilter::strip_filter_suffix(strip_file_path(filename),false);
-	string compressionDesc = BitVector::compressor_to_string(compressor);
+	string dstFilename;
+	string rootName = BloomFilter::strip_filter_suffix(strip_file_path(filename),2);
+	if (dstFilenameTemplate.empty())
+		dstFilename = rootName;
+	else
+		{
+		string nakedName = BloomFilter::strip_filter_suffix(strip_file_path(filename),3);
+		dstFilename = dstFilenameTemplate;
+		string field = "{in}";
+		std::size_t fieldIx = dstFilename.find(field);
+		dstFilename.replace(fieldIx,field.length(),nakedName);
+		dstFilename += rootName.substr(nakedName.length());
+		}
+
+	string compressionDesc = BitVector::compressor_to_string(dstCompressor);
 	if (compressionDesc == "uncompressed")
 		dstFilename += ".bf";
 	else if ((compressionDesc == "zeros")
@@ -336,7 +367,7 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	if (dstFilename == filename)
 		{
 		cerr << "warning: not converting \"" << filename << "\""
-		     << " (new filename would be the same)" << endl;
+		     << " (the new filename would be the same; use --out)" << endl;
 		return dstFilename;
 		}
 
@@ -390,18 +421,6 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 			}
 		}
 
-	// if the filter's compression type is the type the user wants, we're
-	// already done
-	// $$$ this test may not be exactly right -- it prevents vectors from being
-	//     super-compressed in they are part of an already-compressed bf
-
-	if (compressor == srcCompressor)
-		{
-		cerr << "warning: not converting \"" << filename << "\""
-		     << " (it is already " << compressionDesc << ")" << endl;
-		return dstFilename;
-		}
-
 	// create the destination filter, either copying the bits en masse (if the
 	// source is uncompressed) or copying bits one-by-one (if the source is
 	// compressed)
@@ -416,21 +435,23 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
 				dstBf->new_bits(bvCompressor,whichBv);
 			else
-				dstBf->new_bits(srcBf->bvs[whichBv],compressor,whichBv);
+				dstBf->new_bits(srcBf->bvs[whichBv],dstCompressor,whichBv);
 			}
 		}
 	else
 		{
 		for (int whichBv=0 ; whichBv<srcBf->numBitVectors ; whichBv++)
 			{
-			u32 bvCompressor = srcBf->bvs[whichBv]->compressor();
+			BitVector* srcBv = srcBf->bvs[whichBv];
+			u32 bvCompressor = srcBv->compressor();
 			if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
 				dstBf->new_bits(bvCompressor,whichBv);
+			else if (bvCompressor == dstCompressor)
+				dstBf->bvs[whichBv] = BitVector::bit_vector(dstCompressor,srcBv);
 			else
 				{
 				// $$$ improve this for RRR by decoding chunk by chunk
-				dstBf->new_bits(compressor,whichBv);
-				BitVector* srcBv = srcBf->bvs[whichBv];
+				dstBf->new_bits(dstCompressor,whichBv);
 				BitVector* dstBv = dstBf->bvs[whichBv];
 				for (u64 pos=0 ; pos<srcBf->numBits ; pos++)
 					{ if ((*srcBv)[pos] == 1) dstBv->write_bit(pos); }
@@ -441,8 +462,8 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	// save the destination filter; note that the bit vector will automatically
 	// be compressed (if necessary) as part of the save process
 
-	if ((compressor == bvcomp_unc_rrr)
-	 || (compressor == bvcomp_unc_roar))
+	if ((dstCompressor == bvcomp_unc_rrr)    // non-yet-compressed rrr
+	 || (dstCompressor == bvcomp_unc_roar))  // non-yet-compressed roar
 		{
 		for (int whichBv=0 ; whichBv<dstBf->numBitVectors ; whichBv++)
 			{

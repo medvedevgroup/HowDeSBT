@@ -88,7 +88,7 @@ void BuildSBTCommand::parse
 
 	bfKind     = bfkind_simple;
 	compressor = bvcomp_uncompressed;
-	BloomTree::inhibitBvSimplify = true;  // $$$ change this to false
+	BloomTree::inhibitBvSimplify = false;
 
 	// skip command name
 
@@ -204,9 +204,6 @@ void BuildSBTCommand::parse
 
 		if (arg == "--nobvsimplify")
 			{ BloomTree::inhibitBvSimplify = true;  continue; }
-
-		if (arg == "--bvsimplify")  // $$$ remove this
-			{ BloomTree::inhibitBvSimplify = false;  continue; }
 
 		// (unadvertised) debug options
 

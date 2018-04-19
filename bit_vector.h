@@ -117,6 +117,7 @@ public:
 	virtual void discard_rank_select();
 
 	virtual std::uint64_t num_bits() const { return numBits; }
+	virtual std::uint64_t size() const;
 
 	virtual std::string to_string() const;
 	virtual std::string to_complement_string() const;
@@ -205,6 +206,8 @@ public:
 	virtual std::uint64_t select0(std::uint64_t rank);
 	virtual void discard_rank_select();
 
+	virtual std::uint64_t size() const;
+
 	bool readAsUncompressed;	// true => input file contains the vector still
 								// .. in uncompressed form
 	bool writeAsUncompressed;	// true => output file is to contain the vector
@@ -249,6 +252,8 @@ public:
 	virtual std::uint64_t rank1(std::uint64_t pos);
 	virtual std::uint64_t select0(std::uint64_t rank);
 	virtual void discard_rank_select();
+
+	virtual std::uint64_t size() const;
 
 	bool readAsUncompressed;	// true => input file contains the vector still
 								// .. in uncompressed form
@@ -308,6 +313,8 @@ public:
 	virtual std::uint64_t rank1(std::uint64_t pos);
 	virtual std::uint64_t select0(std::uint64_t rank);
 	virtual void discard_rank_select();
+
+	virtual std::uint64_t size() const;
 	};
 
 

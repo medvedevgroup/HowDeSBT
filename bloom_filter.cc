@@ -722,7 +722,7 @@ BitVector* BloomFilter::simplify_bit_vector
 		{
 		if (reportSimplify)
 			cerr << "Simplifying " << filename << "." << whichBv << " to all-zeros" << endl;
-		bvs[whichBv] = new ZerosBitVector(bv->bits->size());
+		bvs[whichBv] = new ZerosBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
 		}
@@ -731,7 +731,7 @@ BitVector* BloomFilter::simplify_bit_vector
 		{
 		if (reportSimplify)
 			cerr << "Simplifying " << filename << "." << whichBv << " to all-ones" << endl;
-		bvs[whichBv] = new OnesBitVector(bv->bits->size());
+		bvs[whichBv] = new OnesBitVector(bv->size());
 		delete bv;
 		return bvs[whichBv];
 		}
@@ -1290,6 +1290,10 @@ void DeterminedBriefFilter::restore_positions_in_list
 //
 // Arguments:
 //	const string&	filename:	The name of the bloom filter file.
+//	const int		complete:	How much to remove
+//								  1 => remove, e.g. ".bf"
+//								  2 => remove, e.g. ".rrr.bf"
+//								  3 => remove, e.g. ".det.bf" or ".det.rrr.bf"
 //
 // Returns:
 //	A filename, with the suffix removed.
@@ -1298,7 +1302,7 @@ void DeterminedBriefFilter::restore_positions_in_list
 
 string BloomFilter::strip_filter_suffix
    (const string&	filename,
-	bool			complete)
+	const int		complete)
 	{
 	string name = filename;
 
@@ -1308,7 +1312,7 @@ string BloomFilter::strip_filter_suffix
 	if (is_suffix_of (name, ".unity"))
 		name = strip_suffix(name,".unity");
 
-	if (complete)
+	if (complete >= 2)
 		{
 		string compSuffix = "." + BitVector::compressor_to_string(bvcomp_rrr);
 		if (is_suffix_of(name,compSuffix))
@@ -1319,7 +1323,10 @@ string BloomFilter::strip_filter_suffix
 			if (is_suffix_of(name,compSuffix))
 				name = strip_suffix(name,compSuffix);
 			}
+		}
 
+	if (complete >= 3)
+		{
 		if (is_suffix_of(name,".allsome"))			// bfkind_allsome
 			name = strip_suffix(name,".allsome");
 		else if (is_suffix_of(name,".det"))			// bfkind_determined

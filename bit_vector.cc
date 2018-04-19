@@ -567,7 +567,7 @@ u64 BitVector::select0
 	//
 	// note that the SDSL-LITE implements this slightly differently, with
 	//   sdsl.select0(i) = min{n s.t. rank0(n)=i}
-	// so we add 1 to their result
+	// so we add 1 to their input
 
 	if (bits == nullptr)
 		fatal ("internal error for " + identity()
@@ -583,7 +583,7 @@ u64 BitVector::select0
 		}
 
 	dbgRankSelect_CountSelect;
-	return selector0->select(rank+1);  // (pos+1 compensates for SDSL API)
+	return selector0->select(rank+1);  // (rank+1 compensates for SDSL API)
 	}
 
 void BitVector::discard_rank_select ()
@@ -595,6 +595,15 @@ void BitVector::discard_rank_select ()
 
 	if (ranker1   != nullptr) { delete ranker1;    ranker1   = nullptr; }
 	if (selector0 != nullptr) { delete selector0;  selector0 = nullptr; }
+	}
+
+u64 BitVector::size () const
+	{
+	if (bits != nullptr) return bits->size();
+
+	fatal ("internal error for " + identity()
+	     + "; request for size() of null bit vector");
+	return 0; // never gets here
 	}
 
 string BitVector::to_string () const
@@ -994,7 +1003,7 @@ u64 RrrBitVector::select0
 			cerr << "@+" << rrrSelector0 << " creating selector0 for RrrBitVector(" << identity() << " " << this << ")" << endl;
 		}
 	dbgRankSelect_CountSelect;
-	return rrrSelector0->select(rank+1);  // (pos+1 compensates for SDSL API)
+	return rrrSelector0->select(rank+1);  // (rank+1 compensates for SDSL API)
 	}
 
 void RrrBitVector::discard_rank_select ()
@@ -1007,6 +1016,16 @@ void RrrBitVector::discard_rank_select ()
 	if (rrrRanker1   != nullptr) { delete rrrRanker1;    rrrRanker1   = nullptr; }
 	if (rrrSelector0 != nullptr) { delete rrrSelector0;  rrrSelector0 = nullptr; }
 	BitVector::discard_rank_select();
+	}
+
+u64 RrrBitVector::size () const
+	{
+	if (bits    != nullptr) return bits->size();
+	if (rrrBits != nullptr) return rrrBits->size();
+
+	fatal ("internal error for " + identity()
+	     + "; request for size() of null bit vector");
+	return 0; // never gets here
 	}
 
 //----------
@@ -1410,6 +1429,16 @@ void RoarBitVector::discard_rank_select ()
 	// do nothing
 	}
 
+u64 RoarBitVector::size () const
+	{
+	if (bits != nullptr) return bits->size();
+	if (roarBits != nullptr) return numBits;
+
+	fatal ("internal error for " + identity()
+	     + "; request for size() of null bit vector");
+	return 0; // never gets here
+	}
+
 //----------
 //
 // RawBitVector--
@@ -1684,14 +1713,23 @@ u64 ZerosBitVector::select0
    (u64 rank)
 	{
 	// see BitVector::select0() for our mathematical definition of select0
+	//
+	// for a bit-vetor with all zeros, SDSL-LITE gives sdsl.select0(i) = i-1,
+	// so keeping with our other BitVector classes, we match sdsl.select0(i+1)
+	// here
 
 	dbgRankSelect_CountRank;
-	return rank+1;
+	return rank;
 	}
 
 void ZerosBitVector::discard_rank_select ()
 	{
 	// do nothing
+	}
+
+u64 ZerosBitVector::size () const
+	{
+	return numBits;
 	}
 
 //----------
@@ -1747,10 +1785,8 @@ u64 OnesBitVector::select0
 	{
 	// see BitVector::select0() for our mathematical definition of select0
 	//
-	// but note that there are no zeros in the vector, so select0(n) is
-	// ill-defined; returning any value greater than numBits seems to match
-	// what SDSL-LITE returns (their behavior is different for RRR than it is
-	// for uncompressed bit vectors)
+	// note that there are no zeros in the vector, so select0(n) isn't really
+	// defined; we don't expect this to be called
 
 	dbgRankSelect_CountRank;
 	return numBits+1;

@@ -24,7 +24,8 @@ public:
 	std::string listFilename;
 	std::string inTreeFilename;
 	std::string outTreeFilename;
-	std::uint32_t compressor;
+	std::string dstFilenameTemplate;
+	std::uint32_t dstCompressor;
 	bool inhibitBvSimplify;
 	bool trackMemory;
 	};
