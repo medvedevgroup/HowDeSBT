@@ -51,6 +51,7 @@ void BVOperateCommand::usage
 	s << "  --out=<filename>  name for the resulting bit vector file" << endl;
 	s << "  --and             output = a AND b" << endl;
 	s << "  --or              output = a OR b" << endl;
+	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
 	}
 
@@ -117,6 +118,9 @@ void BVOperateCommand::parse
 		if ((arg == "--or") || (arg == "--OR") || (arg == "OR"))
 			{ operation = "or";  continue; }
 
+		if ((arg == "--not") || (arg == "--NOT") || (arg == "NOT") || (arg == "--complement"))
+			{ operation = "complement";  continue; }
+
 		if ((arg == "--squeeze") || (arg == "--SQUEEZE") || (arg == "SQUEEZE"))
 			{ operation = "squeeze";  continue; }
 
@@ -166,19 +170,23 @@ void BVOperateCommand::parse
 	if (operation == "and")
 		{
 		if (bvFilenames.size() != 2)
-			chastise ("and requires two input bit vectors");
+			chastise ("AND requires two input bit vectors");
 		}
 	else if (operation == "or")
 		{
 		if (bvFilenames.size() != 2)
-			chastise ("or requires two input bit vectors");
+			chastise ("OR requires two input bit vectors");
+		}
+	else if (operation == "complement")
+		{
+		if (bvFilenames.size() != 1)
+			chastise ("NOT requires one input bit vector");
 		}
 	else if ((operation == "squeeze") || (operation == "squeeze long"))
 		{
 		if (bvFilenames.size() != 2)
-			chastise ("squeeze requires two input bit vectors");
+			chastise ("SQUEEZE requires two input bit vectors");
 		}
-
 
 	return;
 	}
@@ -188,6 +196,7 @@ int BVOperateCommand::execute()
 	{
 	if      (operation == "and")          op_and();
 	else if (operation == "or")           op_or();
+	else if (operation == "complement")   op_complement();
 	else if (operation == "squeeze")      op_squeeze(false);
 	else if (operation == "squeeze long") op_squeeze(true);
 
@@ -244,6 +253,25 @@ void BVOperateCommand::op_or()
 
 	delete bvA;
 	delete bvB;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_complement()
+	{
+	BitVector* bv = BitVector::bit_vector (bvFilenames[0]);
+
+	bv->load();
+
+	u64 numBits = bv->num_bits();
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	bitwise_complement (bv->bits->data(), dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete bv;
 	delete dstBv;
 	}
 
