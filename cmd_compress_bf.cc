@@ -64,6 +64,7 @@ void CompressBFCommand::debug_help
 	{
 	s << "--debug= options" << endl;
 	s << "  trackmemory" << endl;
+	s << "  bfsimplify" << endl;
 	}
 
 void CompressBFCommand::parse
@@ -77,6 +78,7 @@ void CompressBFCommand::parse
 
 	listFilename = "";
 	compressor   = bvcomp_rrr;
+	inhibitBvSimplify = true;  // $$$ change this to false
 
 	bool inhibitOutTree = false;
 
@@ -156,6 +158,14 @@ void CompressBFCommand::parse
 		if (arg == "--uncroar")
 			{ compressor = bvcomp_unc_roar;  continue; }
 
+		// (unadvertised) --nobvsimplify
+
+		if (arg == "--nobvsimplify")
+			{ inhibitBvSimplify = true;  continue; }
+
+		if (arg == "--bvsimplify")  // $$$ remove this
+			{ inhibitBvSimplify = false;  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -222,6 +232,8 @@ int CompressBFCommand::execute()
 	{
 	if (contains(debug,"trackmemory"))
 		trackMemory = true;
+	if (contains(debug,"bfsimplify"))
+		BloomFilter::reportSimplify = true;
 
 	if (not bfFilenames.empty())
 		{
@@ -380,6 +392,8 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 
 	// if the filter's compression type is the type the user wants, we're
 	// already done
+	// $$$ this test may not be exactly right -- it prevents vectors from being
+	//     super-compressed in they are part of an already-compressed bf
 
 	if (compressor == srcCompressor)
 		{
@@ -434,6 +448,14 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 			{
 			BitVector* dstBv = dstBf->bvs[whichBv];
 			dstBv->unfinished();
+			}
+		}
+	else if (not inhibitBvSimplify)
+		{
+		for (int whichBv=0 ; whichBv<dstBf->numBitVectors ; whichBv++)
+			{
+			BitVector* dstBv = dstBf->bvs[whichBv];
+			dstBv = dstBf->simplify_bit_vector(whichBv);
 			}
 		}
 

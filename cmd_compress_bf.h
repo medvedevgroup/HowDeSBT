@@ -25,6 +25,7 @@ public:
 	std::string inTreeFilename;
 	std::string outTreeFilename;
 	std::uint32_t compressor;
+	bool inhibitBvSimplify;
 	bool trackMemory;
 	};
 

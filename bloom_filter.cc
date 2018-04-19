@@ -308,11 +308,13 @@ void BloomFilter::preload(bool bypassManager)
 			     + " but we aren't using a file manager");
 
 		BloomFilter* templateBf = content[0].second;
-		if (templateBf->kind() != kind())
+		u32 bfKind = kind();
+		u32 templateBfKind = templateBf->kind();
+		if (templateBfKind != bfKind)
 			fatal ("(internal?) error: in " + identity() + ".preload()"
 			     + " file contains incompatible"
-			     + "\n..bloom filter, expected kind=" + std::to_string(kind())
-			     + " but file has kind=" + std::to_string(templateBf->kind()));
+			     + "\n.. bloom filter, expected kind=" + filter_kind_to_string(bfKind,false)
+			     + " but file has kind=" + filter_kind_to_string(templateBfKind,false));
 
 		copy_properties(templateBf);
 		steal_bits(templateBf);
@@ -711,9 +713,10 @@ BitVector* BloomFilter::simplify_bit_vector
 		     + "; request to simplify bitvector " + std::to_string(whichBv));
 
 	BitVector* bv = bvs[whichBv];
+	u32 bvCompressor = bv->compressor();
 
-	// $$$ this test should include a test to see if bv is already a simple
-	//     type, in which case we should not bother to change it
+	if ((bvCompressor == bvcomp_zeros) || (bvCompressor == bvcomp_ones))
+		return bv;  // bv is already a simple type
 
 	if (bv->is_all_zeros())
 		{
