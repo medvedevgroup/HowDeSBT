@@ -369,6 +369,8 @@ void BloomFilter::save()
 			}
 		}
 
+// $$$ this needs to make sure the file isn't currently opened for read!!!!
+
 	// allocate the header, with enough room for a bfvectorinfo record for each
 	// component
 
