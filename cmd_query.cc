@@ -476,7 +476,7 @@ int QueryCommand::execute()
 			}
 		}
 
-	// if we're not using a file manager, we still want to do a consistency
+	// if we're not using a file manager, we may still want to do a consistency
 	// check before we start the search (we'd rather not run for a long time
 	// and *then* report the problem)
 
