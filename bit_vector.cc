@@ -490,6 +490,20 @@ void BitVector::mask_with
 	bitwise_mask (/*dst*/ bits->data(), srcBits->data(), commonNumBits);
 	}
 
+void BitVector::xor_with
+   (const sdslbitvector* srcBits)
+	{
+	if (bits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to xor into null bit vector");
+	if (srcBits == nullptr)
+		fatal ("internal error for " + identity()
+		     + "; attempt to xor from null bit vector");
+
+	u64 commonNumBits = std::min(numBits,srcBits->size());
+	bitwise_xor (/*dst*/ bits->data(), srcBits->data(), commonNumBits);
+	}
+
 void BitVector::squeeze_by
    (const sdslbitvector* srcBits)
 	{

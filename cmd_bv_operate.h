@@ -20,6 +20,8 @@ public:
 	virtual int execute (void);
 	virtual void op_and (void);
 	virtual void op_or (void);
+	virtual void op_xor (void);
+	virtual void op_eq (void);
 	virtual void op_complement (void);
 	virtual void op_squeeze (bool fullLengthResult);
 

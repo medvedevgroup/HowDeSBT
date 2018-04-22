@@ -51,6 +51,8 @@ void BVOperateCommand::usage
 	s << "  --out=<filename>  name for the resulting bit vector file" << endl;
 	s << "  --and             output = a AND b" << endl;
 	s << "  --or              output = a OR b" << endl;
+	s << "  --xor             output = a XOR b" << endl;
+	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
 	}
@@ -118,6 +120,12 @@ void BVOperateCommand::parse
 		if ((arg == "--or") || (arg == "--OR") || (arg == "OR"))
 			{ operation = "or";  continue; }
 
+		if ((arg == "--xor") || (arg == "--XOR") || (arg == "XOR"))
+			{ operation = "xor";  continue; }
+
+		if ((arg == "--eq") || (arg == "--EQ") || (arg == "EQ") || (arg == "=="))
+			{ operation = "eq";  continue; }
+
 		if ((arg == "--not") || (arg == "--NOT") || (arg == "NOT") || (arg == "--complement"))
 			{ operation = "complement";  continue; }
 
@@ -177,6 +185,16 @@ void BVOperateCommand::parse
 		if (bvFilenames.size() != 2)
 			chastise ("OR requires two input bit vectors");
 		}
+	else if (operation == "xor")
+		{
+		if (bvFilenames.size() != 2)
+			chastise ("XOR requires two input bit vectors");
+		}
+	else if (operation == "eq")
+		{
+		if (bvFilenames.size() != 2)
+			chastise ("EQ requires two input bit vectors");
+		}
 	else if (operation == "complement")
 		{
 		if (bvFilenames.size() != 1)
@@ -196,6 +214,8 @@ int BVOperateCommand::execute()
 	{
 	if      (operation == "and")          op_and();
 	else if (operation == "or")           op_or();
+	else if (operation == "xor")          op_xor();
+	else if (operation == "eq")           op_eq();
 	else if (operation == "complement")   op_complement();
 	else if (operation == "squeeze")      op_squeeze(false);
 	else if (operation == "squeeze long") op_squeeze(true);
@@ -246,6 +266,57 @@ void BVOperateCommand::op_or()
 	dstBv->new_bits (numBits);
 
 	bitwise_or (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete bvA;
+	delete bvB;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_xor()
+	{
+	BitVector* bvA = BitVector::bit_vector (bvFilenames[0]);
+	BitVector* bvB = BitVector::bit_vector (bvFilenames[1]);
+
+	bvA->load();
+	bvB->load();
+
+	u64 numBits = bvA->num_bits();
+	if (bvB->num_bits() != numBits)
+		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
+			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete bvA;
+	delete bvB;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_eq()
+	{
+	BitVector* bvA = BitVector::bit_vector (bvFilenames[0]);
+	BitVector* bvB = BitVector::bit_vector (bvFilenames[1]);
+
+	bvA->load();
+	bvB->load();
+
+	u64 numBits = bvA->num_bits();
+	if (bvB->num_bits() != numBits)
+		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
+			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+	bitwise_complement (dstBv->bits->data(), numBits);
 	dstBv->save();
 
 	delete bvA;

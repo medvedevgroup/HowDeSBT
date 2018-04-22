@@ -60,6 +60,7 @@ public:
 	virtual void intersect_with (BitVector* srcBv, int whichDstBv=0);
 	virtual void intersect_with_complement (BitVector* srcBv, int whichDstBv=0) { return mask_with(srcBv,whichDstBv); }
 	virtual void mask_with (BitVector* srcBv, int whichDstBv=0);
+	virtual void xor_with (BitVector* srcBv, int whichDstBv=0);
 	virtual void squeeze_by (BitVector* srcBv, int whichDstBv=0);
 	virtual void squeeze_by (const sdslbitvector* srcBits, int whichDstBv=0);
 

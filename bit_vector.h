@@ -107,6 +107,7 @@ public:
 	virtual void union_with_complement(const sdslbitvector* srcBits);
 	virtual void intersect_with(const sdslbitvector* srcBits);
 	virtual void mask_with(const sdslbitvector* srcBits);
+	virtual void xor_with(const sdslbitvector* srcBits);
 	virtual void squeeze_by(const sdslbitvector* srcBits);
 
 	virtual int operator[](std::uint64_t pos) const;

@@ -842,6 +842,27 @@ void BloomFilter::mask_with
 		}
 	}
 
+void BloomFilter::xor_with
+   (BitVector*	srcBv,
+	int			whichDstBv)
+	{
+	if ((whichDstBv < 0) || (whichDstBv >= numBitVectors))
+		fatal ("internal error for " + identity()
+		     + "; request to xor into bitvector " + std::to_string(whichDstBv));
+
+	switch (srcBv->compressor())
+		{
+		case bvcomp_zeros:
+			break;
+		case bvcomp_ones:
+			bvs[whichDstBv]->complement();
+			break;
+		default:
+			bvs[whichDstBv]->xor_with(srcBv->bits);
+			break;
+		}
+	}
+
 void BloomFilter::squeeze_by
    (BitVector*	srcBv,
 	int			whichDstBv)
