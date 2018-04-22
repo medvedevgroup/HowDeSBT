@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <iostream>
 
+#include "bloom_tree.h"
+
 #include "commands.h"
 
 class ValidateTreeCommand: public Command
@@ -17,8 +19,11 @@ public:
 	virtual void debug_help (std::ostream& s);
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
+	virtual int validate_consistency (BloomTree* root);
+	virtual int validate_union (BloomTree* root);
 
 	std::string inTreeFilename;
+	bool validateUnion;
 	};
 
 #endif // cmd_validate_tree_H

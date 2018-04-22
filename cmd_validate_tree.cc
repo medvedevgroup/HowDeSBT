@@ -8,6 +8,7 @@
 #include <unordered_map>
 
 #include "utilities.h"
+#include "bit_utilities.h"
 #include "bloom_tree.h"
 #include "file_manager.h"
 
@@ -43,7 +44,10 @@ void ValidateTreeCommand::usage
 	short_description(s);
 	s << "usage: " << commandName << " <filename>" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
-	s << "  <filename> name of a topology file" << endl;
+	s << "  <filename>  name of a topology file" << endl;
+	s << "  --union     verify the node union property" << endl;
+	s << "              (by default we only validate simple properties like the size of" << endl;
+	s << "              bloom filters)" << endl;
 	}
 
 void ValidateTreeCommand::debug_help
@@ -51,6 +55,7 @@ void ValidateTreeCommand::debug_help
 	{
 	s << "--debug= options" << endl;
 	s << "  topology" << endl;
+	s << "  traversal" << endl;
 	}
 
 void ValidateTreeCommand::parse
@@ -62,7 +67,8 @@ void ValidateTreeCommand::parse
 
 	// defaults
 
-	inTreeFilename  = "";
+	inTreeFilename = "";
+	validateUnion  = false;
 
 	// skip command name
 
@@ -112,6 +118,11 @@ void ValidateTreeCommand::parse
 			continue;
 			}
 
+		// --union
+
+		if (arg == "--union")
+			{ validateUnion = true;  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -152,6 +163,23 @@ int ValidateTreeCommand::execute()
 	if (contains(debug,"topology"))
 		root->print_topology(cerr);
 
+	validate_consistency(root);
+	if (validateUnion) validate_union(root);
+
+	delete root;
+
+	FileManager::close_file();	// make sure the last bloom filter file we
+								// .. opened for read gets closed
+
+	// we assume that any failures prevented us from getting to this point
+
+	cout << "TEST SUCCEEDED" << std::endl;
+	return EXIT_SUCCESS;
+	}
+
+
+int ValidateTreeCommand::validate_consistency(BloomTree* root)
+	{
 	std::unordered_map<std::string,std::vector<std::string>*> filenameToNames;
 	std::unordered_map<string,string>                         nameToFile;
 
@@ -200,9 +228,17 @@ int ValidateTreeCommand::execute()
 			// make sure all bloom filters in the tree are consistent
 
 			if (modelBf == nullptr)
+				{
+				if (contains(debug,"traversal"))
+					cerr << "using " << templateBf->filename << " as the consistency model" << endl;
+
 				modelBf = templateBf;
+				}
 			else
 				{
+				if (contains(debug,"traversal"))
+					cerr << "checking consistency of " << templateBf->filename << endl;
+
 				templateBf->is_consistent_with (modelBf, /*beFatal*/ true);
 				delete templateBf;
 				}
@@ -212,14 +248,84 @@ int ValidateTreeCommand::execute()
 		}
 
 	delete modelBf;
-	delete root;
-
-	FileManager::close_file();	// make sure the last bloom filter file we
-								// .. opened for read gets closed
 
 	// we assume that any failures prevented us from getting to this point
 
-	cout << "TEST SUCCEEDED" << std::endl;
+	return EXIT_SUCCESS;
+	}
+
+
+int ValidateTreeCommand::validate_union(BloomTree* root)
+	{
+	vector<BloomTree*> order;
+	root->pre_order(order);
+	for (const auto& node : order)
+		{
+		if (node->is_dummy()) continue;
+		if (node->is_leaf()) continue;
+
+		if (contains(debug,"traversal"))
+			cerr << "checking union at " << node->bfFilename << endl;
+
+		// preload the node, so we know how many bit vectors it has
+
+		node->load();
+		if (node->bf == nullptr)
+			fatal ("internal error: failed to load " + node->bfFilename);
+		if (node->bf->numBitVectors != 1)
+			fatal ("error: " + node->bfFilename + " contains more than one bit vector");
+
+		// compute the union of the node's children
+
+		BitVector* unionBv = nullptr;
+		bool isFirstChild = true;
+		for (const auto& child : node->children)
+			{
+			child->load();
+			if (child->bf == nullptr)
+				fatal ("internal error: failed to load " + child->bfFilename);
+			if (child->bf->numBitVectors != 1)
+				fatal ("error: " + child->bfFilename + " contains more than one bit vector");
+
+			BitVector* childBv = child->bf->get_bit_vector(0);
+			if (childBv == nullptr)
+				fatal ("internal error: failed to load bit vector for " + child->bfFilename);
+			if (childBv->compressor() != bvcomp_uncompressed)
+				fatal ("error: " + child->bfFilename + " contains compressed bit vector(s)");
+
+			if (isFirstChild) // incorporate first child's filters
+				{
+				unionBv = BitVector::bit_vector(bvcomp_uncompressed,childBv);
+				isFirstChild = false;
+				}
+			else // union with later child's filter
+				unionBv->union_with(childBv->bits);
+
+			child->unloadable();
+			}
+
+		// compare the node to the union of its children
+
+		node->load();
+		if (node->bf == nullptr)
+			fatal ("internal error: failed to load " + node->bfFilename);
+
+		BitVector* nodeBv = node->bf->get_bit_vector(0);
+		if (nodeBv == nullptr)
+			fatal ("internal error: failed to load bit vector for " + node->bfFilename);
+		if (nodeBv->compressor() != bvcomp_uncompressed)
+			fatal ("error: " + node->bfFilename + " contains compressed bit vector(s)");
+
+		unionBv->xor_with(nodeBv->bits);
+		if (not unionBv->is_all_zeros())
+			fatal ("error: \"" + node->bfFilename + "\""
+				 + " does not match the union of its children");
+
+		node->unloadable();
+		delete unionBv;
+		}
+
+	// we assume that any failures prevented us from getting to this point
 
 	return EXIT_SUCCESS;
 	}
