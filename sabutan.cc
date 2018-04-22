@@ -13,6 +13,7 @@
 #include "commands.h"
 // subcommands
 #include "cmd_bf_distance.h"
+#include "cmd_bf_operate.h"
 #include "cmd_build_sbt.h"
 #include "cmd_bv_operate.h"
 #include "cmd_cluster.h"
@@ -127,6 +128,8 @@ int main
 	cmd->add_subcommand (new SabuhashTestCommand ("sabuhash"));
 	cmd->add_subcommand (new ValidateRrrCommand  ("validaterrr"));
 	cmd->add_command_alias                       ("rrrvalidate");
+	cmd->add_subcommand (new BFOperateCommand    ("bfoperate"));
+	cmd->add_command_alias                       ("bfop");
 	cmd->add_subcommand (new BVOperateCommand    ("bvoperate"));
 	cmd->add_command_alias                       ("bvop");
 	cmd->add_subcommand (new VersionCommand      ("version"));

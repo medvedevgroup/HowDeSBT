@@ -223,9 +223,6 @@ void BVOperateCommand::op_and()
 	bitwise_and (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	dstBv->save();
 
-	FileManager::close_file();	// make sure the last bloom filter file we
-								// .. opened for read gets closed
-
 	delete bvA;
 	delete bvB;
 	delete dstBv;
