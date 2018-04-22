@@ -63,6 +63,7 @@ void DumpBFCommand::usage
 	s << "                  (by default we show zeros as '-' and ones as '+')" << endl;
 	s << "  --complement    show the bitwise complement of each filter" << endl;
 	s << "  --show:density  show fraction of ones in the filter (instead of showing bits)" << endl;
+	s << "  --show:checksum show a checksum of filter's bits (instead of showing bits)" << endl;
 	s << "  --show:integers show bit positions as a list of integers" << endl;
 	s << "  --show:header   show the filter's header info (instead of any bit data)" << endl;
 	}
@@ -212,9 +213,11 @@ void DumpBFCommand::parse
 		 || (arg == "--header"))
 			{ showAs = "header";  continue; }
 
-		if ((arg == "--show:crc")
+		if ((arg == "--show:checksum")
+		 || (arg == "--show:crc")
+		 || (arg == "--checksum")
 		 || (arg == "--crc"))
-			{ showAs = "crc";  continue; }
+			{ showAs = "checksum";  continue; }
 
 		// (unadvertised) debug options
 
@@ -260,7 +263,7 @@ void DumpBFCommand::parse
 
 	// sanity checks
 
-	if ((showAs == "density") or (showAs == "crc"))
+	if ((showAs == "density") or (showAs == "checksum"))
 		{
 		if (not intervalSet)
 			{
@@ -446,7 +449,7 @@ void DumpBFCommand::dump_one_bloom_filter
 				 << "/" << std::setw(onesCountWidth) << std::left << (bvEndPos-startPos)
 				 << " " << std::fixed << std::setprecision(6) << (onesCount/double(bvEndPos-startPos)) << endl;
 			}
-		else if (showAs == "crc")
+		else if (showAs == "checksum")
 			{
 			u32 crc = 0;
 			u8  byte = 0;
