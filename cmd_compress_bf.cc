@@ -474,10 +474,7 @@ string CompressBFCommand::process_bloom_filter(const string& filename)
 	else if (not inhibitBvSimplify)
 		{
 		for (int whichBv=0 ; whichBv<dstBf->numBitVectors ; whichBv++)
-			{
-			BitVector* dstBv = dstBf->bvs[whichBv];
-			dstBv = dstBf->simplify_bit_vector(whichBv);
-			}
+			dstBf->simplify_bit_vector(whichBv);
 		}
 
 	dstBf->reportSave = true;
