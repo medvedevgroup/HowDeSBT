@@ -273,12 +273,9 @@ int CombineBFCommand::execute()
 					{ unityFilename = argVal;  continue; }
 
 				if (is_prefix_of (arg, "--"))
-					{
 					fatal ("unrecognized field: \"" + arg + "\""
 					     + " at line " + std::to_string(lineNum)
 					     + " in " + listFilename);
-					std::exit (EXIT_FAILURE);
-					}
 
 				bfFilenames.emplace_back(strip_blank_ends(arg));
 				}

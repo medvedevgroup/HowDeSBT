@@ -490,12 +490,9 @@ int MakeBFCommand::execute()
 				 ||	(arg == "--askmers="))
 					{
 					if (minAbundanceSet)
-						{
 						fatal ("cannot use --kmersin, with --min on the command line"
 						       " (at line " + std::to_string(lineNum)
 						     + " in " + listFilename + ")");
-						std::exit (EXIT_FAILURE);
-						}
 					inputIsKmers = true;
 					continue;
 					}
@@ -505,12 +502,9 @@ int MakeBFCommand::execute()
 					{ bfFilename = argVal;  continue; }
 
 				if (is_prefix_of (arg, "--"))
-					{
 					fatal ("unrecognized field: \"" + arg + "\""
 					     + " at line " + std::to_string(lineNum)
 					     + " in " + listFilename);
-					std::exit (EXIT_FAILURE);
-					}
 
 				seqFilenames.emplace_back(strip_blank_ends(arg));
 				}
