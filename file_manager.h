@@ -15,7 +15,7 @@
 //
 //----------
 
-struct BloomFilterInfo
+struct BitVectorInfo
 	{
 	std::string		name;
 	std::uint32_t	compressor;	// compressor identifier (one of bvcomp_xxx)

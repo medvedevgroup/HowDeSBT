@@ -3,7 +3,8 @@
 Parsing support for sabutan tree hierarchy files.
 
 The tree hierarchy file looks something like this (below).  It is a pre-order
-traversal of the tree, and the asterisks indicate the depth of each node.
+traversal of the tree, and the asterisks indicate the depth of each node. See
+BloomTree::read_topology() in bloom_tree.cc for a more complete description.
   node5169.bf
   *node5160.bf
   **SRR765.bf

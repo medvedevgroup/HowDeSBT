@@ -121,6 +121,10 @@ const std::uint64_t bffileheaderMagic   = 0xD532006662544253; // little-endian a
 const std::uint64_t bffileheaderMagicUn = 0xCD96AD692C96649A; // (used for header written to an unfinished file)
 const std::uint64_t bffileheaderVersion = 1;
 
+#define max_bffile_bit_vectors (1000*1000)
+#define bffile_avg_chars_per_name 15
+#define max_bffileheader_size (bffileheader_size(max_bffile_bit_vectors) + max_bffile_bit_vectors*(bffile_avg_chars_per_name+1))
+
 enum
 	{
 	bfkind_simple           = 1,

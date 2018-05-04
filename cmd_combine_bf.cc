@@ -415,9 +415,11 @@ string CombineBFCommand::combine_bloom_filters ()
 	BloomFilter* modelBf = nullptr;
 	for (const auto& componentFilename : bfFilenames)
 		{
-		//……… we ought to make sure each input has only a single bf
-		BloomFilter* bf = new BloomFilter (componentFilename);
-		bf->preload();
+		BloomFilter* bf = BloomFilter::bloom_filter(componentFilename);
+		bool ok = bf->preload(/*bypassManager*/false,/*stopOnMultipleContent*/true);
+
+		if (not ok)
+			fatal ("error: " + componentFilename + " contains multiple bloom filters");
 
 		if (modelBf == nullptr) modelBf = bf;
 		                   else bf->is_consistent_with (modelBf, /*beFatal*/ true);
@@ -429,21 +431,36 @@ string CombineBFCommand::combine_bloom_filters ()
 		}
 
 	//===== create the combined file =====
-//øøø need to merge this with the code in BloomFilter::save()
+	// $$$ this should be merged into BloomFilter::save()
 
-	// allocate the header, with enough room for a bfvectorinfo record for each
-	// component, and for the components' names
-	// øøø bfFilenames.size() isn't the right thing, since each component may
-	//     .. itself have multiple bit vectors
+	int totalBitVectors = 0;
+	for (const auto& bf : componentBfs)
+		{
+		bf->preload();
+		totalBitVectors += bf->numBitVectors;
+		}
 
-	u64 headerBytesNeeded = bffileheader_size(bfFilenames.size());
+	// allocate the header, with enough room for a bfvectorinfo record for all
+	// of the component's bit vectors, and for the components' names
+	//
+	// nota bene: correctness of the file is sensitive to the order in which
+	//   .. we write the bit vectors and the names we give them; at read time,
+	//   .. these are interpreted by BloomFilter::identify_content()
+
+	u64 headerBytesNeeded = bffileheader_size(totalBitVectors);
 	u32 namesStart = (u32) headerBytesNeeded;
-	for (const auto& name : componentNames)
-		headerBytesNeeded += name.length() + 1;
+	u32 bfIx = 0;
+	for (const auto& bf : componentBfs)
+		{
+		bf->preload();
+		for (int whichBv=0 ; whichBv<bf->numBitVectors ; whichBv++)
+			headerBytesNeeded += componentNames[bfIx].length() + 1;
+		bfIx++;
+		}
 	headerBytesNeeded = round_up_16(headerBytesNeeded);
 
-	u32 headerSize = (u32) headerBytesNeeded;
-	if (headerSize != headerBytesNeeded)
+	u32 headerSize = (u32) headerBytesNeeded;   // (check for
+	if (headerSize != headerBytesNeeded)        //  .. size overflow)
 		fatal ("error: header record for \"" + dstFilename + "\""
 		       " would be too large (" + std::to_string(headerSize) + " bytes)");
 
@@ -453,7 +470,7 @@ string CombineBFCommand::combine_bloom_filters ()
 		       " failed to allocate " + std::to_string(headerSize) + " bytes"
 		     + " for header record for \"" + dstFilename + "\"");
 	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header])" << endl;
+		cerr << "@+" << header << " allocating bf file header for \"" << dstFilename << "\"" << endl;
 
 	// write a fake header to the file; after we write the rest of the file
 	// we'll rewind and write the real header; we do this because we don't know
@@ -482,7 +499,7 @@ string CombineBFCommand::combine_bloom_filters ()
 	header->hashSeed2   = modelBf->hashSeed2;
 	header->hashModulus = modelBf->hashModulus;
 	header->numBits     = modelBf->numBits;
-	header->numVectors  = bfFilenames.size();	// øøø not strictly correct
+	header->numVectors  = totalBitVectors;
 	header->padding2    = 0;
 	header->padding3    = 0;
 	header->padding4    = 0;
@@ -491,32 +508,36 @@ string CombineBFCommand::combine_bloom_filters ()
 
 	size_t nameOffset = (u64) namesStart;
 
-	u32 bfIx = 0;
+	u32 bvIx = 0;
+	bfIx = 0;
 	for (const auto& bf : componentBfs)
 		{
 		bf->load();
-		BitVector* bv = bf->bvs[0]; // øøø don't access bvs like this
-		//cout << bv->filename << " " << bv->offset << endl;
+		for (int whichBv=0 ; whichBv<bf->numBitVectors ; whichBv++)
+			{
+			BitVector* bv = bf->bvs[whichBv];
 
-		header->info[bfIx].compressor = bv->compressor();
-		if ((header->info[bfIx].compressor == bvcomp_rrr)
-		 || (header->info[bfIx].compressor == bvcomp_unc_rrr))
-			header->info[bfIx].compressor |= (RRR_BLOCK_SIZE << 8);
-		header->info[bfIx].offset     = bytesWritten;
+			header->info[bvIx].compressor = bv->compressor();
+			if ((header->info[bvIx].compressor == bvcomp_rrr)
+			 || (header->info[bvIx].compressor == bvcomp_unc_rrr))
+				header->info[bvIx].compressor |= (RRR_BLOCK_SIZE << 8);
+			header->info[bvIx].offset = bytesWritten;
 
-//…… we *could* just copy the bytes, instead of loading the bv and then
-//…… serializing it
-		size_t numBytes = bv->serialized_out (out);
-		bytesWritten += numBytes;
+			// $$$ we *could* just copy the bytes, instead of loading the bv and
+			// $$$ .. then re-serializing it
+			size_t numBytes = bv->serialized_out (out);
+			bytesWritten += numBytes;
 
-		header->info[bfIx].numBytes   = numBytes;
-		header->info[bfIx].filterInfo = bv->filterInfo;
+			header->info[bvIx].numBytes   = numBytes;
+			header->info[bvIx].filterInfo = bv->filterInfo;
 
-		header->info[bfIx].name = nameOffset;
-		string name = componentNames[bfIx];
-		strcpy (/*to*/ ((char*)header)+nameOffset , /*from*/ name.c_str());
-		nameOffset += name.length() + 1;
+			header->info[bvIx].name = nameOffset;
+			string name = componentNames[bfIx];
+			strcpy (/*to*/ ((char*)header)+nameOffset , /*from*/ name.c_str());
+			nameOffset += name.length() + 1;
 
+			bvIx++;
+			}
 		bfIx++;
 		}
 
@@ -534,7 +555,7 @@ string CombineBFCommand::combine_bloom_filters ()
 	if (header != nullptr)
 		{
 		if (trackMemory)
-			cerr << "@-" << header << " discarding bf file header])" << endl;
+			cerr << "@-" << header << " discarding bf file header for \"" << dstFilename << "\"" << endl;
 		delete[] header;
 		}
 

@@ -34,7 +34,7 @@ public:
 	virtual std::uint32_t kind() const { return bfkind_simple; }
 
 	virtual void setup_hashers();
-	virtual void preload(bool bypassManager=false);
+	virtual bool preload(bool bypassManager=false,bool stopOnMultipleContent=true);
 	virtual void load(bool bypassManager=false);
 	virtual void save();
 

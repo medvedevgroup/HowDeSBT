@@ -1330,7 +1330,7 @@ void BloomTree::perform_batch_query
 			// positionsToTest
 			//
 			// Attribution: the technique of swapping resolved positions to the
-			// end of the list was inspired by [1]
+			// end of the list was inspired by reference [1]
 
 			u64 pos = q->kmerPositions[posIx];
 			bool posIsResolved = true;
@@ -1851,7 +1851,9 @@ bool BloomTree::report_query_stats  // returns true if anything was reported
 //----------
 //
 // Notes:
-//	(1)	The input format consists of one line per node, with the nodes listed
+//	(1) The input format was inspired by reference [1], but is *not* compatible
+//		with it.
+//	(2)	The input format consists of one line per node, with the nodes listed
 //		in pre-order:
 //			- a parent is listed before it's children
 //			- all nodes in the subtree of the first child are listed before any
@@ -1865,7 +1867,7 @@ bool BloomTree::report_query_stats  // returns true if anything was reported
 //			***child6.bf
 //			**child4.bf
 //			*child2.bf
-//	(2)	Nodes can also be listed as a node name followed by a bracketed
+//	(3)	Nodes can also be listed as a node name followed by a bracketed
 //		filename. This facilitates having many filters stored in the same file.
 //		In the example here, siblings are stored in one file, so that they can
 //		be loaded into memory at the same time.
@@ -1876,12 +1878,12 @@ bool BloomTree::report_query_stats  // returns true if anything was reported
 //			***child6[child5.bf]
 //			**child4.bf
 //			*child2[child1.bf]
-//	(3)	The tree needn't be binary; nodes can have more than two children.
-//	(4)	The tree may be a forest, in which case a dummy root node is added,
+//	(4)	The tree needn't be binary; nodes can have more than two children.
+//	(5)	The tree may be a forest, in which case a dummy root node is added,
 //		having the forest's trees' roots as its children.
-//	(5) If the topology filename contains a path, that path is prepended to any
+//	(6) If the topology filename contains a path, that path is prepended to any
 //		node filenames that don't already contain a path.
-//	(6)	Upon completion, the tree contains *only* BloomTree nodes, none of the
+//	(7)	Upon completion, the tree contains *only* BloomTree nodes, none of the
 //		underlying bloom filters are loaded; in fact, the underlying bloom
 //		filter files are not read, and need not even exist.
 //

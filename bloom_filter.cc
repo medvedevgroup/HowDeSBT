@@ -262,11 +262,14 @@ void BloomFilter::setup_hashers()
 		hasher2 = new HashCanonical(kmerSize,hashSeed2);
 	}
 
-void BloomFilter::preload(bool bypassManager)
+bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 	{
-	if (ready) return;
+	// preload usually returns true; a return of false occurs when the
+	// file contains more than one BF, and stopOnMultipleContent is true
 
-//……… should we also write the bvs back to disk?
+	if (ready) return true;
+
+	// $$$ should we also write the bvs back to disk?
 	for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
 		{
 		if (bvs[bvIx] != nullptr)
@@ -275,6 +278,7 @@ void BloomFilter::preload(bool bypassManager)
 
 	if ((manager != nullptr) and (not bypassManager))
 		{
+		// $$$ this should probably honor stopOnMultipleContent
 		if (reportManager)
 			cerr << "asking manager to preload " << identity() << " " << this << endl;
 		manager->preload_content (filename);
@@ -302,6 +306,11 @@ void BloomFilter::preload(bool bypassManager)
 
 		vector<pair<string,BloomFilter*>> content
 		    = BloomFilter::identify_content(*in,filename);
+		if ((stopOnMultipleContent) and (content.size() != 1))
+			{
+			FileManager::close_file(in);
+			return false;
+			}
 		if (content.size() != 1)
 			fatal ("(internal?) error: in " + identity() + ".preload()"
 			     + " file contains multiple bloom filters"
@@ -324,6 +333,8 @@ void BloomFilter::preload(bool bypassManager)
 
 	if ((numHashes > 0) && (hasher1 == nullptr))
 		setup_hashers();
+
+	return true;
 	}
 
 //……… we should have a reload() too
@@ -1621,10 +1632,10 @@ BloomFilter* BloomFilter::bloom_filter
 //----------
 //
 // Notes:
-//	(1)	Each bloom filter created also has a bit vector created for it.  The
-//		bit vector has the proper information about where to find its bits
-//		(file, offset, number of bytes, compression type), but does not have
-//		its bits loaded.
+//	(1)	Each bloom filter created also has a bit vector  (or bit vectors)
+//		created for it.  The bit vector has the proper information about where
+//		to find its bits (file, offset, number of bytes, compression type), but
+//		does not have its bits loaded.
 //
 //----------
 
@@ -1677,9 +1688,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " header impossibly small (" + std::to_string(prefix.headerSize) + " bytes)");
 
-	if (prefix.headerSize > 0xFFFFFFFF)
+	if (prefix.headerSize > max_bffileheader_size)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " headers larger than " + std::to_string(0xFFFFFFFF) + " bytes are not supported,"
+		       " headers larger than " + std::to_string(max_bffileheader_size) + " bytes are not supported,"
 		     + " this file's header claims to be " + std::to_string(prefix.headerSize) + " bytes");
 
 	// read the rest of the header, and validate
@@ -1765,52 +1776,52 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	// extract the info for each bitvector
 
-	vector<BloomFilterInfo> bfInfoList;
+	vector<BitVectorInfo> bvInfoList;
 
 	u64 expectedOffset = header->headerSize;
 	for (u32 bvIx=0 ; bvIx<header->numVectors ; bvIx++)
 		{
-		BloomFilterInfo bfInfo;
-		bfInfo.compressor = header->info[bvIx].compressor;
-		bfInfo.offset     = header->info[bvIx].offset;
-		bfInfo.numBytes   = header->info[bvIx].numBytes;
+		BitVectorInfo bvInfo;
+		bvInfo.compressor = header->info[bvIx].compressor;
+		bvInfo.offset     = header->info[bvIx].offset;
+		bvInfo.numBytes   = header->info[bvIx].numBytes;
 		u32 nameOffset    = header->info[bvIx].name;
 		// we'll copy header->info[bvIx].filterInfo when we create the bit vector
 
-		if (bfInfo.offset < header->headerSize)
+		if (bvInfo.offset < header->headerSize)
 			fatal ("error: BloomFilter::identify_content(" + filename + ")"
-			       " offset to bitvector-" + std::to_string(1+bvIx)
-			     + " data is within header: " + std::to_string(bfInfo.offset));
+			       " offset to bitvector-" + std::to_string(bvIx)
+			     + " data is within header: " + std::to_string(bvInfo.offset));
 
-		if (bfInfo.offset != expectedOffset)
+		if (bvInfo.offset != expectedOffset)
 			fatal ("error: BloomFilter::identify_content(" + filename + ")"
-			       " offset to bitvector-" + std::to_string(1+bvIx)
-			     + " is " + std::to_string(bfInfo.offset)
+			       " offset to bitvector-" + std::to_string(bvIx)
+			     + " is " + std::to_string(bvInfo.offset)
 			     + " but we expected it to be " + std::to_string(expectedOffset));
 
 		if (nameOffset >= header->headerSize)
 			fatal ("error: BloomFilter::identify_content(" + filename + ")"
-			       " offset to bitvector-" + std::to_string(1+bvIx)
+			       " offset to bitvector-" + std::to_string(bvIx)
 			     + " name is beyond header: " + std::to_string(nameOffset));
 
 		u32 rrrBlockSize, rrrRankPeriod;
-		switch (bfInfo.compressor & 0x000000FF)
+		switch (bvInfo.compressor & 0x000000FF)
 			{
 			case bvcomp_uncompressed:
 			case bvcomp_roar:
 			case bvcomp_unc_roar:
 			case bvcomp_zeros:
 			case bvcomp_ones:
-				if ((bfInfo.compressor & 0xFFFFFF00) != 0) goto bad_compressor_code;
+				if ((bvInfo.compressor & 0xFFFFFF00) != 0) goto bad_compressor_code;
 				break;
 			case bvcomp_rrr:
 			case bvcomp_unc_rrr:
-				if ((bfInfo.compressor & 0xFF000000) != 0) goto bad_compressor_code;
-				rrrBlockSize  = (bfInfo.compressor >> 8)  & 0x000000FF;
-				rrrRankPeriod = (bfInfo.compressor >> 16) & 0x000000FF;
+				if ((bvInfo.compressor & 0xFF000000) != 0) goto bad_compressor_code;
+				rrrBlockSize  = (bvInfo.compressor >> 8)  & 0x000000FF;
+				rrrRankPeriod = (bvInfo.compressor >> 16) & 0x000000FF;
 				if (rrrBlockSize != RRR_BLOCK_SIZE)
 					fatal ("error: BloomFilter::identify_content(" + filename + ")"
-					       " bitvector-" + std::to_string(1+bvIx)
+					       " bitvector-" + std::to_string(bvIx)
 					     + ", rrr block size mismatch"
 					     + "\nthe file's block size is " + std::to_string(rrrBlockSize)
 					     + ", program's block size is " + std::to_string(RRR_BLOCK_SIZE)
@@ -1818,70 +1829,83 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 				if (rrrRankPeriod == 0) rrrRankPeriod = DEFAULT_RRR_RANK_PERIOD;
 				if (rrrRankPeriod != RRR_RANK_PERIOD)
 					fatal ("error: BloomFilter::identify_content(" + filename + ")"
-					       " bitvector-" + std::to_string(1+bvIx)
+					       " bitvector-" + std::to_string(bvIx)
 					     + ", rrr rank period mismatch"
 					     + "\nthe file's rank period is " + std::to_string(rrrRankPeriod)
 					     + ", program's rank period is " + std::to_string(RRR_RANK_PERIOD)
 					     + "\n(see notes regarding RRR_RANK_PERIOD in bit_vector.h)");
-				bfInfo.compressor &= 0x000000FF;
+				bvInfo.compressor &= 0x000000FF;
 				break;
 			default:
 			bad_compressor_code:
 				fatal ("error: BloomFilter::identify_content(" + filename + ")"
-				       " bitvector-" + std::to_string(1+bvIx)
-				     + ", bad compressor code: " + std::to_string(bfInfo.compressor));
+				       " bitvector-" + std::to_string(bvIx)
+				     + ", bad compressor code: " + std::to_string(bvInfo.compressor));
 			}
 
 		if (nameOffset != 0)
-			bfInfo.name = string(((char*) header) + nameOffset);
+			{
+			bvInfo.name = string(((char*) header) + nameOffset);
+			int whichBv = bvIx % vectorsPerFilter;
+			if (whichBv != 0)
+				{
+				string expectedName = bvInfoList[bvIx-whichBv].name;
+				if (bvInfo.name != expectedName)
+					fatal ("error: BloomFilter::identify_content(" + filename + ")"
+					       " bitvector-" + std::to_string(bvIx)
+					     + ", name is \"" + bvInfo.name + "\""
+					     + " but we expected it to be \"" + expectedName + "\"");
+				}
+			}
 		else if (numFilters == 1)
-			bfInfo.name = default_filter_name(filename);
+			bvInfo.name = default_filter_name(filename);
 		else
-			bfInfo.name = default_filter_name(filename,bvIx);
+			bvInfo.name = default_filter_name(filename,bvIx);
 
-		bfInfoList.emplace_back(bfInfo);
+		bvInfoList.emplace_back(bvInfo);
 
-		expectedOffset += bfInfo.numBytes;
+		expectedOffset += bvInfo.numBytes;
 		}
 
 	// create the bloom filters and bit vectors; note that this will *not*
 	// usually load the bit vectors
-	// $$$ note that we assume that for, e.g. all/some filters, the bit vectors
-	//     .. are in the file in the same order as they are in the filter's bvs
-	//     .. array; this *should* be the same order in which they were written
-	//     .. to the file
+	//
+	// nota bene: we assume that for, e.g. all/some filters, the bit vectors
+	//   .. are in the file in the same order as they are in the filter's bvs
+	//   .. array; this *should* be the same order in which they were written
+	//   .. to the file
 
 	BloomFilter* bf = nullptr;
 	int infoIx = -1;
-	for (const auto& bfInfo : bfInfoList)
+	for (const auto& bvInfo : bvInfoList)
 		{
-		int bfIx = (++infoIx) % vectorsPerFilter;
+		int whichBv = (++infoIx) % vectorsPerFilter;
 
-		if (bfIx == 0)
+		if (whichBv == 0)
 			{
 			if (reportCreation)
-				cerr << "about to construct BloomFilter for " << filename << " content " << bfIx << endl;
+				cerr << "about to construct BloomFilter for " << filename << " content " << whichBv << endl;
 			bf = bloom_filter(header->bfKind,
 			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
 			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
-			bf->bvs[0] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
+				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
+			bf->bvs[0] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 		else
 			{
 			if (reportCreation)
-				cerr << "about to construct BitVector for " << filename << " content " << bfIx << endl;
-			bf->bvs[bfIx] = BitVector::bit_vector(filename,bfInfo.compressor,bfInfo.offset,bfInfo.numBytes);
+				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
+			bf->bvs[whichBv] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);
 			}
 
-		bf->bvs[bfIx]->filterInfo = header->info[infoIx].filterInfo;
+		bf->bvs[whichBv]->filterInfo = header->info[infoIx].filterInfo;
 
-		if (bfIx == vectorsPerFilter-1)
+		if (whichBv == vectorsPerFilter-1)
 			{
 			bf->ready = true; //…… do we really want to do this here?
-			content.emplace_back(bfInfo.name,bf);
+			content.emplace_back(bvInfo.name,bf);
 			}
 		}
 
