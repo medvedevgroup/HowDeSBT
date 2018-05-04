@@ -165,5 +165,3 @@ class TreeNode(object):
 		for child in self.children:
 			child.list_height_etc(f,indent=indent+1)
 
-
-if __name__ == "__main__": main()
