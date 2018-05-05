@@ -1,4 +1,4 @@
-# Tutorial, Creating a Bloom Filter Tree
+# Tutorial, Creating a Determined,Brief Bloom Filter Tree
 
 (1) Estimate the best bloom filter size.
 
@@ -8,7 +8,7 @@ cat EXPERIMENTS_k20.hist
 ```
 
 ntcard reports f1≈1.5 million.  This is an estimate of the number of distinct
-20-mers amnong all our experiments, and we will use that as our bloom filter
+20-mers among all our experiments, and we will use that as our bloom filter
 size.
 
 _Note that this size is an overestimate._
