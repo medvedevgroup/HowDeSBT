@@ -53,7 +53,7 @@ public:
 	virtual void post_order (std::vector<BloomTree*>& order);
 	virtual void leaves (std::vector<BloomTree*>& order);
 
-	virtual void print_topology (std::ostream& out, int level=0) const;
+	virtual void print_topology (std::ostream& out, int level=0, bool withFilename=false) const;
 	virtual void construct_union_nodes (std::uint32_t compressor);
 	virtual void construct_allsome_nodes (std::uint32_t compressor);
 	virtual void construct_determined_nodes (std::uint32_t compressor);

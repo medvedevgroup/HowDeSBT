@@ -246,13 +246,21 @@ void BloomTree::leaves
 
 void BloomTree::print_topology
    (std::ostream&	out,
-	int				level) const
+	int				level,
+	bool			withFilename) const
 	{
 	int levelInc = 1;
-	if (isDummy) levelInc = 0;
-	        else out << string(level,'*') << bfFilename << endl;
+	if (isDummy)
+		levelInc = 0;
+	else
+		{
+		out << string(level,'*') << name;
+		if (withFilename)
+			out << "[" << bfFilename << "]";
+		out << endl;
+		}
 	for (const auto& child : children)
-		child->print_topology (out, level+levelInc);
+		child->print_topology (out, level+levelInc, withFilename);
 	}
 
 //~~~~~~~~~~
@@ -1893,7 +1901,7 @@ bool BloomTree::report_query_stats  // returns true if anything was reported
 
 struct ParsedLine
 	{
-	bool problem;
+	bool hasProblem;
 	std::size_t level;
 	string name;
 	string bfFilename;
@@ -1904,7 +1912,7 @@ static ParsedLine parse_topology_line
 	const string& basePath)
 	{
 	ParsedLine p;
-	p.problem = true;
+	p.hasProblem = true;
 	p.level = line.find_first_not_of("*");
 	p.bfFilename = strip_blank_ends (line.substr(p.level));
 	p.name = "";
@@ -1946,7 +1954,7 @@ static ParsedLine parse_topology_line
 	string::size_type slashIx = p.bfFilename.find_last_of("/");
 	if (slashIx == string::npos) p.bfFilename = basePath + p.bfFilename;
 
-	p.problem = false;
+	p.hasProblem = false;
 	return p;
 	}
 
@@ -1991,7 +1999,7 @@ BloomTree* BloomTree::read_topology
 			if (line.empty()) continue;
 
 			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.problem)
+			if (p.hasProblem)
 				fatal ("error: unable to parse (\"" + filename
 					 + "\", line " + std::to_string(lineNum) + ")");
 
@@ -2034,7 +2042,7 @@ BloomTree* BloomTree::read_topology
 			if (line.empty()) continue;
 
 			ParsedLine p = parse_topology_line(line, basePath);
-			if (p.problem)
+			if (p.hasProblem)
 				fatal ("error: unable to parse (\"" + filename
 					 + "\", line " + std::to_string(lineNum) + ")");
 

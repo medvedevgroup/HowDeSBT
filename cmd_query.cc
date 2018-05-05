@@ -424,7 +424,12 @@ int QueryCommand::execute()
 	vector<BloomTree*> order;
 
 	if (contains(debug,"topology"))
-		root->print_topology(cerr);
+		{
+		if (useFileManager)
+			root->print_topology(cerr,/*level*/0,/*withFilename*/true);
+		else
+			root->print_topology(cerr);
+		}
 
 	if (contains(debug,"reportloadtime"))
 		{
