@@ -27,7 +27,7 @@ struct BitVectorInfo
 class FileManager
 	{
 public:
-	FileManager(BloomTree* root);
+	FileManager(BloomTree* root, bool validateConsistency=false);
 	virtual ~FileManager();
 
 	virtual bool already_preloaded (const std::string& filename);
@@ -36,6 +36,7 @@ public:
 
 public:
 	bool reportLoad = false;
+	static bool dbgContentLoad;
 
 public:
 	BloomFilter* modelBf;

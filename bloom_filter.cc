@@ -345,6 +345,7 @@ void BloomFilter::load(bool bypassManager)
 //	if (bv != nullptr)
 //		fatal ("internal error for " + identity()
 //		     + "; attempt to load() onto non-null bit vector");
+//……
 
 	if ((manager != nullptr) and (not bypassManager))
 		{

@@ -102,6 +102,8 @@ void QueryCommand::debug_help
 	s << "  reportrankselect" << endl;
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
+	s << "  fmcontentload" << endl;
+	s << "  namemapping" << endl;
 	s << "  load" << endl;
 	s << "  reportloadtime" << endl;
 	s << "  reporttotalloadtime" << endl;
@@ -465,18 +467,21 @@ int QueryCommand::execute()
 	FileManager* manager = nullptr;
 	if (useFileManager)
 		{
-		manager = new FileManager(root);
+		if (contains(debug,"fmcontentload"))
+			FileManager::dbgContentLoad = true;
+
+		manager = new FileManager(root,/*validateConsistency*/false);
 		if (contains(debug,"load"))
 			manager->reportLoad = true;
-		if (contains(debug,"names"))
+		if (contains(debug,"namemapping"))
 			{
 			for (auto iter : manager->filenameToNames) 
 				{
-				string          filename = iter.first;
-				vector<string>* names    = iter.second;
-				cout << filename << " contains:" << endl;
-				for (const auto& name : *names)
-					cout << "  " << name << endl;
+				string          filename  = iter.first;
+				vector<string>* nodeNames = iter.second;
+				cerr << filename << " contains:" << endl;
+				for (const auto& nodeName : *nodeNames)
+					cerr << "  " << nodeName << endl;
 				}
 			}
 		}

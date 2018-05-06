@@ -8,6 +8,8 @@
 #include "bloom_filter.h"
 #include "query.h"
 
+class FileManager;
+
 //----------
 //
 // classes in this module--
@@ -83,6 +85,7 @@ public:
 public:
 	bool isDummy;						// a dummy has no filter; the root might
 										// .. be a dummy, to allow for forests
+	FileManager* manager;
 	std::string name;
 	std::string bfFilename;
 	std::string futureBfFilename;

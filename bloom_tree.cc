@@ -14,6 +14,7 @@
 
 #include "utilities.h"
 #include "bit_utilities.h"
+#include "file_manager.h"
 #include "bloom_tree.h"
 
 using std::string;
@@ -45,6 +46,7 @@ BloomTree::BloomTree
    (const string& _name,
 	const string& _bfFilename)
 	  :	isDummy(_bfFilename.empty()),
+		manager(nullptr),
 		name(_name),
 		bfFilename(_bfFilename),
 		bf(nullptr),
@@ -64,6 +66,7 @@ BloomTree::BloomTree
 BloomTree::BloomTree
    (BloomTree* root)
 	  :	isDummy(root->isDummy),
+		manager(nullptr),
 		name(root->name),
 		bfFilename(root->bfFilename),
 		bf(root->bf),
@@ -120,6 +123,7 @@ void BloomTree::load()
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
 	bf->reportSave = reportSave;
+	if (manager != nullptr) bf->manager = manager;
 	bf->load();
 	}
 

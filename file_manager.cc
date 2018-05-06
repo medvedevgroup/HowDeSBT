@@ -27,6 +27,8 @@ using std::endl;
 //
 //----------
 
+bool           FileManager::dbgContentLoad  = false;
+
 bool           FileManager::reportOpenClose = false;
 string         FileManager::openedFilename  = "";
 std::ifstream* FileManager::openedFile      = nullptr;
@@ -37,10 +39,11 @@ std::ifstream* FileManager::openedFile      = nullptr;
 //
 //----------
 
-// $$$ add trackMemory to hash constructor/destructor
+// $$$ add trackMemory to hash table constructor/destructor
 
 FileManager::FileManager
-   (BloomTree* root)
+   (BloomTree*	root,
+	bool		validateConsistency)
 	  :	modelBf(nullptr)
 	{
 	// scan the tree, setting up hashes from (a) node name to a node's filter
@@ -51,6 +54,10 @@ FileManager::FileManager
 
 	vector<BloomTree*> order;
 	root->post_order(order);
+
+	for (const auto& node : order)
+		node->manager = this;
+
 	for (const auto& node : order)
 		{
 		if (nameToFile.count(node->name) > 0)
@@ -63,10 +70,7 @@ FileManager::FileManager
 		nameToNode[node->name] = node;
 
 		if (filenameToNames.count(node->bfFilename) == 0)
-			{
-			// !!! $$$ this looks like a memory leak
 			filenameToNames[node->bfFilename] = new vector<string>;
-			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
 		}
 
@@ -74,12 +78,13 @@ FileManager::FileManager
 	// two side effects -- (1) the bloom filter properties are checked for
 	// consistency, and (2) we are installed as every bloom filter's manager
 
-	// øøø change this, don't do the consistency check (it's a separate command)
-
-	for (auto iter : filenameToNames) 
+	if (validateConsistency)
 		{
-		string filename = iter.first;
-		preload_content (filename);
+		for (auto iter : filenameToNames) 
+			{
+			string filename = iter.first;
+			preload_content (filename);
+			}
 		}
 	}
 
@@ -157,6 +162,16 @@ void FileManager::preload_content
 	vector<pair<string,BloomFilter*>> content
 		= BloomFilter::identify_content(*in,filename);
 
+	if (dbgContentLoad)
+		{
+		cerr << "FileManager::preload_content, \"" << filename << "\" contains" << endl;
+		for (const auto& templatePair : content)
+			{
+			string bfName = templatePair.first;
+			cerr << "  \"" << bfName << "\"" << endl;
+			}
+		}
+
 	vector<string>* nodeNames = filenameToNames[filename];
 	for (const auto& templatePair : content)
 		{
@@ -168,16 +183,27 @@ void FileManager::preload_content
 			     + ", in conflict with the tree's topology");
 
 		BloomTree* node = nameToNode[bfName];
+		if (dbgContentLoad)
+			cerr << "FileManager::preload_content (\"" << bfName << "\")"
+			     << " node=" << node
+			     << " node->name=" << node->name
+			     << " node->bf=" << node->bf << endl;
 
 		// copy the template into the node's filter
 
 		if (node->bf == nullptr)
 			{
+			if (dbgContentLoad)
+				cerr << "  creating new BF for  (\"" << bfName << "\")" << endl;
 			node->bf = BloomFilter::bloom_filter(templateBf);
 			node->bf->manager = this;
 			}
 		else
+			{
+			if (dbgContentLoad)
+				cerr << "  using existing BF for  (\"" << bfName << "\")" << endl;
 			node->bf->copy_properties(templateBf);
+			}
 
 		node->bf->steal_bits(templateBf);
 		delete templateBf;
@@ -203,20 +229,14 @@ void FileManager::load_content
 		fatal ("internal error: attempt to load content from"
 		       " unknown file \"" + filename + "\"");
 
-//øøø
-//though this loads everything in order, we really need to make sure that the
-//components are in the same order as they are in the file, and that the sizes
-//add up so that no seeks are necessary
-//
-//but where should that check be performed?
-//if we do that check in identify_content ...
-
 	if (not already_preloaded(filename))
 		preload_content (filename);
 
 	vector<string>* nodeNames = filenameToNames[filename];
 	for (const auto& nodeName : *nodeNames)
 		{
+		if (dbgContentLoad)
+			cerr << "FileManager::load_content nodeName = \"" << nodeName << "\"" << endl;
 		BloomTree* node = nameToNode[nodeName];
 		node->bf->reportLoad = reportLoad;
 		node->bf->load(/*bypassManager*/ true);
