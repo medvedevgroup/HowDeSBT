@@ -100,6 +100,7 @@ void QueryCommand::debug_help
 	s << "  countfilebytes" << endl;
 	s << "  reportopenclose" << endl;
 	s << "  reportrankselect" << endl;
+	s << "  btunload" << endl;
 	s << "  bvcreation" << endl;
 	s << "  topology" << endl;
 	s << "  fmcontentload" << endl;
@@ -398,6 +399,7 @@ int QueryCommand::execute()
 
 	if (contains(debug,"trackmemory"))
 		{
+		FileManager::trackMemory = true;
 		BloomTree::trackMemory   = true;
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
@@ -416,6 +418,8 @@ int QueryCommand::execute()
 		FileManager::reportOpenClose = true;
 	if (contains(debug,"reportrankselect"))
 		BitVector::reportRankSelect = true;
+	if (contains(debug,"btunload"))
+		BloomTree::reportUnload = true;
 	if (contains(debug,"bvcreation"))
 		BitVector::reportCreation = true;
 

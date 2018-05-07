@@ -36,6 +36,7 @@ public:
 
 public:
 	bool reportLoad = false;
+	static bool trackMemory;
 	static bool dbgContentLoad;
 
 public:

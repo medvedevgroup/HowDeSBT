@@ -232,6 +232,7 @@ int CombineBFCommand::execute()
 	if (contains(debug,"trackmemory"))
 		{
 		trackMemory              = true;
+		FileManager::trackMemory = true;
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;
 		}

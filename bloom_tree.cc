@@ -119,7 +119,12 @@ void BloomTree::preload()
 
 void BloomTree::load()
 	{
-	if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
+	if (bf == nullptr)
+		{
+		if (FileManager::dbgContentLoad)
+			cerr << "BloomTree::load() creating new BF for \"" << name << "\"" << endl;
+		bf = BloomFilter::bloom_filter(bfFilename);
+		}
 	relay_debug_settings();
 	bf->reportLoad = reportLoad;
 	bf->reportSave = reportSave;
@@ -156,7 +161,12 @@ void BloomTree::unloadable()
 		cerr << "marking " << name << " as unloadable" << endl;
 
 	if (bf != nullptr)
-		{ delete bf;  bf = nullptr; }
+		{
+		if (bf->manager != nullptr)
+			bf->discard_bits();
+		else
+			{ delete bf;  bf = nullptr; }
+		}
 	}
 
 void BloomTree::relay_debug_settings()

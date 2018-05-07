@@ -169,6 +169,7 @@ int TreeStatsCommand::execute()
 
 	if (contains(debug,"trackmemory"))
 		{
+		FileManager::trackMemory = true;
 		BloomTree::trackMemory   = true;
 		BloomFilter::trackMemory = true;
 		BitVector::trackMemory   = true;

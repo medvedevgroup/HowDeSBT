@@ -27,6 +27,7 @@ using std::endl;
 //
 //----------
 
+bool           FileManager::trackMemory     = false;
 bool           FileManager::dbgContentLoad  = false;
 
 bool           FileManager::reportOpenClose = false;
@@ -38,8 +39,6 @@ std::ifstream* FileManager::openedFile      = nullptr;
 // FileManager--
 //
 //----------
-
-// $$$ add trackMemory to hash table constructor/destructor
 
 FileManager::FileManager
    (BloomTree*	root,
@@ -70,7 +69,12 @@ FileManager::FileManager
 		nameToNode[node->name] = node;
 
 		if (filenameToNames.count(node->bfFilename) == 0)
+			{
 			filenameToNames[node->bfFilename] = new vector<string>;
+			if (trackMemory)
+				cerr << "@+" << filenameToNames[node->bfFilename]
+				     << " allocating names vector for FileManager.filenameToNames[" << node->bfFilename << "]" << endl;
+			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
 		}
 
@@ -86,13 +90,26 @@ FileManager::FileManager
 			preload_content (filename);
 			}
 		}
+
+	if (trackMemory)
+		cerr << "@+" << this << " constructor FileManager" << endl;
 	}
 
 FileManager::~FileManager()
 	{
+	if (trackMemory)
+		cerr << "@-" << this << " destructor FileManager" << endl;
+
+	if (modelBf != nullptr) delete modelBf;
 	for (auto iter : filenameToNames) 
 		{
 		vector<string>* names = iter.second;
+		if (trackMemory)
+			{
+			string bfFilename = iter.first;
+			cerr << "@-" << names
+			     << " discarding names vector for FileManager.filenameToNames[" << bfFilename << "]" << endl;
+			}
 		delete names;
 		}
 	}
@@ -129,7 +146,7 @@ bool FileManager::already_preloaded
 			}
 		}
 
-	return someArePreloaded;
+	return someArePreloaded;  // in fact, *all* are preloaded
 	}
 
 void FileManager::preload_content
@@ -167,12 +184,20 @@ void FileManager::preload_content
 		cerr << "FileManager::preload_content, \"" << filename << "\" contains" << endl;
 		for (const auto& templatePair : content)
 			{
-			string bfName = templatePair.first;
-			cerr << "  \"" << bfName << "\"" << endl;
+			string       bfName     = templatePair.first;
+			BloomFilter* templateBf = templatePair.second;
+			cerr << "  \"" << bfName << "\""
+			     << " templateBf=" << templateBf << endl;
 			}
 		}
 
 	vector<string>* nodeNames = filenameToNames[filename];
+	if (content.size() != nodeNames->size())
+		fatal ("error: \"" + filename + "\""
+		     + " contains " + std::to_string(content.size()) + " bloom filters"
+		     + ", in conflict with the tree's topology"
+		     + " (expected " + std::to_string(nodeNames->size()) + ")");
+
 	for (const auto& templatePair : content)
 		{
 		string       bfName     = templatePair.first;
@@ -189,19 +214,24 @@ void FileManager::preload_content
 			     << " node->name=" << node->name
 			     << " node->bf=" << node->bf << endl;
 
+		// if the node has already been loaded, leave it be
+
+		if ((node->bf != nullptr) and (node->bf->ready))
+			continue;
+
 		// copy the template into the node's filter
 
 		if (node->bf == nullptr)
 			{
 			if (dbgContentLoad)
-				cerr << "  creating new BF for  (\"" << bfName << "\")" << endl;
+				cerr << "  creating new BF for \"" << bfName << "\"" << endl;
 			node->bf = BloomFilter::bloom_filter(templateBf);
 			node->bf->manager = this;
 			}
-		else
+		else // node exists but is not ready
 			{
 			if (dbgContentLoad)
-				cerr << "  using existing BF for  (\"" << bfName << "\")" << endl;
+				cerr << "  using existing (but not ready) BF for \"" << bfName << "\"" << endl;
 			node->bf->copy_properties(templateBf);
 			}
 
@@ -211,9 +241,9 @@ void FileManager::preload_content
 		// make sure all bloom filters in the tree are consistent
 
 		if (modelBf == nullptr)
-			modelBf = node->bf;
+			modelBf = BloomFilter::bloom_filter(node->bf);
 		else
-			node->bf->is_consistent_with (modelBf, /*beFatal*/ true);
+			node->bf->is_consistent_with(modelBf,/*beFatal*/true);
 		}
 
 	// $$$ add trackMemory for in
