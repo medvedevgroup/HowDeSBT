@@ -161,7 +161,7 @@ int ValidateTreeCommand::execute()
 	{
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 	if (contains(debug,"topology"))
-		root->print_topology(cerr);
+		root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
 
 	validate_consistency(root);
 	if (validateUnion) validate_union(root);

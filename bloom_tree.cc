@@ -261,20 +261,31 @@ void BloomTree::leaves
 void BloomTree::print_topology
    (std::ostream&	out,
 	int				level,
-	bool			withFilename) const
+	int				format) const
 	{
 	int levelInc = 1;
+
 	if (isDummy)
 		levelInc = 0;
 	else
 		{
-		out << string(level,'*') << name;
-		if (withFilename)
-			out << "[" << bfFilename << "]";
-		out << endl;
+		switch (format)
+			{
+			case topofmt_nodeNames:
+				out << string(level,'*') << name << endl;
+				break;
+			case topofmt_fileNames:
+			default:
+				out << string(level,'*') << bfFilename << endl;
+				break;
+			case topofmt_containers:
+				out << string(level,'*') << name << "[" << bfFilename << "]" << endl;
+				break;
+			}
 		}
+
 	for (const auto& child : children)
-		child->print_topology (out, level+levelInc, withFilename);
+		child->print_topology (out, level+levelInc, format);
 	}
 
 //~~~~~~~~~~

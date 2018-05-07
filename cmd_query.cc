@@ -432,9 +432,9 @@ int QueryCommand::execute()
 	if (contains(debug,"topology"))
 		{
 		if (useFileManager)
-			root->print_topology(cerr,/*level*/0,/*withFilename*/true);
+			root->print_topology(cerr,/*level*/0,/*format*/topofmt_containers);
 		else
-			root->print_topology(cerr);
+			root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
 		}
 
 	if (contains(debug,"reportloadtime"))

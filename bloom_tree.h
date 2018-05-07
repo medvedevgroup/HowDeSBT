@@ -28,6 +28,13 @@ struct querystats
 	std::uint64_t	locallyFailed;
 	};
 
+enum topofmt
+	{
+	topofmt_nodeNames = 0,
+	topofmt_fileNames,
+	topofmt_containers
+	};
+
 
 class BloomTree
 	{
@@ -55,7 +62,7 @@ public:
 	virtual void post_order (std::vector<BloomTree*>& order);
 	virtual void leaves (std::vector<BloomTree*>& order);
 
-	virtual void print_topology (std::ostream& out, int level=0, bool withFilename=false) const;
+	virtual void print_topology (std::ostream& out, int level=0, int format=topofmt_fileNames) const;
 	virtual void construct_union_nodes (std::uint32_t compressor);
 	virtual void construct_allsome_nodes (std::uint32_t compressor);
 	virtual void construct_determined_nodes (std::uint32_t compressor);

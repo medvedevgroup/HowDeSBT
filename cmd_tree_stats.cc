@@ -178,7 +178,7 @@ int TreeStatsCommand::execute()
 	BloomTree* root = BloomTree::read_topology(inTreeFilename);
 
 	if (contains(debug,"topology"))
-		root->print_topology(cerr);
+		root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
 
 	vector<BloomTree*> preOrder, postOrder;
 	root->pre_order(preOrder);
