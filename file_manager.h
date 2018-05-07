@@ -30,7 +30,6 @@ public:
 	FileManager(BloomTree* root, bool validateConsistency=false);
 	virtual ~FileManager();
 
-	virtual bool already_preloaded (const std::string& filename);
 	virtual void preload_content   (const std::string& filename);
 	virtual void load_content      (const std::string& filename);
 
@@ -48,6 +47,10 @@ public:
 									// hash table mapping a filename to the
 									// .. list of names of nodes to be loaded
 									// .. from that file
+	std::unordered_map<std::string,bool> alreadyPreloaded; // hash table mapping
+									// .. a filename to the to true if the file
+									// .. has already been preloaded, false if
+									// .. not
 
 public:
 	static bool reportOpenClose;

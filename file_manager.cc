@@ -74,6 +74,7 @@ FileManager::FileManager
 			if (trackMemory)
 				cerr << "@+" << filenameToNames[node->bfFilename]
 				     << " allocating names vector for FileManager.filenameToNames[" << node->bfFilename << "]" << endl;
+			alreadyPreloaded[node->bfFilename] = false;
 			}
 		filenameToNames[node->bfFilename]->emplace_back(node->name);
 		}
@@ -114,41 +115,6 @@ FileManager::~FileManager()
 		}
 	}
 
-bool FileManager::already_preloaded
-   (const string&	filename)
-	{
-	bool someNotPreloaded   = false;
-	bool someArePreloaded   = false;
-	string nonPreloadedName = "";
-	string preloadedName    = "";
-
-	vector<string>* nodeNames = filenameToNames[filename];
-	for (const auto& nodeName : *nodeNames)
-		{
-		BloomTree* node = nameToNode[nodeName];
-		if ((node->bf != nullptr) and (node->bf->ready))
-			{
-			if (someNotPreloaded)
-				fatal ("internal error: attempt to preload content from \"" + filename + "\""
-				     + "; \"" + nodeName + "\" was already preloaded"
-				     + " but \"" + nonPreloadedName + "\" wasn't");
-			someArePreloaded = true;
-			preloadedName = nodeName;
-			}
-		else
-			{
-			if (someArePreloaded)
-				fatal ("internal error: attempt to preload content from \"" + filename + "\""
-				     + "; \"" + preloadedName + "\" was already preloaded"
-				     + " but \"" + nodeName + "\" wasn't");
-			someNotPreloaded = true;
-			nonPreloadedName = nodeName;
-			}
-		}
-
-	return someArePreloaded;  // in fact, *all* are preloaded
-	}
-
 void FileManager::preload_content
    (const string&	filename)
 	{
@@ -158,7 +124,7 @@ void FileManager::preload_content
 		fatal ("internal error: attempt to preload content from"
 		       " unknown file \"" + filename + "\"");
 
-	if (already_preloaded(filename)) return;
+	if (alreadyPreloaded[filename]) return;
 
 	// $$$ add trackMemory for in
 	if (BloomFilter::reportLoadTime || BloomFilter::reportTotalLoadTime) startTime = get_wall_time();
@@ -246,6 +212,8 @@ void FileManager::preload_content
 			node->bf->is_consistent_with(modelBf,/*beFatal*/true);
 		}
 
+	alreadyPreloaded[filename] = true;
+
 	// $$$ add trackMemory for in
 	FileManager::close_file(in);
 	}
@@ -259,8 +227,10 @@ void FileManager::load_content
 		fatal ("internal error: attempt to load content from"
 		       " unknown file \"" + filename + "\"");
 
-	if (not already_preloaded(filename))
+	if (not alreadyPreloaded[filename])
 		preload_content (filename);
+
+//øøø we only need to load this if it hasn't already been loaded
 
 	vector<string>* nodeNames = filenameToNames[filename];
 	for (const auto& nodeName : *nodeNames)
