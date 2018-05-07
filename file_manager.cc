@@ -219,7 +219,8 @@ void FileManager::preload_content
 	}
 
 void FileManager::load_content
-   (const string&	filename)
+   (const string&	filename,
+	const string&	_whichNodeName)
 	{
 	// ……… when we implement a heap, and dirty bits, we'll need to empty the heap here
 
@@ -227,14 +228,20 @@ void FileManager::load_content
 		fatal ("internal error: attempt to load content from"
 		       " unknown file \"" + filename + "\"");
 
+	string whichNodeName = _whichNodeName;
 	if (not alreadyPreloaded[filename])
-		preload_content (filename);
+		{
+		preload_content(filename);
+		whichNodeName = "";  // we will load all nodes in this file
+		}
 
 //øøø we only need to load this if it hasn't already been loaded
 
 	vector<string>* nodeNames = filenameToNames[filename];
 	for (const auto& nodeName : *nodeNames)
 		{
+		if ((whichNodeName != "") and (nodeName != whichNodeName))
+			continue;
 		if (dbgContentLoad)
 			cerr << "FileManager::load_content nodeName = \"" << nodeName << "\"" << endl;
 		BloomTree* node = nameToNode[nodeName];

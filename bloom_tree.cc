@@ -129,7 +129,7 @@ void BloomTree::load()
 	bf->reportLoad = reportLoad;
 	bf->reportSave = reportSave;
 	if (manager != nullptr) bf->manager = manager;
-	bf->load();
+	bf->load(/*bypassManager*/false,/*whichNodeName*/name);
 	}
 
 void BloomTree::save(bool finished)

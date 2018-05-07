@@ -30,8 +30,8 @@ public:
 	FileManager(BloomTree* root, bool validateConsistency=false);
 	virtual ~FileManager();
 
-	virtual void preload_content   (const std::string& filename);
-	virtual void load_content      (const std::string& filename);
+	virtual void preload_content(const std::string& filename);
+	virtual void load_content(const std::string& filename,const std::string& whichNodeName="");
 
 public:
 	bool reportLoad = false;

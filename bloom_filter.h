@@ -35,7 +35,7 @@ public:
 
 	virtual void setup_hashers();
 	virtual bool preload(bool bypassManager=false,bool stopOnMultipleContent=true);
-	virtual void load(bool bypassManager=false);
+	virtual void load(bool bypassManager=false,const std::string& whichNodeName="");
 	virtual void save();
 
 	virtual void copy_properties(const BloomFilter* templateBf);

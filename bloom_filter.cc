@@ -281,7 +281,7 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 		// $$$ this should probably honor stopOnMultipleContent
 		if (reportManager)
 			cerr << "asking manager to preload " << identity() << " " << this << endl;
-		manager->preload_content (filename);
+		manager->preload_content(filename);
 		// manager will set ready = true
 		}
 	else
@@ -339,7 +339,9 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 
 //……… we should have a reload() too
 //……… we shouldn't be able to load() a filter that didn't come from a file
-void BloomFilter::load(bool bypassManager)
+void BloomFilter::load
+   (bool			bypassManager,
+	const string&	whichNodeName)
 	{
 //…… enable this test, non-null and resident and dirty
 //	if (bv != nullptr)
@@ -351,10 +353,11 @@ void BloomFilter::load(bool bypassManager)
 		{
 		if (reportManager)
 			cerr << "asking manager to load " << identity() << " " << this << endl;
-		manager->load_content (filename);
+		manager->load_content(filename,whichNodeName);
 		}
 	else
 		{
+		// $$$ assert that whichNodeName == ""
 		if (not ready) preload ();
 
 		for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
