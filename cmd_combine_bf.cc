@@ -213,11 +213,11 @@ void CombineBFCommand::parse
 		outTreeFilename = strip_file_path(inTreeFilename);
 		string::size_type dotIx = outTreeFilename.find_last_of(".");
 		if (dotIx == string::npos)
-			outTreeFilename = outTreeFilename + ".unity.sbt";
+			outTreeFilename = outTreeFilename + ".siblings.sbt";
 		else if (is_suffix_of(outTreeFilename,".sbt"))
-			outTreeFilename = outTreeFilename.substr(0,dotIx) + ".unity.sbt";
+			outTreeFilename = outTreeFilename.substr(0,dotIx) + ".siblings.sbt";
 		else
-			outTreeFilename = outTreeFilename + ".unity.sbt";
+			outTreeFilename = outTreeFilename + ".siblings.sbt";
 
 		if (not beQuiet)
 			cout << "topology will be written to \"" << outTreeFilename << "\"" << endl;
@@ -299,20 +299,28 @@ int CombineBFCommand::execute()
 			inTreePath = inTreeFilename.substr(0,slashIx);
 
 		BloomTree* root = BloomTree::read_topology(inTreeFilename);
+		if (root->nodesShareFiles)
+			fatal("cannot combine siblings in " + inTreeFilename + ";"
+			    + " it already contains some combined nodes");
+
 		if (contains(debug,"topology"))
 			root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
 
 		vector<BloomTree*> order;
-		root->post_order (order);
+		root->post_order(order);  // (it's important we use this order)
 		for (const auto& node : order)
 			{
-			// ignore this node unless it is a first child, with at least one
+			// ignore this node unless it is a last child, with at least one
 			// sibling
+			//
+			// nota bene: nodes we ignore hear remain in the tree in
+			//   .. single-node-per-file form
 
 			auto& parent = node->parent;
-			if (node->parent == nullptr)     continue;  // no parent means no siblings
-			if (parent->num_children() < 2)  continue;  // only child
-			if (parent->children[0] != node) continue;  // no first child
+			if (parent == nullptr)                       continue;  // no parent means no siblings
+			size_t numChildren = parent->num_children();
+			if (numChildren < 2)                         continue;  // only child
+			if (parent->children[numChildren-1] != node) continue;  // not last child
 
 			bfFilenames.clear();
 			for (const auto& child : parent->children)
@@ -323,6 +331,27 @@ int CombineBFCommand::execute()
 					bfFilename = inTreePath + "/" + bfFilename;
 				bfFilenames.emplace_back (bfFilename);
 				}
+
+			string unityTemplate;
+			if (parent->is_dummy())
+				{ // dummy is root of forest -- derive a name from last child
+				string::size_type dotIx = node->name.find_first_of(".");
+				if (dotIx == string::npos) dotIx = node->name.length();
+				unityTemplate = "root" + node->bfFilename.substr(dotIx);
+				}
+			else
+				unityTemplate = strip_file_path(parent->bfFilename);
+
+			string unityPrefix = BloomFilter::strip_filter_suffix(unityTemplate);
+			string unitySuffix = unityTemplate.substr(unityPrefix.length());
+			unityFilename = unityPrefix + ".children" + unitySuffix;
+			//string::size_type dotIx = unityFilename.find_last_of(".");
+			//if (dotIx == string::npos)
+			//	unityFilename = unityFilename + ".children.bf";
+			//else if (is_suffix_of(unityFilename,".bf"))
+			//	unityFilename = unityFilename.substr(0,dotIx) + ".children.bf";
+			//else
+			//	unityFilename = unityFilename + ".children.bf";
 
 			string dstFilename = combine_bloom_filters();
 
