@@ -73,9 +73,6 @@ void QueryCommand::usage
 	s << "                       at the leaves" << endl;
 	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
 	s << "                       (by default we count a query kmer each time it occurs)" << endl;
-	s << "  --usemanager         use a file manager; if a manager isn't used, each file" << endl;
-	s << "                       can contain only one bloom filter" << endl;
-	s << "                       (by default a manager isn't used)" << endl;
 	s << "  --consistencycheck   before searching, check that bloom filter properties are" << endl;
 	s << "                       consistent across the tree" << endl;
 	s << "                       (not needed with --usemanager)" << endl;
@@ -134,7 +131,6 @@ void QueryCommand::parse
 	sortByKmerCounts        = false;
 	onlyLeaves              = false;
 	distinctKmers           = false;
-	useFileManager          = false;
 	checkConsistency        = false;
 	justReportKmerCounts    = false;
 	countAllKmerHits        = false;
@@ -244,16 +240,6 @@ void QueryCommand::parse
 		 || (arg == "--distinct-kmers")
 		 || (arg == "--distinct"))
 			{ distinctKmers = true;  continue; }
-
-		// --usemanager, (unadvertised) --nomanager
-
-		if ((arg == "--usemanager")
-		 || (arg == "--nofilemanager"))
-			{ useFileManager = true;  continue; }
-
-		if ((arg == "--nomanager")
-		 || (arg == "--nofilemanager"))
-			{ useFileManager = false;  continue; }
 
 		// --consistencycheck, (unadvertised) --noconsistency
 
@@ -424,9 +410,10 @@ int QueryCommand::execute()
 		BitVector::reportCreation = true;
 
 	// read the tree
-	// $$$ we really should derive useFileManager from the tree 
 
 	BloomTree* root = BloomTree::read_topology(treeFilename,onlyLeaves);
+	useFileManager = root->nodesShareFiles;
+
 	vector<BloomTree*> order;
 
 	if (contains(debug,"topology"))

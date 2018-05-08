@@ -52,6 +52,7 @@ BloomTree::BloomTree
 		bf(nullptr),
 		isLeaf(true),
 		parent(nullptr),
+		nodesShareFiles(false),
 		queryStats(nullptr)
 	{
 	if (trackMemory)
@@ -72,6 +73,7 @@ BloomTree::BloomTree
 		bf(root->bf),
 		isLeaf(root->isLeaf),
 		parent(nullptr),
+		nodesShareFiles(false),
 		queryStats(nullptr)
 	{
 	// nota bene: this doesn't copy the subtree, just the root node; we expect
@@ -1931,6 +1933,7 @@ struct ParsedLine
 	std::size_t level;
 	string name;
 	string bfFilename;
+	bool hasBracketedFilename;
 	};
 
 static ParsedLine parse_topology_line
@@ -1942,6 +1945,7 @@ static ParsedLine parse_topology_line
 	p.level = line.find_first_not_of("*");
 	p.bfFilename = strip_blank_ends (line.substr(p.level));
 	p.name = "";
+	p.hasBracketedFilename = false;
 
 	// if the line is of the form name[filename], split out the relevant parts
 	// $$$ probably should use regular expressions for this
@@ -1964,6 +1968,7 @@ static ParsedLine parse_topology_line
 			return p;                             // extra bracket between the []
 		p.name       = p.bfFilename.substr(0,lBrackIx);
 		p.bfFilename = p.bfFilename.substr(lBrackIx+1,rBrackIx-(lBrackIx+1));
+		p.hasBracketedFilename = true;
 		}
 
 	// if no name was specified, derive one from the filename
@@ -2007,6 +2012,7 @@ BloomTree* BloomTree::read_topology
 
 	int numNodes = 0;
 	BloomTree* root = new BloomTree();
+	bool nodesShareFiles = false;
 
 	// parse the topology file; this first method creates nodes for the entire
 	// tree
@@ -2031,6 +2037,7 @@ BloomTree* BloomTree::read_topology
 
 			numNodes++;
 			BloomTree* node = new BloomTree(p.name,p.bfFilename);
+			if (p.hasBracketedFilename) nodesShareFiles = true;
 
 			if ((numNodes == 0) and (p.level != 0))
 				fatal ("error: root must be at level zero (\"" + filename
@@ -2085,6 +2092,7 @@ BloomTree* BloomTree::read_topology
 			if ((p.level <= prevLevel) and (not prevBfFilename.empty()))
 				{
 				BloomTree* leaf = new BloomTree(prevName,prevBfFilename);
+				if (p.hasBracketedFilename) nodesShareFiles = true;
 				root->add_child (leaf);
 				}
 
@@ -2120,6 +2128,7 @@ BloomTree* BloomTree::read_topology
 		delete oldRoot;
 		}
 
+	root->nodesShareFiles = nodesShareFiles;
 	return root;
 	}
 

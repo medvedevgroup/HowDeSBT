@@ -102,6 +102,10 @@ public:
 	std::vector<BloomTree*> children;	// this will either be empty or have size
 										// .. at least 2 (never size 1)
 
+	bool nodesShareFiles;				// (only applicable at root)
+										// true => tree may contains nodes that
+										//         .. share files with each other
+
 public:
 	bool reportLoad = false;
 	bool reportSave = false;
