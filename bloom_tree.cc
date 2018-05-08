@@ -213,6 +213,7 @@ BloomFilter* BloomTree::real_filter()
 	if (not is_dummy())
 		{
 		if (bf == nullptr) bf = BloomFilter::bloom_filter(bfFilename);
+		if (manager != nullptr) bf->manager = manager;
 		return bf;
 		}
 
