@@ -27,12 +27,12 @@ min_abundance=2
 ls EXPERIMENT*.fastq.gz \
   | sed "s/\.fastq\.gz//" \
   | while read experiment ; do
-      gzip -dc EXPERIMENT${genomeNum}.fastq.gz \
-        > EXPERIMENT${genomeNum}.fastq
+      gzip -dc ${experiment}.fastq.gz \
+        > ${experiment}.fastq
       sabutan makebf K=20 --min=${min_abundance} --bits=${bf_size} \
-        EXPERIMENT${genomeNum}.fastq \
-        --out=EXPERIMENT${genomeNum}.bf
-      rm EXPERIMENT${genomeNum}.fastq
+        ${experiment}.fastq \
+        --out=${experiment}.bf
+      rm ${experiment}.fastq
       done
 ```
 
