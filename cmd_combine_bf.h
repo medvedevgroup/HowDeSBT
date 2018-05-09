@@ -28,6 +28,7 @@ public:
 	bool dryRun;
 	bool beQuiet;
 	bool trackMemory;
+	int  combinationsCounter;
 	};
 
 #endif // cmd_combine_bf_H

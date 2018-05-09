@@ -246,6 +246,8 @@ int CombineBFCommand::execute()
 		BitVector::trackMemory   = true;
 		}
 
+	combinationsCounter = 0;
+
 	// if we're to make a single unity, do so
 
 	if (not bfFilenames.empty())
@@ -434,6 +436,7 @@ string CombineBFCommand::combine_bloom_filters ()
 	if ((dryRun) or (not beQuiet))
 		{
 		bool isFirst = true;
+		cout << "(#" << (++combinationsCounter) << ") ";
 		if (dryRun) cout << "would combine " << dstFilename << " from ";
 		       else cout << "combining " << dstFilename << " from ";
 		for (const auto& componentFilename : bfFilenames)
