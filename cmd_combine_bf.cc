@@ -434,7 +434,8 @@ string CombineBFCommand::combine_bloom_filters ()
 	if ((dryRun) or (not beQuiet))
 		{
 		bool isFirst = true;
-		cout << "combining " << dstFilename << " from ";
+		if (dryRun) cout << "would combine " << dstFilename << " from ";
+		       else cout << "combining " << dstFilename << " from ";
 		for (const auto& componentFilename : bfFilenames)
 			{
 			if (isFirst) isFirst = false;
