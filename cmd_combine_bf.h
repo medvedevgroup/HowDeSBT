@@ -25,6 +25,7 @@ public:
 	std::string inTreeFilename;
 	std::string outTreeFilename;
 	std::string unityFilename;
+	bool dryRun;
 	bool beQuiet;
 	bool trackMemory;
 	};

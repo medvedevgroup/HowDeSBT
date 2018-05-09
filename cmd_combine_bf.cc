@@ -56,6 +56,7 @@ void CombineBFCommand::usage
 	s << "                        (by default, when --siblings is used, we derive a name" << endl;
 	s << "                        for the resulting topology from the input filename)" << endl;
 	s << "  --noouttree           don't write the resulting topology file" << endl;
+	s << "  --dryrun              report the files we'd combine, but don't do it" << endl;
 	s << "  --quiet               don't report what files we're combining" << endl;
 	s << endl;
 	s << "When --list is used, each line of the file corresponds to a set of bloom" << endl;
@@ -85,6 +86,7 @@ void CombineBFCommand::parse
 	inTreeFilename  = "";
 	outTreeFilename = "";
 	unityFilename   = "";
+	dryRun  = false;
 	beQuiet = false;
 
 	bool inhibitOutTree = false;
@@ -149,6 +151,11 @@ void CombineBFCommand::parse
 
 		if (arg == "--noouttree")
 			{ inhibitOutTree = true;  continue; }
+
+		// --dryrun
+
+		if (arg == "--dryrun")
+			{ dryRun = true;  continue; }
 
 		// --quiet
 
@@ -219,7 +226,9 @@ void CombineBFCommand::parse
 		else
 			outTreeFilename = outTreeFilename + ".siblings.sbt";
 
-		if (not beQuiet)
+		if (dryRun)
+			cout << "topology would be written to \"" << outTreeFilename << "\"" << endl;
+		else if (not beQuiet)
 			cout << "topology will be written to \"" << outTreeFilename << "\"" << endl;
 		}
 
@@ -345,13 +354,6 @@ int CombineBFCommand::execute()
 			string unityPrefix = BloomFilter::strip_filter_suffix(unityTemplate);
 			string unitySuffix = unityTemplate.substr(unityPrefix.length());
 			unityFilename = unityPrefix + ".children" + unitySuffix;
-			//string::size_type dotIx = unityFilename.find_last_of(".");
-			//if (dotIx == string::npos)
-			//	unityFilename = unityFilename + ".children.bf";
-			//else if (is_suffix_of(unityFilename,".bf"))
-			//	unityFilename = unityFilename.substr(0,dotIx) + ".children.bf";
-			//else
-			//	unityFilename = unityFilename + ".children.bf";
 
 			string dstFilename = combine_bloom_filters();
 
@@ -364,8 +366,13 @@ int CombineBFCommand::execute()
 
 		if (makeOutTree)
 			{
-		    std::ofstream out(outTreeFilename);
-			root->print_topology(out);
+			if (dryRun)
+				root->print_topology(cout);
+			else
+				{
+			    std::ofstream out(outTreeFilename);
+				root->print_topology(out);
+				}
 			}
 
 		delete root;
@@ -424,7 +431,7 @@ string CombineBFCommand::combine_bloom_filters ()
 		    + "\ncomponents: " + components);
 		}
 
-	if (not beQuiet)
+	if ((dryRun) or (not beQuiet))
 		{
 		bool isFirst = true;
 		cout << "combining " << dstFilename << " from ";
@@ -436,6 +443,9 @@ string CombineBFCommand::combine_bloom_filters ()
 			}
 		cout << endl;
 		}
+
+	if (dryRun)
+		return dstFilename;
 
 	// preload the components; we make sure that they have consistent properties
 
