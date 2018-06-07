@@ -75,7 +75,7 @@ def read_sabutan_tree_file(f,keepFileExtension=False,keepTags=False,debug=False)
 		if (debug):
 			print >>stderr, "pushing %d %s" % (level,name)
 		node = TreeNode(name)
-		if (keepTags): node.attributes = tags
+		if (keepTags): node.tags = tags
 		nodeStack += [(level,node)]
 		topLevelSame = (level == topLevel)
 		topLevel = level
