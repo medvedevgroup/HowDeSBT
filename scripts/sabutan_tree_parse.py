@@ -19,19 +19,24 @@ BloomTree::read_topology() in bloom_tree.cc for a more complete description.
 """
 
 from sys import argv,stdin,stdout,stderr,exit
+from os  import path as os_path
 
 
-def read_sabutan_tree_file(f,keepFileExtension=False,debug=False):
+def read_sabutan_tree_file(f,keepFileExtension=False,keepTags=False,debug=False):
 	nodeStack = []
 	topLevelSame = False
 	topLevel = None
 	forest = []
 
-	for (level,name) in read_sabutan_list(f,keepFileExtension=keepFileExtension):
+	for (lineNumber,level,name,tags) in read_sabutan_list(f,keepFileExtension=keepFileExtension):
 		if (debug):
 			print >>stderr, "read %d %s" % (level,name)
 			for (dgbLevel,dbgNode) in nodeStack:
 				print >>stderr, "  %d %s" % (dgbLevel,dbgNode.name)
+
+		if (not keepTags) and (tags != None):
+			exit("%s: line %d of tree input contains extra fields (\"%s\")"
+			   % (os_path.basename(argv[0]),lineNumber,tags[0]))
 
 		while (topLevelSame) and (level < topLevel):
 			(sibLevel,sibling) = nodeStack.pop()
@@ -69,7 +74,9 @@ def read_sabutan_tree_file(f,keepFileExtension=False,debug=False):
 
 		if (debug):
 			print >>stderr, "pushing %d %s" % (level,name)
-		nodeStack += [(level,TreeNode(name))]
+		node = TreeNode(name)
+		if (keepTags): node.attributes = tags
+		nodeStack += [(level,node)]
 		topLevelSame = (level == topLevel)
 		topLevel = level
 
@@ -81,20 +88,24 @@ def read_sabutan_tree_file(f,keepFileExtension=False,debug=False):
 
 
 def read_sabutan_list(f,keepFileExtension=False):
+	lineNumber = 0
 	for line in f:
+		lineNumber +=1 
 		line = line.strip()
 
 		indent = 0
 		while (line[indent] == "*"):
 			indent += 1
 
-		name = line[indent:]
+		line = line[indent:].split()
+		name = line[0]
 		if ("/" in name): name = name.split("/")[-1]
 		if (not keepFileExtension): name = name.split(".bf")[0]
 
-		yield (indent,name)
+		if (len(line) == 1): yield (lineNumber,indent,name,None)
+		else:                yield (lineNumber,indent,name,line[1:])
 
-	yield (-1,"end-of-list")
+	yield (-1,-1,"end-of-list",None)
 
 
 class TreeNode(object):
@@ -133,6 +144,22 @@ class TreeNode(object):
 		print >>f, "%s%s" % ("*"*indent,name)
 		for child in self.children:
 			child.list_pre_order (f,indent=indent+1,fileSpec=fileSpec)
+
+	def post_order(self,order=None):
+		for child in self.children:
+			child.post_order(order)
+		if (order == None): order = [self]
+		else:               order += [self]
+		return order
+
+	def list_post_order(self,f=None,indent=0,fileSpec=None):
+		if (f == None): f = stdout
+		for child in self.children:
+			child.list_post_order (f,indent=indent+1,fileSpec=fileSpec)
+		name = self.name
+		if (fileSpec != None):
+			name = fileSpec.replace("{name}",name)
+		print >>f, "%s%s" % ("*"*indent,name)
 
 	def list_leaf_groups(self,f=None):
 		if (f == None): f = stdout

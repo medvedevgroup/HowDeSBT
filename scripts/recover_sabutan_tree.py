@@ -11,6 +11,7 @@ def usage(s=None):
 usage: cat sabutan_tree_file | recover_sabutan_tree [options]
   --show=preorder        list the tree in pre-order
                          (this is the default)
+  --show=postorder        list the tree in post-order
   --show=leafgroups      list all leaf groups
   --show=height          for each node, list max distance to a leaf, and number
                          of descendants
@@ -33,8 +34,10 @@ def main():
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg == "--show=preorder"):
+		if (arg in ["--show=preorder","--show=pre"]):
 			showWhat = "pre order"
+		elif (arg in ["--show=postorder","--show=post"]):
+			showWhat = "post order"
 		elif (arg == "--show=leafgroups"):
 			showWhat = "leaf groups"
 		elif (arg == "--show=height"):
@@ -59,6 +62,8 @@ def main():
 	for tree in forest:
 		if (showWhat == "pre order"):
 			tree.list_pre_order()
+		elif (showWhat == "post order"):
+			tree.list_post_order()
 		elif (showWhat == "leaf groups"):
 			tree.list_leaf_groups()
 		elif (showWhat == "height etc"):
