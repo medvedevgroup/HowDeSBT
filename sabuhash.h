@@ -25,7 +25,7 @@
 // nucleotides 64 bp apart cancelling each other.
 //
 // An avalanche step, borrowed from murmurhash3 [4a], is applied to the core
-// result so that the resulting hash function has better randomness propreties.
+// result so that the resulting hash function has better randomness properties.
 //
 // Mathematically, we have
 //   h = a(xor {for i=0..k-1} of f(z[s[k-1-i]],i))
