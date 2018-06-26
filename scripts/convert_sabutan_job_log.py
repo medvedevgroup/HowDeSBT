@@ -14,6 +14,7 @@ usage: cat job_log_file | convert_sabutan_job_log [options]
                                (this is the default)
   --allsome                    the log file is from a bloomtree-allsome test job
   --split-sbt                  the log file is from a split-sbt test job
+  --mantis                     the log file is from a mantis test job
   --showas=HMS                 report times as hours, minutes, seconds
   --showas=HM                  report times as hours, minutes
   --showas=hours[.<digits>]    report times in units of hours
@@ -41,6 +42,8 @@ def main():
 			logType = "allsome"
 		elif (arg in ["--split-sbt","--splitsbt"]):
 			logType = "split-sbt"
+		elif (arg == "--mantis"):
+			logType = "mantis"
 		elif (arg == "--showas=HMS"):
 			showAs = "HMS"
 		elif (arg == "--showas=HM"):
@@ -70,6 +73,7 @@ def main():
 	# $$$ change this, eventually
 	elif (logType == "allsome"):   converter = SabutanLogReader(showAs=showAs)
 	elif (logType == "split-sbt"): converter = SabutanLogReader(showAs=showAs)
+	elif (logType == "mantis"):    converter = MantisLogReader(showAs=showAs)
 
 	converter.read_file(stdin)
 
@@ -178,6 +182,80 @@ class SplitSbtLogReader(object):
 
 	def read_file(self,f):
 		raise ValueError
+
+
+# MantisLogReader--
+#
+# typical log file:
+#   cdgbId = CDBG_mantis_cutoffs
+#   batch = ten.3
+#   
+#   real	0m57.174s
+#   user	0m11.520s
+#   sys	0m33.848s
+#   
+#   real	0m41.874s
+#   user	0m9.200s
+#   sys	0m32.672s
+
+class MantisLogReader(object):
+
+	def __init__(self,showAs="HMS"):
+		self.showAs = showAs
+
+	def read_file(self,f):
+		self.cdgbId = None
+		self.batch  = None
+		self.runs   = []
+		currentRun  = None
+
+		for line in f:
+			line = line.strip()
+
+			if (line.startswith("cdgbId")):
+				line = line.split(None,2)
+				assert (line[1] == "=")
+				if (self.cdgbId != None): assert (line[2] == self.cdgbId)
+				else:                     self.cdgbId = line[2]
+				continue
+
+			if (line.startswith("batch")):
+				line = line.split(None,2)
+				assert (line[1] == "=")
+				if (self.batch != None): assert (line[2] == self.batch)
+				else:                    self.batch = line[2]
+				continue
+
+			if (line.startswith("real")):
+				line = line.split(None,1)
+				currentRun = {"real" : time_to_seconds(line[1])}
+				self.runs += [currentRun]
+				continue
+
+			if (line.startswith("user")):
+				assert (currentRun != None) and ("user" not in currentRun)
+				line = line.split(None,1)
+				currentRun["user"] = time_to_seconds(line[1])
+				continue
+
+			if (line.startswith("sys")):
+				assert (currentRun != None) and ("sys" not in currentRun)
+				line = line.split(None,1)
+				currentRun["sys"] = time_to_seconds(line[1])
+				continue
+
+	def __str__(self):
+		s = []
+		s += [self.cdgbId if (self.cdgbId != None) else "NA"]
+		s += [self.batch  if (self.batch  != None) else "NA"]
+		s += ["NA"]  # for specificity
+
+		for run in self.runs:
+			s += [seconds_to_time(run["real"],showAs=self.showAs) if ("real" in run) else "NA"]
+			s += [seconds_to_time(run["user"],showAs=self.showAs) if ("user" in run) else "NA"]
+			s += [seconds_to_time(run["sys"], showAs=self.showAs) if ("sys"  in run) else "NA"]
+
+		return "\t".join(s)
 
 
 # time_to_seconds--
