@@ -708,21 +708,6 @@ def draw_node(svg,node,name):
 	svg.addElement(ob)
 	yLine += dc.nameFontLineHgt
 
-	if (hasattr(node,"bitsCup")):
-		draw_bits(svg,"%s_Bcup" % node.name,
-		              node.x+1,yLine,glyphUnion,node.numBits,node.bitsCup)
-		yLine += dc.nameFontLineHgt
-
-	if (hasattr(node,"bitsCap")):
-		draw_bits(svg,"%s_Bcap" % node.name,
-		          node.x+1,yLine,glyphIntersection,node.numBits,node.bitsCap)
-		yLine += dc.nameFontLineHgt
-
-	if (hasattr(node,"bitsCapNot")):
-		draw_bits(svg,"%s_Bcapnot" % node.name,
-		          node.x+1,yLine,glyphDotIntersection,node.numBits,node.bitsCapNot)
-		yLine += dc.nameFontLineHgt
-
 	if (hasattr(node,"bitsAll")):
 		draw_bits(svg,"%s_Ball" % node.name,
 		          node.x+1,yLine,"A",node.numBits,node.bitsAll)
@@ -743,6 +728,21 @@ def draw_node(svg,node,name):
 		bitsHowInf = node.bitsHowInf if (hasattr(node,"bitsHowInf")) else None
 		draw_bits(svg,"%s_Bhow" % node.name,
 		          node.x+1,yLine,"H",node.numBits,node.bitsHow,bitsHowInf)
+		yLine += dc.nameFontLineHgt
+
+	if (hasattr(node,"bitsCup")):
+		draw_bits(svg,"%s_Bcup" % node.name,
+		              node.x+1,yLine,glyphUnion,node.numBits,node.bitsCup)
+		yLine += dc.nameFontLineHgt
+
+	if (hasattr(node,"bitsCap")):
+		draw_bits(svg,"%s_Bcap" % node.name,
+		          node.x+1,yLine,glyphIntersection,node.numBits,node.bitsCap)
+		yLine += dc.nameFontLineHgt
+
+	if (hasattr(node,"bitsCapNot")):
+		draw_bits(svg,"%s_Bcapnot" % node.name,
+		          node.x+1,yLine,glyphDotIntersection,node.numBits,node.bitsCapNot)
 		yLine += dc.nameFontLineHgt
 
 
