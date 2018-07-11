@@ -96,7 +96,7 @@ def main():
 	bitGroupSizes     = None
 	showNodesAs       = "union"
 	showBitsAs        = "squares"
-	debug = {}
+	debug             = {}
 
 	for arg in argv[1:]:
 		if ("=" in arg):
@@ -108,9 +108,9 @@ def main():
 			bitVectorTemplate = argVal
 			if (not "{leaf}" in bitVectorTemplate):
 				usage("(in %s) template fails to contain {leaf}" % arg)
-		elif (arg == "--group=none"):
+		elif (arg in ["--group=none","--chunk=none"]):
 			bitGroupSizes = []
-		elif (arg.startswith("--group=")):
+		elif (arg.startswith("--group=")) or (arg.startswith("--chunk=")):
 			bitGroupSizes = map(int,argVal.split(","))
 		elif (arg == "--nodes:union"):
 			showNodesAs = "union"
