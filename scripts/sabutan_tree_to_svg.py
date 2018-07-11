@@ -175,7 +175,7 @@ def main():
 
 	# read the tree
 
-	forest = read_sabutan_tree_file(stdin)
+	forest = read_sabutan_tree_file(stdin,debug="treeparse" in debug)
 	assert (len(forest) != 0), "input has no tree"
 	assert (len(forest) == 1), "input is a forest (not supported yet)"
 	tree = forest[0]
