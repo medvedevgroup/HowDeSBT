@@ -329,7 +329,7 @@ def compute_determined_how(withActive=False):
 			isLeaf = (node.children == [])
 			if (isLeaf):
 				node.bitsCap    = node.bitsCup
-				node.bitsCapNot = all_ones(node.numBits) & ~node.bitsCup
+				node.bitsCupNot = all_ones(node.numBits) & ~node.bitsCup
 				node.bitsDet    = all_ones(node.numBits)
 				node.bitsHow    = node.bitsCup
 				if (withActive):
@@ -342,22 +342,22 @@ def compute_determined_how(withActive=False):
 				if (numBits == None): numBits = child.numBits
 				else:                 assert (child.numBits == numBits)
 
-			bitsCup = bitsCap = bitsCapNot = None
+			bitsCup = bitsCap = bitsCupNot = None
 			for child in node.children:
 				if (bitsCup == None):
 					bitsCup    = child.bitsCup
 					bitsCap    = child.bitsCap
-					bitsCapNot = child.bitsCapNot
+					bitsCupNot = child.bitsCupNot
 				else:
 					bitsCup    |= child.bitsCup
 					bitsCap    &= child.bitsCap
-					bitsCapNot &= child.bitsCapNot
+					bitsCupNot &= child.bitsCupNot
 
 			node.numBits    = numBits
 			node.bitsCup    = bitsCup
 			node.bitsCap    = bitsCap
-			node.bitsCapNot = bitsCapNot
-			node.bitsDet    = bitsCap | bitsCapNot
+			node.bitsCupNot = bitsCupNot
+			node.bitsDet    = bitsCap | bitsCupNot
 			node.bitsHow    = bitsCap
 
 			if (withActive):
@@ -685,6 +685,7 @@ def draw_tree(width,height):
 # draw_node--
 
 glyphUnion           = "&#x222A;"   # (see http://ascii-table.com/unicode-index-u.php)
+glyphDotUnion        = "&#x2A03;"
 glyphIntersection    = "&#x2229;"
 glyphDotIntersection = "&#x2A40;"
 
@@ -740,9 +741,9 @@ def draw_node(svg,node,name):
 		          node.x+1,yLine,glyphIntersection,node.numBits,node.bitsCap)
 		yLine += dc.nameFontLineHgt
 
-	if (hasattr(node,"bitsCapNot")):
-		draw_bits(svg,"%s_Bcapnot" % node.name,
-		          node.x+1,yLine,glyphDotIntersection,node.numBits,node.bitsCapNot)
+	if (hasattr(node,"bitsCupNot")):
+		draw_bits(svg,"%s_Bcupnot" % node.name,
+		          node.x+1,yLine,glyphDotUnion,node.numBits,node.bitsCupNot)
 		yLine += dc.nameFontLineHgt
 
 
