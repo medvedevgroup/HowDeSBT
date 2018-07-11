@@ -20,31 +20,31 @@ dc = DrawingControl()
 def usage(s=None):
 	message = """
 usage: cat sabutan_tree_file | sabutan_tree_to_svg [options]
-  --bitvectors=<template>         read bits vectors corresponding to each leaf;
-                                  this has a form like {leaf}.bf.bv
-                                  (by default, bit vectors are not read)
-  --group=<N>                     show bits in groups of N
-                                  (default is 5)
-  --nodes:union                   show nodes with cup and cap fields
-                                  (this is the default)
-  --nodes:allsome                 show nodes with all/some fields
-  --nodes:determined              show nodes with determined/how fields
-  --nodes:determined,informative  show nodes with determined/how fields, with
-                                  informative bits
-  --bits:squares                  show bits as filled squares
-                                  (this is the default)
-  --bits:binary                   show bits in binary
-                                  (--group is ignored, we group by 4s)
-  --top-to-bottom                 tree root is at top
-                                  (this is the default)
-  --left-to-right                 tree root is at left
-  --out=<filename>                this should end with ".svg"
-                                  (default is sabutan_tree_to_svg.svg)
-  --node:width=<points>           node/leaf width
-  --node:height=<points>          node/leaf height
-  --node:sepwidth=<points>        node/leaf separating width
-  --node:sepheight=<points>       node/leaf separating height
-  --node:font=<points>            node/leaf font size"""
+  --bitvectors=<template>    read bits vectors corresponding to each leaf; this
+                             has a form like {leaf}.bf.bv
+                             (by default, bit vectors are not read)
+  --group=<N>                show bits in groups of N
+                             (default is 5)
+  --nodes:union              show nodes with cup and cap fields
+                             (this is the default)
+  --nodes:allsome            show nodes with all/some fields
+  --nodes:determined         show nodes with determined/how fields
+  --nodes:determined,active  show nodes with determined/how fields, with active
+                             bits
+  --bits:squares             show bits as filled squares
+                             (this is the default)
+  --bits:binary              show bits in binary
+                             (--group is ignored, we group by 4s)
+  --top-to-bottom            tree root is at top
+                             (this is the default)
+  --left-to-right            tree root is at left
+  --out=<filename>           this should end with ".svg"
+                             (default is sabutan_tree_to_svg.svg)
+  --node:width=<points>      node/leaf width
+  --node:height=<points>     node/leaf height
+  --node:sepwidth=<points>   node/leaf separating width
+  --node:sepheight=<points>  node/leaf separating height
+  --node:font=<points>       node/leaf font size"""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -118,8 +118,9 @@ def main():
 			showNodesAs = "all/some"
 		elif (arg == "--nodes:determined") or (arg == "--nodes:det"):
 			showNodesAs = "determined/how"
-		elif (arg == "--nodes:determined,informative") or (arg == "--nodes:det,informative"):
-			showNodesAs = "determined/how/informative"
+		elif (arg == "--nodes:determined,active")      or (arg == "--nodes:det,active") \
+		  or (arg == "--nodes:determined,informative") or (arg == "--nodes:det,informative"):
+			showNodesAs = "determined/how/active"
 		elif (arg == "--bits:squares") or (arg == "--bits:square"):
 			showBitsAs = "squares"
 		elif (arg == "--bits:binary"):
@@ -207,10 +208,10 @@ def main():
 			compute_all_some()
 			dc.nodeHgt = 5 * dc.nameFontLineHgt + 3
 		elif (showNodesAs == "determined/how"):
-			compute_determined_how(withInformative=False)
+			compute_determined_how(withActive=False)
 			dc.nodeHgt = 6 * dc.nameFontLineHgt + 3
-		elif (showNodesAs == "determined/how/informative"):
-			compute_determined_how(withInformative=True)
+		elif (showNodesAs == "determined/how/active"):
+			compute_determined_how(withActive=True)
 			dc.nodeHgt = 6 * dc.nameFontLineHgt + 3
 		else: # if (showNodesAs == "union"):
 			compute_union()
@@ -319,7 +320,7 @@ def compute_all_some():
 
 # compute_determined_how--
 
-def compute_determined_how(withInformative=False):
+def compute_determined_how(withActive=False):
 	maxDepth = max([depth for depth in depthToNames])
 
 	for depth in xrange(maxDepth,0,-1):  # (depth is 1-based)
@@ -331,7 +332,7 @@ def compute_determined_how(withInformative=False):
 				node.bitsCapNot = all_ones(node.numBits) & ~node.bitsCup
 				node.bitsDet    = all_ones(node.numBits)
 				node.bitsHow    = node.bitsCup
-				if (withInformative):
+				if (withActive):
 					node.bitsDetInf = all_ones(node.numBits)
 					node.bitsHowInf = all_ones(node.numBits)
 				continue
@@ -359,7 +360,7 @@ def compute_determined_how(withInformative=False):
 			node.bitsDet    = bitsCap | bitsCapNot
 			node.bitsHow    = bitsCap
 
-			if (withInformative):
+			if (withActive):
 				node.bitsDetInf = all_ones(numBits)
 				node.bitsHowInf = node.bitsDet
 
@@ -773,7 +774,7 @@ def draw_vert_branch(svg,id,xs,ys,xe,ye):
 
 # draw_bits--
 
-def draw_bits(svg,id,x,y,prefix,numBits,bits,informativeBits=None):
+def draw_bits(svg,id,x,y,prefix,numBits,bits,activeBits=None):
 	# prefix is assumed to be a single character
 
 	if (showBitsAs == "text"):
@@ -787,14 +788,14 @@ def draw_bits(svg,id,x,y,prefix,numBits,bits,informativeBits=None):
 	x += dc.bitPrefixSkip
 	y -= dc.bitHgt-1
 
-	if (informativeBits == None):
+	if (activeBits == None):
 		infBit = 1
 
 	for bitNum in xrange(numBits):
 		bitPos = numBits-1 - bitNum
 		bit = bits & (1 << bitPos)
-		if (informativeBits != None):
-			infBit = informativeBits & (1 << bitPos)
+		if (activeBits != None):
+			infBit = activeBits & (1 << bitPos)
 
 		if (bitGroupSizes == None): groupNum = 0
 		else:                       groupNum = bitNum / bitGroupSizes[0]
