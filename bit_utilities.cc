@@ -1,6 +1,7 @@
 // bit_utilities.cc-- bit-related utility functions.
 
 #include <cstdint>
+#include <algorithm>  // (for std::min)
 
 #include "bit_utilities.h"
 
@@ -808,8 +809,6 @@ std::uint64_t bitwise_squeeze
 	// we have a full or partial 64-bit chunk but we don't have enough bits
 	// left in the destination vector;  write some of the chunk, byte-by-byte
 
-//……… need to test this
-
 overrun:
 	if (bitsInDst == numDstBits)
 		return bitsInDst;
@@ -826,6 +825,282 @@ overrun:
 		*(dstb++) = *(chunkb++);
 
 	return bitsInDst + bitsInChunk;
+	}
+
+//----------
+//
+// bitwise_unsqueeze--
+//	Make a copy of a bit array, only copying *into* specified bit positions and
+//	expanding the result, so that unspecified bit positions are filled with
+//	zeros.
+//
+// This is a partial inverse of bitwise_squeeze, but the bits lost by that
+// operation are zero-filled here. If instead one-fill is desired, the caller
+// can OR the result with the complement of specBits.
+//
+// Example:
+//	bits:        1001001101000011111110000
+//	specBits:    01110011011100100110111111000100110010001001100100
+//	copied bits: -100--10-011--0--10-000111---1--11--1---0--00--0--
+//	result:      01000010001100000100000111000100110010000000000000
+//
+//----------
+//
+// Arguments:
+//	const void*	bits:		Bit array to read.
+//	u64			numBits:	The length of the input bit array (bits), counted
+//							.. in *bits*. See note (1) below.
+//	const void*	specBits:	Bit array indicating the bit positions to copy to.
+//							.. 1s indicate positions to be copied to.
+//							.. 0s indicate positions to be zero-filled.
+//	u64			numSpecBits:The length of the specBits array, counted in
+//							.. *bits*. See note (1) below.
+//	void*		dstBits:	Bit array to fill.  Note that this must be as long
+//							.. as bits and specBits.
+//	u64			numDstBits:	The length of the output bit array (dstBits),
+//							.. counted in *bits*. By default we assume this is
+//							.. the same as the specBits array.
+//
+// Returns:
+//	The number of bits copied to dstBits; note that the rest of dstBits has
+//	been cleared.  It is up to the caller to modify whatever data object
+//	contains dstBits so that it knows the new length (if that's important).
+//	Note that the return value is never greater than numDstBits.
+//
+//----------
+//
+// Notes:
+//	(1)	The number of bytes in the bit arrays is ceil(numBits/8) or
+//		ceil(numDstBits/8). When numBits is not a multiple of 8, the remaining
+//		bits are read from the least significant bits of the final byte.
+//	(2)	We process the bytes in 64-bit chunks until we get to the final chunk.
+//		The final chunk is processed byte-by-byte, so that we do not access
+//		any bytes beyond the bit arrays.
+//
+//----------
+
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+// $$$  THIS FUNCTION HAS NOT BEEN TESTED $$$
+// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+std::uint64_t bitwise_unsqueeze
+   (const void*	bits,
+	const u64	numBits,
+	const void*	specBits,
+	const u64	numSpecBits,
+	void*		dstBits,
+	const u64	_numDstBits)
+	{
+	u64*		src  = (u64*) bits;
+	u64*		scan = (u64*) specBits;
+	u64*		dst  = (u64*) dstBits;
+	u64			numDstBits;
+	u64			n;
+	u8*			scanb, *chunkb, *dstb;
+	u64			bitsWritten = 0;  // placate compiler, re goto hopping over true initialization
+
+	if (_numDstBits == ((u64)-1)) numDstBits = numSpecBits;
+	                         else numDstBits = _numDstBits;
+
+	// copy from full 64-bit chunks
+
+	u64 srcChunk       = 0;
+	u64 bitsInSrcChunk = 0;           // bits remaining in src chunk
+	u64 bitsInSrc      = numSpecBits; // bits remaining in entire src
+	u8* srcb           = nullptr;
+
+	u64 dstChunk       = 0;
+	u64 bitsInDstChunk = 0;
+	u64 bitsInDst      = 0;
+
+	for (n=numSpecBits ; n>=64 ; n-=64)
+		{
+		u64 specChunk = *(scan++);
+
+		for (u8 b=0 ; b<64 ; b++)
+			{
+			if ((specChunk&1) == 0)
+				{
+				// zero fill one bit in dst
+				; // nothing to do
+				}
+			else // if ((specChunk&1) == 1)
+				{
+				// copy one bit from src to dst
+
+				if (bitsInSrc == 0)
+					goto underrun;
+
+				if (bitsInSrcChunk == 0)
+					{
+					if (bitsInSrc >= 64)
+						{
+						srcChunk       = *(src++);
+						bitsInSrcChunk = 64;
+						}
+					else
+						{
+						// (we might not need all the bits in this byte)
+						if (srcb == nullptr) srcb = (u8*) src;
+						srcChunk = *(srcb++);
+						bitsInSrcChunk = 8;
+						}
+					}
+
+				dstChunk |= (srcChunk&1) << bitsInDstChunk;
+				srcChunk >>= 1;
+				bitsInSrcChunk--;
+				bitsInSrc--;
+				}
+
+			// we've added one bit to dst, if the chunk is full, emit it
+
+			if (++bitsInDstChunk == 64)
+				{
+				if (bitsInDst+64 > numDstBits) goto overrun;
+				*(dst++) = dstChunk;
+				dstChunk       =  0;
+				bitsInDstChunk =  0;
+				bitsInDst      += 64;
+				}
+
+			specChunk >>= 1;
+			}
+		}
+
+	// copy from full and partial bytes, if any remain
+
+	scanb = (u8*) scan;
+
+	if (n > 0)
+		{
+		for ( ; n>=8 ; n-=8)
+			{
+			u8 specByte = *(scanb++);
+			u64 bitsInSpecChunk = std::min((u64)8,n);
+
+			for (u8 b=0 ; b<bitsInSpecChunk ; b++)
+				{
+				if ((specByte&1) == 0)
+					{
+					// zero fill one bit in dst
+					; // nothing to do
+					}
+				else // if ((specByte&1) == 1)
+					{
+					// copy one bit from src to dst
+
+					if (bitsInSrc == 0)
+						goto underrun;
+
+					if (bitsInSrcChunk == 0)
+						{
+						if (bitsInSrc >= 64)
+							{
+							srcChunk       = *(src++);
+							bitsInSrcChunk = 64;
+							}
+						else
+							{
+							// (we might not need all the bits in this byte)
+							if (srcb == nullptr) srcb = (u8*) src;
+							srcChunk = *(srcb++);
+							bitsInSrcChunk = 8;
+							}
+						}
+
+					dstChunk |= (srcChunk&1) << bitsInDstChunk;
+					srcChunk >>= 1;
+					bitsInSrcChunk--;
+					bitsInSrc--;
+					}
+
+				// we've added one bit to dst, if the chunk is full, emit it
+
+				if (++bitsInDstChunk == 64)
+					{
+					if (bitsInDst+64 > numDstBits) goto overrun;
+					*(dst++) = dstChunk;
+					dstChunk       =  0;
+					bitsInDstChunk =  0;
+					bitsInDst      += 64;
+					}
+
+				specByte >>= 1;
+				}
+			}
+		}
+
+	// write partial chunk, if we have one; note that if we're writing into a
+	// final partial chunk of the destination vector, we also clear the rest
+	// of that partial chunk and return
+	//
+	// note that we also arrive here if we have an underrun of the src bits; in
+	// this case we treat the src as though the missing bits are zero
+
+underrun:
+	if (bitsInDst + bitsInDstChunk > numDstBits) goto overrun;
+
+	bitsWritten = bitsInDst;
+
+	if (bitsInDstChunk > 0)
+		{
+		if (numDstBits-bitsInDst >= 64)
+			{
+			*(dst++) = dstChunk;
+			bitsInDst   += bitsInDstChunk;
+			bitsWritten += 64;
+			}
+		else
+			{
+			u64 bytesLeft = (numDstBits+7-bitsInDst) / 8;
+			chunkb = (u8*) &dstChunk;
+			dstb   = (u8*) dst;
+
+			for (n=bitsInDstChunk ; n>=8 ; n-=8)
+				{ *(dstb++) = *(chunkb++); bytesLeft--; }
+			if (n > 0)
+				{ *(dstb++) = *(chunkb++); bytesLeft--; }
+			while (bytesLeft > 0)  // erase remaining bytes in this partial chunk
+				{ *(dstb++) = 0;           bytesLeft--; }
+			bitsInDst += bitsInDstChunk;
+
+			return bitsInDst;
+			}
+		}
+
+	// erase full 64-bit chunks, if any remain
+
+	for ( ; bitsWritten+64<numDstBits ; bitsWritten+=64)
+		{ *(dst++) = 0;  bitsWritten += 64; }
+
+	// erase bytes, if any remain
+
+	dstb = (u8*) dst;
+	for ( ; bitsWritten<numDstBits ; bitsWritten+=8)
+		{ *(dstb++) = 0;  bitsWritten += 8; }
+
+	return bitsInDst;
+
+	// we have a full or partial 64-bit chunk but we don't have enough bits
+	// left in the destination vector;  write some of the chunk, byte-by-byte
+
+overrun:
+	if (bitsInDst == numDstBits)
+		return bitsInDst;
+
+	u64 bitsToWrite = numDstBits - bitsInDst;   // guaranteed to be less than 64
+	if (bitsInDstChunk > bitsToWrite) bitsInDstChunk = bitsToWrite;
+	dstChunk &= (((u64)1) << bitsToWrite) - 1;  // erase excess bits from ms end of chunk
+
+	chunkb = (u8*) &dstChunk;
+	dstb   = (u8*) dst;
+	for ( ; bitsToWrite>=8 ; bitsToWrite-=8)
+		*(dstb++) = *(chunkb++);
+	if (bitsToWrite > 0)
+		*(dstb++) = *(chunkb++);
+
+	return bitsInDst + bitsInDstChunk;
 	}
 
 //----------

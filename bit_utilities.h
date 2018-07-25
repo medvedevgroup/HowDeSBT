@@ -25,7 +25,10 @@ void          bitwise_complement   (const void* bits, void* dstBits, const std::
 void          bitwise_complement   (void* dstBits, const std::uint64_t numBits);
 void          bitwise_fill         (void* dstBits, const int bitVal, const std::uint64_t numBits);
 std::uint64_t bitwise_squeeze      (const void* bits, const void* specBits, const std::uint64_t numBits, void* dstBits,
-                                    const std::uint64_t numDstBits=  (  (std::uint64_t)-1));
+                                    const std::uint64_t numDstBits=((std::uint64_t)-1));
+std::uint64_t bitwise_unsqueeze    (const void* bits, const std::uint64_t numBits,
+                                    const void* specBits, const std::uint64_t numSpecBits,
+                                    void* dstBits, const std::uint64_t numDstBits=((std::uint64_t)-1));
 std::uint64_t bitwise_count        (const void* bits, const std::uint64_t numBits);
 std::uint64_t bitwise_and_count    (const void* bits1, const void* bits2, const std::uint64_t numBits);
 std::uint64_t bitwise_mask_count   (const void* bits1, const void* bits2, const std::uint64_t numBits);
