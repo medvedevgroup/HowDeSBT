@@ -50,12 +50,14 @@ void BVOperateCommand::usage
 	s << "                    is bv, rrr or roar; <offset> is location within the file" << endl;
 	s << "  --out=<filename>  name for the resulting bit vector file" << endl;
 	s << "  --and             output = a AND b" << endl;
+	s << "  --mask            output = a MASK b  (i.e. a AND NOT b)" << endl;
 	s << "  --or              output = a OR b" << endl;
 	s << "  --xor             output = a XOR b" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
 	s << "  --unsqueeze       output = a UNSQUEEZE b" << endl;
+	s << "  --quiet           don't report information about the result" << endl;
 	}
 
 void BVOperateCommand::debug_help
@@ -71,6 +73,10 @@ void BVOperateCommand::parse
 	{
 	int		argc;
 	char**	argv;
+
+	// defaults
+
+	beQuiet = false;
 
 	// skip command name
 
@@ -118,6 +124,10 @@ void BVOperateCommand::parse
 		if ((arg == "--and") || (arg == "--AND") || (arg == "AND"))
 			{ operation = "and";  continue; }
 
+		if ((arg == "--mask")   || (arg == "--MASK")   || (arg == "MASK")
+		 || (arg == "--andnot") || (arg == "--ANDNOT") || (arg == "ANDNOT"))
+			{ operation = "mask";  continue; }
+
 		if ((arg == "--or") || (arg == "--OR") || (arg == "OR"))
 			{ operation = "or";  continue; }
 
@@ -138,6 +148,11 @@ void BVOperateCommand::parse
 
 		if ((arg == "--unsqueeze") || (arg == "--UNSQUEEZE") || (arg == "UNSQUEEZE"))
 			{ operation = "unsqueeze";  continue; }
+
+		// --quiet
+
+		if (arg == "--quiet")
+			{ beQuiet = true;  continue; }
 
 		// (unadvertised) debug options
 
@@ -184,6 +199,11 @@ void BVOperateCommand::parse
 		if (bvFilenames.size() != 2)
 			chastise ("AND requires two input bit vectors");
 		}
+	if (operation == "mask")
+		{
+		if (bvFilenames.size() != 2)
+			chastise ("MASK requires two input bit vectors");
+		}
 	else if (operation == "or")
 		{
 		if (bvFilenames.size() != 2)
@@ -211,8 +231,8 @@ void BVOperateCommand::parse
 		}
 	else if (operation == "unsqueeze")
 		{
-		if (bvFilenames.size() != 1)
-			chastise ("UNSQUEEZE requires one input bit vector");
+		if (bvFilenames.size() != 2)
+			chastise ("UNSQUEEZE requires two input bit vectors");
 		}
 
 	return;
@@ -222,6 +242,7 @@ void BVOperateCommand::parse
 int BVOperateCommand::execute()
 	{
 	if      (operation == "and")            op_and();
+	else if (operation == "mask")           op_mask();
 	else if (operation == "or")             op_or();
 	else if (operation == "xor")            op_xor();
 	else if (operation == "eq")             op_eq();
@@ -251,6 +272,31 @@ void BVOperateCommand::op_and()
 	dstBv->new_bits (numBits);
 
 	bitwise_and (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete bvA;
+	delete bvB;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_mask()
+	{
+	BitVector* bvA = BitVector::bit_vector (bvFilenames[0]);
+	BitVector* bvB = BitVector::bit_vector (bvFilenames[1]);
+
+	bvA->load();
+	bvB->load();
+
+	u64 numBits = bvA->num_bits();
+	if (bvB->num_bits() != numBits)
+		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
+			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	bitwise_mask (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	dstBv->save();
 
 	delete bvA;
@@ -376,7 +422,7 @@ void BVOperateCommand::op_squeeze
 
 	u64 numCopied = bitwise_squeeze (srcBv->bits->data(), specBv->bits->data(), numBits,
 	                                 dstBv->bits->data(), dstNumBits);
-	cout << "result has " << numCopied << " bits" << endl;
+	if (not beQuiet) cout << "result has " << numCopied << " bits" << endl;
 	dstBv->save();
 
 	delete srcBv;
@@ -407,7 +453,7 @@ void BVOperateCommand::op_unsqueeze()
 	u64 resultNumBits = bitwise_unsqueeze (srcBv->bits->data(),  numBits,
 	                                       specBv->bits->data(), specNumBits,
 	                                       dstBv->bits->data(),  dstNumBits);
-	cout << "result has " << resultNumBits << " bits" << endl;
+	if (not beQuiet) cout << "result has " << resultNumBits << " bits" << endl;
 	dstBv->save();
 
 	delete srcBv;

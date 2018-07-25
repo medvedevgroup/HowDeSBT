@@ -972,63 +972,62 @@ std::uint64_t bitwise_unsqueeze
 
 	scanb = (u8*) scan;
 
-	if (n > 0)
+	while (n > 0)  // (will be reduced by n -= bitsInSpecChunk)
 		{
-		for ( ; n>=8 ; n-=8)
+		u8 specByte = *(scanb++);
+		u64 bitsInSpecChunk = std::min((u64)8,n);
+
+		for (u8 b=0 ; b<bitsInSpecChunk ; b++)
 			{
-			u8 specByte = *(scanb++);
-			u64 bitsInSpecChunk = std::min((u64)8,n);
-
-			for (u8 b=0 ; b<bitsInSpecChunk ; b++)
+			if ((specByte&1) == 0)
 				{
-				if ((specByte&1) == 0)
-					{
-					// zero fill one bit in dst
-					; // nothing to do
-					}
-				else // if ((specByte&1) == 1)
-					{
-					// copy one bit from src to dst
-
-					if (bitsInSrc == 0)
-						goto underrun;
-
-					if (bitsInSrcChunk == 0)
-						{
-						if (bitsInSrc >= 64)
-							{
-							srcChunk       = *(src++);
-							bitsInSrcChunk = 64;
-							}
-						else
-							{
-							// (we might not need all the bits in this byte)
-							if (srcb == nullptr) srcb = (u8*) src;
-							srcChunk = *(srcb++);
-							bitsInSrcChunk = 8;
-							}
-						}
-
-					dstChunk |= (srcChunk&1) << bitsInDstChunk;
-					srcChunk >>= 1;
-					bitsInSrcChunk--;
-					bitsInSrc--;
-					}
-
-				// we've added one bit to dst, if the chunk is full, emit it
-
-				if (++bitsInDstChunk == 64)
-					{
-					if (bitsInDst+64 > numDstBits) goto overrun;
-					*(dst++) = dstChunk;
-					dstChunk       =  0;
-					bitsInDstChunk =  0;
-					bitsInDst      += 64;
-					}
-
-				specByte >>= 1;
+				// zero fill one bit in dst
+				; // nothing to do
 				}
+			else // if ((specByte&1) == 1)
+				{
+				// copy one bit from src to dst
+
+				if (bitsInSrc == 0)
+					goto underrun;
+
+				if (bitsInSrcChunk == 0)
+					{
+					if (bitsInSrc >= 64)
+						{
+						srcChunk       = *(src++);
+						bitsInSrcChunk = 64;
+						}
+					else
+						{
+						// (we might not need all the bits in this byte)
+						if (srcb == nullptr) srcb = (u8*) src;
+						srcChunk = *(srcb++);
+						bitsInSrcChunk = 8;
+						}
+					}
+
+				dstChunk |= (srcChunk&1) << bitsInDstChunk;
+				srcChunk >>= 1;
+				bitsInSrcChunk--;
+				bitsInSrc--;
+				}
+
+			// we've added one bit to dst, if the chunk is full, emit it
+
+			if (++bitsInDstChunk == 64)
+				{
+				if (bitsInDst+64 > numDstBits) goto overrun;
+				*(dst++) = dstChunk;
+				dstChunk       =  0;
+				bitsInDstChunk =  0;
+				bitsInDst      += 64;
+				}
+
+			specByte >>= 1;
 			}
+
+		n -= bitsInSpecChunk;
 		}
 
 	// write partial chunk, if we have one; note that if we're writing into a

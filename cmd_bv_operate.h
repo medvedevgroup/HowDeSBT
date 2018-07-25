@@ -19,6 +19,7 @@ public:
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 	virtual void op_and (void);
+	virtual void op_mask (void);
 	virtual void op_or (void);
 	virtual void op_xor (void);
 	virtual void op_eq (void);
@@ -29,6 +30,7 @@ public:
 	std::vector<std::string> bvFilenames;
 	std::string outputFilename;
 	std::string operation;
+	bool beQuiet;
 	};
 
 #endif // cmd_bv_operate_H
