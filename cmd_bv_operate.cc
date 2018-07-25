@@ -55,6 +55,7 @@ void BVOperateCommand::usage
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
+	s << "  --unsqueeze       output = a UNSQUEEZE b" << endl;
 	}
 
 void BVOperateCommand::debug_help
@@ -135,6 +136,9 @@ void BVOperateCommand::parse
 		if ((arg == "--squeeze.long") || (arg == "--SQUEEZE.LONG") || (arg == "SQUEEZE.LONG"))
 			{ operation = "squeeze long";  continue; }
 
+		if ((arg == "--unsqueeze") || (arg == "--UNSQUEEZE") || (arg == "UNSQUEEZE"))
+			{ operation = "unsqueeze";  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -205,6 +209,11 @@ void BVOperateCommand::parse
 		if (bvFilenames.size() != 2)
 			chastise ("SQUEEZE requires two input bit vectors");
 		}
+	else if (operation == "unsqueeze")
+		{
+		if (bvFilenames.size() != 1)
+			chastise ("UNSQUEEZE requires one input bit vector");
+		}
 
 	return;
 	}
@@ -212,13 +221,14 @@ void BVOperateCommand::parse
 
 int BVOperateCommand::execute()
 	{
-	if      (operation == "and")          op_and();
-	else if (operation == "or")           op_or();
-	else if (operation == "xor")          op_xor();
-	else if (operation == "eq")           op_eq();
-	else if (operation == "complement")   op_complement();
-	else if (operation == "squeeze")      op_squeeze(false);
-	else if (operation == "squeeze long") op_squeeze(true);
+	if      (operation == "and")            op_and();
+	else if (operation == "or")             op_or();
+	else if (operation == "xor")            op_xor();
+	else if (operation == "eq")             op_eq();
+	else if (operation == "complement")     op_complement();
+	else if (operation == "squeeze")        op_squeeze(false);
+	else if (operation == "squeeze long")   op_squeeze(true);
+	else if (operation == "unsqueeze")      op_unsqueeze();
 
 	return EXIT_SUCCESS;
 	}
@@ -365,8 +375,39 @@ void BVOperateCommand::op_squeeze
 	dstBv->new_bits (dstNumBits);
 
 	u64 numCopied = bitwise_squeeze (srcBv->bits->data(), specBv->bits->data(), numBits,
-									 dstBv->bits->data(), dstNumBits);
+	                                 dstBv->bits->data(), dstNumBits);
 	cout << "result has " << numCopied << " bits" << endl;
+	dstBv->save();
+
+	delete srcBv;
+	delete specBv;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_unsqueeze()
+	{
+	BitVector* srcBv  = BitVector::bit_vector (bvFilenames[0]);
+	BitVector* specBv = BitVector::bit_vector (bvFilenames[1]);
+
+	srcBv->load();
+	specBv->load();
+
+	u64 numBits     = srcBv->num_bits();
+	u64 specNumBits = specBv->num_bits();
+	u64 specOneBits = bitwise_count(specBv->bits->data(),specNumBits);
+	if (specOneBits > numBits)
+		fatal ("error: \"" + bvFilenames[1] + "\" has " + std::to_string(specOneBits) + " ones"
+			 + ", but  \"" + bvFilenames[0] + "\" only has " + std::to_string(numBits) + " bits");
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	u64 dstNumBits = specNumBits;
+	dstBv->new_bits (dstNumBits);
+
+	u64 resultNumBits = bitwise_unsqueeze (srcBv->bits->data(),  numBits,
+	                                       specBv->bits->data(), specNumBits,
+	                                       dstBv->bits->data(),  dstNumBits);
+	cout << "result has " << resultNumBits << " bits" << endl;
 	dstBv->save();
 
 	delete srcBv;
