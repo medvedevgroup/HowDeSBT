@@ -52,6 +52,7 @@ void BVOperateCommand::usage
 	s << "  --and             output = a AND b" << endl;
 	s << "  --mask            output = a MASK b  (i.e. a AND NOT b)" << endl;
 	s << "  --or              output = a OR b" << endl;
+	s << "  --ornot           output = a OR NOT b" << endl;
 	s << "  --xor             output = a XOR b" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
@@ -130,6 +131,9 @@ void BVOperateCommand::parse
 
 		if ((arg == "--or") || (arg == "--OR") || (arg == "OR"))
 			{ operation = "or";  continue; }
+
+		if ((arg == "--ornot") || (arg == "--ORNOT") || (arg == "ORNOT"))
+			{ operation = "or not";  continue; }
 
 		if ((arg == "--xor") || (arg == "--XOR") || (arg == "XOR"))
 			{ operation = "xor";  continue; }
@@ -244,6 +248,7 @@ int BVOperateCommand::execute()
 	if      (operation == "and")            op_and();
 	else if (operation == "mask")           op_mask();
 	else if (operation == "or")             op_or();
+	else if (operation == "or not")         op_or_not();
 	else if (operation == "xor")            op_xor();
 	else if (operation == "eq")             op_eq();
 	else if (operation == "complement")     op_complement();
@@ -322,6 +327,31 @@ void BVOperateCommand::op_or()
 	dstBv->new_bits (numBits);
 
 	bitwise_or (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete bvA;
+	delete bvB;
+	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_or_not()
+	{
+	BitVector* bvA = BitVector::bit_vector (bvFilenames[0]);
+	BitVector* bvB = BitVector::bit_vector (bvFilenames[1]);
+
+	bvA->load();
+	bvB->load();
+
+	u64 numBits = bvA->num_bits();
+	if (bvB->num_bits() != numBits)
+		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
+			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	bitwise_or_not (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	dstBv->save();
 
 	delete bvA;

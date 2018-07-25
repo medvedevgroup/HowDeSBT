@@ -21,6 +21,7 @@ public:
 	virtual void op_and (void);
 	virtual void op_mask (void);
 	virtual void op_or (void);
+	virtual void op_or_not (void);
 	virtual void op_xor (void);
 	virtual void op_eq (void);
 	virtual void op_complement (void);
