@@ -879,10 +879,6 @@ overrun:
 //
 //----------
 
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-// $$$  THIS FUNCTION HAS NOT BEEN TESTED $$$
-// $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-
 std::uint64_t bitwise_unsqueeze
    (const void*	bits,
 	const u64	numBits,
