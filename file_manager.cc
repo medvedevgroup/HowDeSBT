@@ -260,7 +260,7 @@ void FileManager::load_content
 //
 //----------
 //
-// CAVEAT:	Any commands that reads bit vectors needs to call close_file()
+// CAVEAT:	Any command that reads bit vectors needs to call close_file()
 //			before exit, to avoid a memory leak.
 //
 //----------

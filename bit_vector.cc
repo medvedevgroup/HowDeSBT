@@ -207,7 +207,7 @@ void BitVector::load()
 		}
 
 	serialized_in (*in);
-	FileManager::close_file(in);
+	FileManager::close_file(in,/*really*/true);
 	}
 
 void BitVector::serialized_in
