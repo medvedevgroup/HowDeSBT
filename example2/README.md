@@ -62,7 +62,7 @@ number from 1 to the count of internal nodes.
 cluster_bits=80K
 ls EXPERIMENT*.bf > leafnames
 sabutan cluster --list=leafnames --bits=${clusterBits} \
-  --tree=union.sbt --nodename=node{number} --keepallnodes \
+  --tree=union.sbt --nodename=node{number} --keepallnodes
 rm leafnames
 ```
 
