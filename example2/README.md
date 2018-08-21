@@ -7,7 +7,7 @@ ntcard --kmer=20 --pref=EXPERIMENTS EXPERIMENT*.fastq.gz
 cat EXPERIMENTS_k20.hist
 ```
 
-ntcard reports f1≈1.5 million.  This is an estimate of the number of distinct
+ntcard reports F0≈2.2 million.  This is an estimate of the number of distinct
 20-mers among all our experiments, and we will use that as our bloom filter
 size.
 
@@ -22,7 +22,7 @@ However, this is not necessary, and an abundance cutoff derived from, say, the
 size of the fasta file, could be used._
 
 ```bash  
-bf_size=1.5M
+bf_size=2.2M
 min_abundance=2
 ls EXPERIMENT*.fastq.gz \
   | sed "s/\.fastq\.gz//" \
@@ -48,7 +48,7 @@ actually create any of the bloom filters for the tree -- it only creates the
 topology.
 
 The cluster command estimates the similarity from a subset of the bits in the
-filters. In this example we use 150K bits (10% of the 1.5M bits in each filter).
+filters. In this example we use 220K bits (10% of the 2.2M bits in each filter).
 This significantly reduces the program's memory and I/O footprints, as well as
 runtime, while still providing a reasonably good estimate of similarity.
 
@@ -57,7 +57,7 @@ nodes in the tree. This must contain "{number}", which will be replaced by a
 number from 1 to the count of internal nodes.
 
 ```bash  
-cluster_bits=150K
+cluster_bits=220K
 ls EXPERIMENT*.bf > leafnames
 sabutan cluster --list=leafnames --bits=${clusterBits} \
   --tree=union.sbt --nodename=node{number} --keepallnodes \
