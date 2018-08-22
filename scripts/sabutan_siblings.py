@@ -10,6 +10,7 @@ from sabutan_tree_parse import read_sabutan_tree_file
 def usage(s=None):
 	message = """
 usage: cat sabutan_tree_file | sabutan_siblings [options]
+  --leafonly     only report sibling sets that are all leaves
   --withparent   report the parents as the first column in each line
                  (by default we only report siblings)"""
 
@@ -21,13 +22,16 @@ def main():
 
 	# parse the command line
 
+	leavesOnly   = False
 	reportParent = False
 
 	for arg in argv[1:]:
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg in ["--withparent","--withparents","--parent","--parents"]):
+		if (arg in ["--leafonly","--leavesonly","--onlyleaves"]):
+			leavesOnly = True
+		elif (arg in ["--withparent","--withparents","--parent","--parents"]):
 			reportParent = True
 		else:
 			usage("unrecognized option: %s" % arg)
@@ -47,6 +51,13 @@ def main():
 		preOrder = root.pre_order()
 		for node in preOrder:
 			if (node.children == []): continue
+			if (leavesOnly):
+				isAllLeaves = True
+				for child in node.children:
+					if (child.children != []):
+						isAllLeaves = False
+						break
+				if (not isAllLeaves): continue
 			if (reportParent): print node.name,
 			print " ".join([child.name for child in node.children])
 
