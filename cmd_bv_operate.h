@@ -27,6 +27,8 @@ public:
 	virtual void op_complement (void);
 	virtual void op_squeeze (bool fullLengthResult);
 	virtual void op_unsqueeze (void);
+	virtual void op_rrr (void);
+	virtual void op_unrrr (void);
 
 	std::vector<std::string> bvFilenames;
 	std::string outputFilename;

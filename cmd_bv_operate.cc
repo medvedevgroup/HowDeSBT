@@ -24,6 +24,9 @@ using std::endl;
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
+static void decompress_rrr (const rrrbitvector* rrrBits, void* dstBits, const u64 numBits);
+
+
 void BVOperateCommand::short_description
    (std::ostream& s)
 	{
@@ -58,6 +61,8 @@ void BVOperateCommand::usage
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
 	s << "  --unsqueeze       output = a UNSQUEEZE b" << endl;
+	s << "  --rrr             output = RRR a" << endl;
+	s << "  --unrrr           output = UNRRR a" << endl;
 	s << "  --quiet           don't report information about the result" << endl;
 	}
 
@@ -153,6 +158,12 @@ void BVOperateCommand::parse
 		if ((arg == "--unsqueeze") || (arg == "--UNSQUEEZE") || (arg == "UNSQUEEZE"))
 			{ operation = "unsqueeze";  continue; }
 
+		if ((arg == "--rrr") || (arg == "--RRR") || (arg == "RRR"))
+			{ operation = "rrr compress";  continue; }
+
+		if ((arg == "--unrrr") || (arg == "--UNRRR") || (arg == "UNRRR"))
+			{ operation = "rrr decompress";  continue; }
+
 		// --quiet
 
 		if (arg == "--quiet")
@@ -238,6 +249,16 @@ void BVOperateCommand::parse
 		if (bvFilenames.size() != 2)
 			chastise ("UNSQUEEZE requires two input bit vectors");
 		}
+	else if (operation == "rrr compress")
+		{
+		if (bvFilenames.size() != 1)
+			chastise ("RRR requires one input bit vector");
+		}
+	else if (operation == "rrr decompress")
+		{
+		if (bvFilenames.size() != 1)
+			chastise ("UNRRR requires one input bit vector");
+		}
 
 	return;
 	}
@@ -255,6 +276,8 @@ int BVOperateCommand::execute()
 	else if (operation == "squeeze")        op_squeeze(false);
 	else if (operation == "squeeze long")   op_squeeze(true);
 	else if (operation == "unsqueeze")      op_unsqueeze();
+	else if (operation == "rrr compress")   op_rrr();
+	else if (operation == "rrr decompress") op_unrrr();
 
 	return EXIT_SUCCESS;
 	}
@@ -489,4 +512,86 @@ void BVOperateCommand::op_unsqueeze()
 	delete srcBv;
 	delete specBv;
 	delete dstBv;
+	}
+
+
+void BVOperateCommand::op_rrr()
+	{
+	BitVector* bv = BitVector::bit_vector (bvFilenames[0]);
+
+	bv->load();
+
+	RrrBitVector* rrrBv = new RrrBitVector (bv);
+	rrrBv->filename = outputFilename;
+	rrrBv->save();
+
+	delete bv;
+	delete rrrBv;
+	}
+
+
+void BVOperateCommand::op_unrrr()
+	{
+	RrrBitVector* rrrBv = new RrrBitVector (bvFilenames[0]);
+
+	rrrBv->load();
+
+	u64 numBits = rrrBv->num_bits();
+
+	BitVector* dstBv = BitVector::bit_vector (outputFilename);
+	dstBv->new_bits (numBits);
+
+	decompress_rrr (rrrBv->rrrBits, dstBv->bits->data(), numBits);
+	dstBv->save();
+
+	delete rrrBv;
+	delete dstBv;
+	}
+
+//----------
+//
+// decompress_rrr--
+//	Decompress an RRR-compressed bit vector.
+//
+//----------
+//
+// Arguments:
+//	const rrrbitvector*	rrrBits:	Bit array to read.
+//	void*				dstBits:	Bit array to fill.
+//	u64					numBits:	The length of the bit arrays, counted in
+//									*bits*.
+//
+// Returns:
+//	(nothing)
+//
+//----------
+//
+// Notes:
+//	(1)	We process the bytes in 64-bit chunks until we get to the final chunk.
+//		The final chunk is processed byte-by-byte, so that we do not access
+//		any bytes beyond the bit arrays.
+//
+//----------
+
+static void decompress_rrr
+   (const rrrbitvector*	rrrBits,
+	void*				dstBits,
+	const u64			numBits)
+	{
+	u64*				dst  = (u64*) dstBits;
+	u64					n, ix;
+
+	for (ix=0,n=numBits ; n>=64 ; ix+=64,n-=64)
+		*(dst++) = rrrBits->get_int(ix,64);
+
+	if (n > 0)
+		{
+		u64 srcChunk = rrrBits->get_int(ix,n);
+		u8*	dstb  = (u8*) dst;
+		u8*	scanb = (u8*) &srcChunk;
+		for ( ; n>=8 ; n-=8)
+			*(dstb++) = *(scanb++);
+		if (n > 0)
+			*dstb = *scanb;
+		}
 	}
