@@ -335,6 +335,7 @@ int DumpBVCommand::execute()
 		cout.flags(saveCoutFlags);
 		if (showAs == "density")
 			{
+			// $$$ we could use rank() to compute this
 			u64 onesCount = 0;
 			for (u64 pos=startPos ; pos<endPos ; pos++)
 				{ if ((*bv)[pos] == 1) onesCount++; }

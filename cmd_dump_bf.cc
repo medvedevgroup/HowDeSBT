@@ -441,6 +441,7 @@ void DumpBFCommand::dump_one_bloom_filter
 			}
 		else if (showAs == "density")
 			{
+			// $$$ we could use rank() to compute this
 			u64 onesCount = 0;
 			for (u64 pos=startPos ; pos<bvEndPos ; pos++)
 				{ if ((*bv)[pos] == 1) onesCount++; }

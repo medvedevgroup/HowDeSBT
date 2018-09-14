@@ -24,8 +24,6 @@ using std::endl;
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
-static void decompress_rrr (const rrrbitvector* rrrBits, void* dstBits, const u64 numBits);
-
 
 void BVOperateCommand::short_description
    (std::ostream& s)
@@ -546,52 +544,4 @@ void BVOperateCommand::op_unrrr()
 
 	delete rrrBv;
 	delete dstBv;
-	}
-
-//----------
-//
-// decompress_rrr--
-//	Decompress an RRR-compressed bit vector.
-//
-//----------
-//
-// Arguments:
-//	const rrrbitvector*	rrrBits:	Bit array to read.
-//	void*				dstBits:	Bit array to fill.
-//	u64					numBits:	The length of the bit arrays, counted in
-//									*bits*.
-//
-// Returns:
-//	(nothing)
-//
-//----------
-//
-// Notes:
-//	(1)	We process the bytes in 64-bit chunks until we get to the final chunk.
-//		The final chunk is processed byte-by-byte, so that we do not access
-//		any bytes beyond the bit arrays.
-//
-//----------
-
-static void decompress_rrr
-   (const rrrbitvector*	rrrBits,
-	void*				dstBits,
-	const u64			numBits)
-	{
-	u64*				dst  = (u64*) dstBits;
-	u64					n, ix;
-
-	for (ix=0,n=numBits ; n>=64 ; ix+=64,n-=64)
-		*(dst++) = rrrBits->get_int(ix,64);
-
-	if (n > 0)
-		{
-		u64 srcChunk = rrrBits->get_int(ix,n);
-		u8*	dstb  = (u8*) dst;
-		u8*	scanb = (u8*) &srcChunk;
-		for ( ; n>=8 ; n-=8)
-			*(dstb++) = *(scanb++);
-		if (n > 0)
-			*dstb = *scanb;
-		}
 	}

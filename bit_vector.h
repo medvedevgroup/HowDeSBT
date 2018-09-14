@@ -340,3 +340,13 @@ public:
 	virtual void discard_rank_select();
 	};
 #endif // bit_vector_H
+
+
+//----------
+//
+// support utilities--
+//
+//----------
+
+void decompress_rrr (const rrrbitvector* rrrBits,
+                     void* dstBits, const std::uint64_t numBits);

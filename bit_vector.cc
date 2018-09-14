@@ -16,6 +16,7 @@
 using std::string;
 using std::cerr;
 using std::endl;
+#define u8  std::uint8_t
 #define u32 std::uint32_t
 #define u64 std::uint64_t
 
@@ -2149,4 +2150,80 @@ BitVector* BitVector::bit_vector
 		}
 
 	return nullptr;  // execution never reaches here
+	}
+
+//----------
+//
+// decompress_rrr--
+//	Decompress an RRR-compressed bit vector.
+//
+//----------
+//
+// Arguments:
+//	const rrrbitvector*	rrrBits:	Compressed bit array to read.
+//	void*				dstBits:	Uncompressed bit array to fill.
+//	u64					numBits:	The length of the bit array, counted in
+//									.. *bits*. See notes (1) and (2) below.
+//
+// Returns:
+//	(nothing)
+//
+//----------
+//
+// Notes:
+//	(1)	If the destination has more bits than the source vector, the extra bits
+//		are written with zeros.
+//	(2)	We process the bytes in 64-bit chunks until we get to the final chunk.
+//		The final chunk is processed byte-by-byte, so that we do not access
+//		any bytes beyond the bit arrays.
+//
+//----------
+
+void decompress_rrr
+   (const rrrbitvector*	rrrBits,
+	void*				dstBits,
+	const u64			_numBits)
+	{
+	u64					numBits, actualBits;
+	u64*				dst = (u64*) dstBits;
+	u64					n, ix;
+
+	// if the destination has more bits than the source, zero the extras
+
+	numBits    = _numBits;
+	actualBits = rrrBits->size();
+
+	if (numBits > actualBits)
+		{
+		ix = actualBits & ~0x3F;  // ix = actualBits - (actualBits % 64)
+		for ( ; numBits-ix>=64 ; ix+=64)
+			dst[ix/64] = 0;
+
+		if (ix < numBits)
+			{
+			u8*	dstb = (u8*) &dst[ix/64];
+			for ( ; numBits-ix>=8 ; ix+=8)
+				*(dstb++) = 0;
+			if (ix < numBits)
+				*dstb = 0;
+			}
+
+		numBits = actualBits;
+		}
+
+	// decompress
+
+	for (ix=0,n=numBits ; n>=64 ; ix+=64,n-=64)
+		*(dst++) = rrrBits->get_int(ix,64);
+
+	if (n > 0)
+		{
+		u64 srcChunk = rrrBits->get_int(ix,n);
+		u8*	dstb  = (u8*) dst;
+		u8*	scanb = (u8*) &srcChunk;
+		for ( ; n>=8 ; n-=8)
+			*(dstb++) = *(scanb++);
+		if (n > 0)
+			*dstb = *scanb;
+		}
 	}
