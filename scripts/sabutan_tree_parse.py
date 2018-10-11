@@ -38,9 +38,23 @@ def read_sabutan_tree_file(f,keepFileExtension=False,keepTags=False,debug=False)
 			exit("%s: line %d of tree input contains extra fields (\"%s\")"
 			   % (os_path.basename(argv[0]),lineNumber,tags[0]))
 
+		if (level == 0) and (topLevel == 0):
+			assert (len(nodeStack) == 1)
+			(treeLevel,tree) = nodeStack.pop()
+			assert (treeLevel == 0)
+			forest += [tree]
+			if (debug):
+				print >>stderr, "adding %s to forest" % tree.name
+
 		while (topLevelSame) and (level < topLevel):
 			(sibLevel,sibling) = nodeStack.pop()
 			siblings = [sibling]
+			if (level < 0) and (nodeStack == []):
+				assert (sibLevel == 0)
+				forest += [sibling]
+				if (debug):
+					print >>stderr, "adding %s to forest" % sibling.name
+				break
 			(peekLevel,_) = nodeStack[-1]
 			while (peekLevel == sibLevel):
 				(_,sibling) = nodeStack.pop()
