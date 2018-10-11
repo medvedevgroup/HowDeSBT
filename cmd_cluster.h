@@ -72,7 +72,7 @@ class ClusterCommand: public Command
 	{
 public:
 	static const std::uint64_t defaultEndPosition = 100*1000;
-	static constexpr double defaultWinnowingThreshold = 0.2;
+	static constexpr double defaultCullingThreshold = 0.2;
 
 public:
 	ClusterCommand(const std::string& name): Command(name),treeRoot(nullptr) {}
@@ -84,7 +84,7 @@ public:
 	virtual int execute (void);
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
-	virtual void winnow_nodes (BinaryTree* node,bool isRoot=false);
+	virtual void cull_nodes (BinaryTree* node,bool isRoot=false);
 	virtual void top_down_numbering (BinaryTree* node,int depth,bool isRoot=false);
 	virtual void count_depths (BinaryTree* node,int depth);
 	virtual void print_topology (std::ostream& out, BinaryTree* node, int level);
@@ -95,8 +95,8 @@ public:
 	std::string nodeTemplate;
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
-	bool winnowNodes;
-	double winnowingThreshold;
+	bool cullNodes;
+	double cullingThreshold;
 	bool renumberNodes;
 	bool inhibitBuild;
 	bool trackMemory;

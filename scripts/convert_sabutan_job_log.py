@@ -82,7 +82,7 @@ def main():
 # SabutanLogReader--
 #
 # typical log file:
-#   topologyId = detbrief.winnowed.rrr
+#   topologyId = detbrief.culled.rrr
 #   batch = ten.3
 #   specificity = 0.9
 #   

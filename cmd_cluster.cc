@@ -58,7 +58,7 @@ void ClusterCommand::usage
 	s << "  --bits=<N>        number of bits to use from each filter; same as 0..<N>" << endl;
 	s << "  --keepallnodes    keep all nodes of the binary tree" << endl;
 	s << "                    (by default we remove nodes that appear fruitless)" << endl;
-	s << "  --nowinnow        (same as --keepallnodes)" << endl;
+	s << "  --nocull          (same as --keepallnodes)" << endl;
 	s << "  --nobuild         perform the clustering but don't build the tree's nodes" << endl;
 	s << "                    (this is the default)" << endl;
 	s << "  --build           perform clustering, then build the uncompressed nodes" << endl;
@@ -78,8 +78,8 @@ void ClusterCommand::debug_help
 	s << "  queue" << endl;
 	s << "  mergings" << endl;
 	s << "  numbers" << endl;
-	s << "  winnow" << endl;
-	s << "  winnowratio" << endl;
+	s << "  cull" << endl;
+	s << "  cullratio" << endl;
 	}
 
 void ClusterCommand::parse
@@ -91,12 +91,12 @@ void ClusterCommand::parse
 
 	// defaults
 
-	startPosition      = 0;
-	endPosition        = defaultEndPosition;
-	winnowNodes        = true;
-	winnowingThreshold = defaultWinnowingThreshold;
-	renumberNodes      = true;
-	inhibitBuild       = true;
+	startPosition    = 0;
+	endPosition      = defaultEndPosition;
+	cullNodes        = true;
+	cullingThreshold = defaultCullingThreshold;
+	renumberNodes    = true;
+	inhibitBuild     = true;
 
 	// skip command name
 
@@ -210,25 +210,34 @@ void ClusterCommand::parse
 			continue;
 			}
 
-		// --nowinnow, --winnow
+		// --nocull, --cull
+		// --nowinnow, --winnow (unadvertised; for backward compatibility)
 
-		if ((arg == "--nowinnow")
+		if ((arg == "--nocull")
+		 ||	(arg == "--noculling")
+		 ||	(arg == "--dontcull")
+		 ||	(arg == "--keepallnodes")
+		 || (arg == "--nowinnow")
 		 ||	(arg == "--nowinnowing")
-		 ||	(arg == "--dontwinnow")
-		 ||	(arg == "--keepallnodes"))
-			{ winnowNodes = false;  continue; }
+		 ||	(arg == "--dontwinnow"))
+			{ cullNodes = false;  continue; }
 
-		if ((arg == "--winnow")
+		if ((arg == "--cull")
+		 ||	(arg == "--culling")
+		 || (arg == "--winnow")
 		 ||	(arg == "--winnowing"))
-			{ winnowNodes = true;  continue; }
+			{ cullNodes = true;  continue; }
 
+		// --cull=<F> (unadvertised)
 		// --winnow=<F> (unadvertised)
 
-		if ((is_prefix_of (arg, "--winnow="))
+		if ((is_prefix_of (arg, "--cull="))
+		 ||	(is_prefix_of (arg, "--culling="))
+		 || (is_prefix_of (arg, "--winnow="))
 		 ||	(is_prefix_of (arg, "--winnowing=")))
 			{
-			winnowNodes = true;
-			winnowingThreshold = string_to_probability(argVal);
+			cullNodes = true;
+			cullingThreshold = string_to_probability(argVal);
 			continue;
 			}
 
@@ -351,8 +360,8 @@ int ClusterCommand::execute()
 
 	// remove fruitless nodes
 	
-	if (winnowNodes)
-		winnow_nodes(treeRoot,/*isRoot*/true);
+	if (cullNodes)
+		cull_nodes(treeRoot,/*isRoot*/true);
 
 	// assign nodes top-down numbers;  nodes will be assigned names from these
 
@@ -628,10 +637,10 @@ void ClusterCommand::cluster_greedily()
 		// deactivate u and v by removing their bit arrays; if either was a
 		// leaf tell the corresonding bit vector it can get rid of its bits;
 		//
-		// note that if we're going to be winnowing, we move (or copy) the bit
+		// note that if we're going to be culling, we move (or copy) the bit
 		// arrays to bCup rather than get rid of them
 
-		if (winnowNodes)
+		if (cullNodes)
 			{
 			if (u < numLeaves)
 				{
@@ -662,7 +671,7 @@ void ClusterCommand::cluster_greedily()
 
 		if (u < numLeaves)
 			leafVectors[u]->discard_bits();
-		else if (!winnowNodes)
+		else if (!cullNodes)
 			{
 			if (trackMemory)
 				cerr << "@-" << node[u]->bits << " discarding bits for node[" << u << "]" << endl;
@@ -671,7 +680,7 @@ void ClusterCommand::cluster_greedily()
 
 		if (v < numLeaves)
 			leafVectors[v]->discard_bits();
-		else if (!winnowNodes)
+		else if (!cullNodes)
 			{
 			if (trackMemory)
 				cerr << "@-" << node[v]->bits << " discarding bits for node[" << v << "]" << endl;
@@ -699,12 +708,12 @@ void ClusterCommand::cluster_greedily()
 
 	// get rid of the root
 	//
-	// note that if we're going to be winnowing, we move (or copy) the bit
+	// note that if we're going to be culling, we move (or copy) the bit
 	// array to bCup rather than get rid of it
 
 	u32 root = numNodes-1;
 
-	if (winnowNodes)
+	if (cullNodes)
 		{  // (note that we assume the root cannot be a leaf)
 		node[root]->bCup = node[root]->bits;
 		}
@@ -735,11 +744,11 @@ void ClusterCommand::cluster_greedily()
 
 //----------
 //
-// winnow_nodes--
+// cull_nodes--
 //	Remove "fruitless" nodes from the clustered binary tree structure.
 //
-// The winnowing process consists of removing nodes that have a low percentage
-// of bits that will "determine" present/absent for their subtree.  Experiments
+// The culling process consists of removing nodes that have a low percentage of
+// bits that will "determine" present/absent for their subtree.  Experiments
 // (using real queries) have shown that this ratio correlates well with the
 // probability that a node will resolve a query.
 //
@@ -755,7 +764,7 @@ void ClusterCommand::cluster_greedily()
 // 
 //----------
 
-void ClusterCommand::winnow_nodes
+void ClusterCommand::cull_nodes
    (BinaryTree*	node,
 	bool		isRoot)
 	{
@@ -786,10 +795,10 @@ void ClusterCommand::winnow_nodes
 		return;
 		}
 
-	// otherwise, this is a non-leaf node;  first, winnow the descendents
+	// otherwise, this is a non-leaf node;  first, cull the descendents
 
-	winnow_nodes(node->children[0]);
-	winnow_nodes(node->children[1]);
+	cull_nodes(node->children[0]);
+	cull_nodes(node->children[1]);
 
 	// compute bCap from the children
 	//
@@ -841,16 +850,16 @@ void ClusterCommand::winnow_nodes
 		                           /*but not in*/ node->bDet,
 		                           /*how much*/   numBits);
 
-		if (contains(debug,"winnowratio"))
-			cerr << "winnow node[" << child->nodeNum << "] "
+		if (contains(debug,"cullratio"))
+			cerr << "cull node[" << child->nodeNum << "] "
 			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
 			     << endl;
 
-		if (numer < denom*winnowingThreshold) // (numer/denom < winnowingThreshold)
+		if (numer < denom*cullingThreshold) // (numer/denom < cullingThreshold)
 			{
 			child->fruitful = false;
-			if (contains(debug,"winnow"))
-				cerr << "winnowing removes node[" << child->nodeNum << "] "
+			if (contains(debug,"cull"))
+				cerr << "culling removes node[" << child->nodeNum << "] "
 				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
 				     << endl;
 			}
@@ -866,16 +875,16 @@ void ClusterCommand::winnow_nodes
 		numer = bitwise_count(node->bDet,numBits);
 		denom = numBits;
 
-		if (contains(debug,"winnowratio"))
-			cerr << "winnow node[" << node->nodeNum << "] "
+		if (contains(debug,"cullratio"))
+			cerr << "cull node[" << node->nodeNum << "] "
 			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
 			     << endl;
 
-		if (numer < denom*winnowingThreshold) // (numer/denom < winnowingThreshold)
+		if (numer < denom*cullingThreshold) // (numer/denom < cullingThreshold)
 			{
 			node->fruitful = false;
-			if (contains(debug,"winnow"))
-				cerr << "winnowing removes node[" << node->nodeNum << "] "
+			if (contains(debug,"cull"))
+				cerr << "culling removes node[" << node->nodeNum << "] "
 				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
 				     << endl;
 			}
