@@ -505,16 +505,16 @@ void BloomTree::construct_allsome_nodes (u32 compressor)
 
 		bf->new_bits(bvcomp_zeros,1);
 
-		// $$$ we don't necessarily want to save it;  we want to mark it to be
-		//     .. saved, but keep it around if we have enough room, since we'll
-		//     .. need it to compute its parent, at which time we'll change it
-
 		if ((parent == nullptr) || (parent->is_dummy()))
 			{
 			fatal ("error: " + bfFilename + " contains a leaf with no parent");
 			// $$$ the right thing to do would be to finish the node, like we
-			//     do for other parentless nodes
+			//     do for other parentless nodes; see construct_determined_brief_nodes()
 			}
+
+		// $$$ we don't necessarily want to save it;  we want to mark it to be
+		//     .. saved, but keep it around if we have enough room, since we'll
+		//     .. need it to compute its parent, at which time we'll change it
 
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
@@ -692,16 +692,16 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		BitVector* bvDet = bf->get_bit_vector(0);
 		bvDet->fill(1);
 
-		// $$$ we don't necessarily want to save it;  we want to mark it to be
-		//     .. saved, but keep it around if we have enough room, since we'll
-		//     .. need it to compute its parent, at which time we'll change it
-
 		if ((parent == nullptr) || (parent->is_dummy()))
 			{
 			fatal ("error: " + bfFilename + " contains a leaf with no parent");
 			// $$$ the right thing to do would be to finish the node, like we
-			//     do for other parentless nodes
+			//     do for other parentless nodes; see construct_determined_brief_nodes()
 			}
+
+		// $$$ we don't necessarily want to save it;  we want to mark it to be
+		//     .. saved, but keep it around if we have enough room, since we'll
+		//     .. need it to compute its parent, at which time we'll change it
 
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
@@ -900,20 +900,27 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::notSqueezed;
 		bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::notSqueezed;
 
+		// if this leaf has no parent (i.e. it's an orphan), we need to finish
+		// it now, the same way we do (later in this function) for any other
+		// parentless node
+
+		bool finished = false;
+		if ((parent == nullptr) || (parent->is_dummy()))
+			{
+			bf->squeeze_by(bvDet,1);
+
+			bf->get_bit_vector(0)->filterInfo = DeterminedBriefFilter::squeezed;
+			bf->get_bit_vector(1)->filterInfo = DeterminedBriefFilter::squeezed;
+			finished = true;
+			}
+
 		// $$$ we don't necessarily want to save it;  we want to mark it to be
 		//     .. saved, but keep it around if we have enough room, since we'll
 		//     .. need it to compute its parent, at which time we'll change it
 
-		if ((parent == nullptr) || (parent->is_dummy()))
-			{
-			fatal ("error: " + bfFilename + " contains a leaf with no parent");
-			// $$$ the right thing to do would be to finish the node, like we
-			//     do for other parentless nodes
-			}
-
 		bfFilename = newBfFilename;
 		bf->reportSave = reportSave;
-		save(/*finished*/ false);
+		save(finished);
 		unloadable();
 		return;
 		}
