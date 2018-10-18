@@ -22,6 +22,7 @@ public:
 	virtual void collect_stats(BloomTree* node, const void* activeBits=nullptr);
 
 	std::string inTreeFilename;
+	BloomFilter* rootBf;
 	std::uint32_t bfKind;
 	std::uint64_t bfWidth;
 	std::uint64_t startPosition;	// origin-zero, half-open
