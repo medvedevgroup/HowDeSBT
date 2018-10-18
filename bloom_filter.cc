@@ -1369,7 +1369,7 @@ string BloomFilter::strip_filter_suffix
 			name = strip_suffix(name,".allsome");
 		else if (is_suffix_of(name,".det"))			// bfkind_determined
 			name = strip_suffix(name,".det");
-		else if (is_suffix_of(name,".detbrief"))		// bfkind_determined_brief
+		else if (is_suffix_of(name,".detbrief"))	// bfkind_determined_brief
 			name = strip_suffix(name,".detbrief");
 		}
 

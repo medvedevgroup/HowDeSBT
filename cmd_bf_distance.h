@@ -6,7 +6,6 @@
 #include <cstdint>
 #include <iostream>
 
-#include "bloom_filter.h"
 #include "commands.h"
 
 class BFDistanceCommand: public Command

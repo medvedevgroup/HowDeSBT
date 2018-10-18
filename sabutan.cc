@@ -14,6 +14,7 @@
 // subcommands
 #include "cmd_bf_distance.h"
 #include "cmd_bf_operate.h"
+#include "cmd_bit_stats.h"
 #include "cmd_build_sbt.h"
 #include "cmd_bv_operate.h"
 #include "cmd_cluster.h"
@@ -24,10 +25,10 @@
 #include "cmd_load_test.h"
 #include "cmd_make_bf.h"
 #include "cmd_make_bv.h"
+#include "cmd_node_stats.h"
 #include "cmd_query.h"
 #include "cmd_random_bv.h"
 #include "cmd_sabuhash_test.h"
-#include "cmd_tree_stats.h"
 #include "cmd_validate_rrr.h"
 #include "cmd_validate_tree.h"
 #include "cmd_version.h"
@@ -113,7 +114,8 @@ int main
 	cmd->add_command_alias                       ("bfcombine");
 	cmd->add_command_alias                       ("unitebf");
 	cmd->add_command_alias                       ("bfunite");
-	cmd->add_subcommand (new TreeStatsCommand    ("treestats"));
+	cmd->add_subcommand (new NodeStatsCommand    ("nodestats"));
+	cmd->add_subcommand (new BitStatsCommand     ("bitstats"));
 	cmd->add_subcommand (new ValidateTreeCommand ("validatetree"));
 	cmd->add_command_alias                       ("treevalidate");
 	cmd->add_subcommand (new MakeBVCommand       ("makebv"));

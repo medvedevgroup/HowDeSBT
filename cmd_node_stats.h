@@ -1,5 +1,5 @@
-#ifndef cmd_tree_stats_H
-#define cmd_tree_stats_H
+#ifndef cmd_node_stats_H
+#define cmd_node_stats_H
 
 #include <string>
 #include <cstdlib>
@@ -8,11 +8,11 @@
 
 #include "commands.h"
 
-class TreeStatsCommand: public Command
+class NodeStatsCommand: public Command
 	{
 public:
-	TreeStatsCommand(const std::string& name): Command(name) {}
-	virtual ~TreeStatsCommand() {}
+	NodeStatsCommand(const std::string& name): Command(name) {}
+	virtual ~NodeStatsCommand() {}
 	virtual void short_description (std::ostream& s);
 	virtual void usage (std::ostream& s, const std::string& message="");
 	virtual void debug_help (std::ostream& s);
@@ -23,4 +23,4 @@ public:
 	bool reportOccupancy;
 	};
 
-#endif // cmd_tree_stats_H
+#endif // cmd_node_stats_H

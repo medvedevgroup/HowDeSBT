@@ -1,4 +1,4 @@
-// cmd_tree_stats.cc-- report file size and occupancy stats for a sequence
+// cmd_node_stats.cc-- report file size and occupancy stats for a sequence
 // bloom tree
 
 #include <string>
@@ -14,7 +14,7 @@
 
 #include "support.h"
 #include "commands.h"
-#include "cmd_tree_stats.h"
+#include "cmd_node_stats.h"
 
 using std::string;
 using std::vector;
@@ -25,13 +25,13 @@ using std::endl;
 #define u64 std::uint64_t
 
 
-void TreeStatsCommand::short_description
+void NodeStatsCommand::short_description
    (std::ostream& s)
 	{
 	s << commandName << "-- report file sizes and node occupancy stats for a tree" << endl;
 	}
 
-void TreeStatsCommand::usage
+void NodeStatsCommand::usage
    (std::ostream& s,
 	const string& message)
 	{
@@ -51,7 +51,7 @@ void TreeStatsCommand::usage
 	s << "                       support rank/select)" << endl;
 	}
 
-void TreeStatsCommand::debug_help
+void NodeStatsCommand::debug_help
    (std::ostream& s)
 	{
 	s << "--debug= options" << endl;
@@ -61,7 +61,7 @@ void TreeStatsCommand::debug_help
 	s << "  traversal" << endl;
 	}
 
-void TreeStatsCommand::parse
+void NodeStatsCommand::parse
    (int		_argc,
 	char**	_argv)
 	{
@@ -163,7 +163,7 @@ void TreeStatsCommand::parse
 	return;
 	}
 
-int TreeStatsCommand::execute()
+int NodeStatsCommand::execute()
 	{
 	bool dbgTraversal = (contains(debug,"traversal"));
 
