@@ -19,7 +19,7 @@ public:
 	virtual void debug_help (std::ostream& s);
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
-	virtual void collect_stats(BloomTree* node, const void* activeBits=nullptr);
+	virtual void collect_stats(BloomTree* node, BitVector* activeBv);
 
 	std::string inTreeFilename;
 	BloomFilter* rootBf;

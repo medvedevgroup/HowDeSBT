@@ -227,8 +227,11 @@ int BitStatsCommand::execute()
 
 	// compute the stats
 
+	BitVector* activeBv = BitVector::bit_vector(bfWidth);
+	activeBv->fill(1);
+
 	nodeNum = 0;
-	collect_stats(root);
+	collect_stats(root,activeBv);
 
 	// report the stats
 
@@ -256,6 +259,7 @@ int BitStatsCommand::execute()
 	delete[] detActive;
 	delete[] howActive;
 	delete[] howOne;
+	delete activeBv;
 
 	return EXIT_SUCCESS;
 	}
@@ -263,7 +267,7 @@ int BitStatsCommand::execute()
 
 void BitStatsCommand::collect_stats
    (BloomTree*	node,
-	const void*	activeBits)  // bit vector with bfWidth bits
+	BitVector*	activeBv)  // bit vector with bfWidth bits
 	{
 	// skip through dummy nodes
 
@@ -273,7 +277,7 @@ void BitStatsCommand::collect_stats
 			cerr << "(skipping through dummy node)" << endl;
 
 		for (const auto& child : node->children)
-			collect_stats(child,activeBits);
+			collect_stats(child,activeBv);
 		return;
 		}
 
@@ -288,33 +292,78 @@ void BitStatsCommand::collect_stats
 
 	// make sure this node is compatible with the root
 
-	BloomFilter* bf = node->real_filter();
-	bf->preload();
-
+	node->load();
 	node->bf->is_consistent_with(rootBf, /*beFatal*/ true);
 
 	// reconstruct the original det,how, first decompressing (if needed), then
-	// unsqueezing to recover inactive bit positions; note that if activeBits
-	// is null, we don't need to unsqueeze det
+	// unsqueezing to recover inactive bit positions
 
-……… allocate uncDet, uncHow?
+	BitVector* bvDet = node->bf->get_bit_vector(0);
+	BitVector* uncDet = BitVector::bit_vector(bfWidth);  ……… no, size should come from the compressed vector
+	switch (bvDet->compressor())
+		{
+		case bvcomp_uncompressed:
+			uncDet->copy_from(bvDet->bits);
+			break;
+		case bvcomp_rrr:
+			decompress_rrr(bvDet->rrrBits,uncDet->bits->data(),bvDet->num_bits());
+			break;
+		case bvcomp_zeros:
+			uncDet->fill(0);
+			break;
+		case bvcomp_ones:
+			uncDet->fill(1);
+			break;
+		default:
+			fatal ("error: compression type " + BitVector::compressor_to_string(bvDet->compressor())
+			     + " is not yet supported, for \"" + node->filename + "\" determined");
+			break;
+		}
 
-	if (bit vectors are rrr, or roar, or allOnes/allZeros)
-		decompress them
+	BitVector* bvHow = node->bf->get_bit_vector(0);
+	BitVector* uncHow = BitVector::bit_vector(bfWidth);  ……… no, size should come from the compressed vector
+	switch (bvHow->compressor())
+		{
+		case bvcomp_uncompressed:
+			uncHow->copy_from(bvHow->bits);
+			break;
+		case bvcomp_rrr:
+			decompress_rrr(bvHow->rrrBits,uncHow->bits->data(),bvHow->num_bits());
+			break;
+		case bvcomp_zeros:
+			uncHow->fill(0);
+			break;
+		case bvcomp_ones:
+			uncHow->fill(1);
+			break;
+		default:
+			fatal ("error: compression type " + BitVector::compressor_to_string(bvHow->compressor())
+			     + " is not yet supported, for \"" + node->filename + "\" how");
+			break;
+		}
 
-	if (activeBits != nullptr)
-		uncDet = unsqueeze by activeBits
+	BitVector* tmpBv = BitVector::bit_vector(bfWidth);
+	bitwise_unsqueeze (uncDet->bits->data(),   ……numBits,
+	                   activeBv->bits->data(), bfWidth,
+	                   tmpBv->bits->data(),    bfWidth);
+	std::swap(uncDet,tmpBv);
 
 	uncHow = unsqueeze by uncDet
+	bitwise_unsqueeze (uncHow->bits->data(), ……numBits,
+	                   uncDet->bits->data(), bfWidth,
+	                   tmpBv->bits->data(),  bfWidth);
+	std::swap(uncHow,tmpBv);
+
+	delete tmpBv;
 
 	// count stats
 
 	for (u64 pos=startPosition ; pos<endPosition ; pos++)
 		{
-		if (……pos not in activeBits) continue
+		if (activeBv[pos] == 0) continue
 		detActive[pos-startPosition]++;
-		if (……pos in uncDet) howActive[pos-startPosition]++;
-		if (……pos in uncHow) howOne[pos-startPosition]++;
+		if (uncDet[pos] == 1) howActive[pos-startPosition]++;
+		if (uncHow[pos] == 1) howOne[pos-startPosition]++;
 		}
 
 	// count stats in the children (if any)
@@ -322,6 +371,7 @@ void BitStatsCommand::collect_stats
 	for (const auto& child : node->children)
 		collect_stats(child,uncDet);
 
-	delete uncDet; or delete[]?
-	delete uncHow; or delete[]?
+	delete uncDet;
+	delete uncHow;
+	delete node;
 	}
