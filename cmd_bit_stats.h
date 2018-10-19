@@ -32,6 +32,7 @@ public:
 	std::uint32_t* howOne;			//   "
 
 	bool dbgTraversal;
+	bool dbgBits;
 	int nodeNum;
 	};
 

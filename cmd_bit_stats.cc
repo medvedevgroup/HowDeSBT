@@ -1,5 +1,4 @@
-// cmd_bit_stats.cc-- report file size and occupancy stats for a sequence
-// bloom tree
+// cmd_bit_stats.cc-- report active-bit stats for a sequence bloom tree
 
 #include <string>
 #include <cstdlib>
@@ -18,11 +17,15 @@
 #include "cmd_bit_stats.h"
 
 using std::string;
+using std::vector;
 using std::cout;
 using std::cerr;
 using std::endl;
+#define u8  std::uint8_t
 #define u32 std::uint32_t
 #define u64 std::uint64_t
+
+static string bit_array_string (const void* bits, const u64 numBits);
 
 
 void BitStatsCommand::short_description
@@ -59,6 +62,7 @@ void BitStatsCommand::debug_help
 	s << "  topology" << endl;
 	s << "  load" << endl;
 	s << "  traversal" << endl;
+	s << "  bits" << endl;
 	}
 
 void BitStatsCommand::parse
@@ -180,6 +184,7 @@ void BitStatsCommand::parse
 int BitStatsCommand::execute()
 	{
 	dbgTraversal = (contains(debug,"traversal"));
+	dbgBits      = (contains(debug,"bits"));
 
 	if (contains(debug,"trackmemory"))
 		{
@@ -193,6 +198,15 @@ int BitStatsCommand::execute()
 
 	if (contains(debug,"topology"))
 		root->print_topology(cerr,/*level*/0,/*format*/topofmt_nodeNames);
+
+	if (contains(debug,"load"))
+		{
+		vector<BloomTree*> preOrder;
+		root->pre_order(preOrder);
+
+		for (const auto& node : preOrder)
+			node->reportLoad = true;
+		}
 
 	// make sure we can support this tree and interval
 
@@ -292,6 +306,9 @@ void BitStatsCommand::collect_stats
 		     << endl;
 		}
 
+	if (dbgBits)
+		cerr << "  activeBv  = " << bit_array_string(activeBv->bits->data(),bfWidth) << endl;
+
 	// make sure this node is compatible with the root
 
 	node->load();
@@ -332,6 +349,9 @@ void BitStatsCommand::collect_stats
 			break;
 		}
 
+	if (dbgBits)
+		cerr << "  det.brief = " << bit_array_string(uncDet->bits->data(),detBits) << endl;
+
 	// decompress how; note that we allocate a full-width bit vector, same as
 	// for determined
 
@@ -363,21 +383,30 @@ void BitStatsCommand::collect_stats
 			break;
 		}
 
+	if (dbgBits)
+		cerr << "  how.brief = " << bit_array_string(uncDet->bits->data(),detBits) << endl;
+
 	// unsqueeze determined, by activeBv; this will expand determined to full
 	// width
 
 	BitVector* tmpBv = new BitVector(bfWidth);
-	bitwise_unsqueeze (uncDet->bits->data(),   detBits,
-	                   activeBv->bits->data(), bfWidth,
-	                   tmpBv->bits->data(),    bfWidth);
+	bitwise_unsqueeze (uncDet->bits->data(),  detBits,
+	                   activeBv->bits->data(),bfWidth,
+	                   tmpBv->bits->data(),   bfWidth);
 	std::swap(uncDet,tmpBv);
+
+	if (dbgBits)
+		cerr << "  det       = " << bit_array_string(uncDet->bits->data(),bfWidth) << endl;
 
 	// unsqueeze how by determined; this will expand how to full width
 
-	bitwise_unsqueeze (uncHow->bits->data(), howBits,
-	                   uncDet->bits->data(), bfWidth,
-	                   tmpBv->bits->data(),  bfWidth);
+	bitwise_unsqueeze (uncHow->bits->data(),howBits,
+	                   uncDet->bits->data(),bfWidth,
+	                   tmpBv->bits->data(), bfWidth);
 	std::swap(uncHow,tmpBv);
+
+	if (dbgBits)
+		cerr << "  how       = " << bit_array_string(uncHow->bits->data(),bfWidth) << endl;
 
 	delete tmpBv;
 
@@ -385,18 +414,76 @@ void BitStatsCommand::collect_stats
 
 	for (u64 pos=startPosition ; pos<endPosition ; pos++)
 		{
-		if ((*activeBv)[pos] == 0) continue;
+		u64 posWhole = pos / 64;
+		u64 posPart  = pos % 64;
+		u64 posMask  = ((u64)1) << posPart;
+
+		if ((activeBv->bits->data()[posWhole] & posMask) == 0) continue;
 		detActive[pos-startPosition]++;
-		if ((*uncDet)[pos] == 1) howActive[pos-startPosition]++;
-		if ((*uncHow)[pos] == 1) howOne[pos-startPosition]++;
+		if ((uncDet->bits->data()[posWhole] & posMask) != 0) howActive[pos-startPosition]++;
+		if ((uncHow->bits->data()[posWhole] & posMask) != 0) howOne[pos-startPosition]++;
 		}
 
 	// count stats in the children (if any)
 
 	for (const auto& child : node->children)
+		{
 		collect_stats(child,uncDet);
+		}
 
+	node->unloadable();
 	delete uncDet;
 	delete uncHow;
-	delete node;
 	}
+
+
+static string bit_array_string (const void* bits, const u64 numBits)
+	{
+	if (numBits == 0)
+		{ string s(0);  return s; }
+
+	u64 numChars = numBits + ((numBits-1)/5);
+	string	s(numChars,'#');
+
+	u64*	scan = (u64*) bits;
+	u64		n, ix;
+
+	ix = 0;
+	for (n=numBits ; n>=64 ; n-=64)
+		{
+		u64 word = *(scan++);
+		for (u32 pos=0 ; pos<64 ; pos++)
+			{
+			if (ix % 6 == 5) s[ix++] = ' ';
+			s[ix++] = ((word&1) == 1)? '+' : '-';
+			word >>= 1;
+			}
+		}
+
+	if (n == 0) return s;
+
+	u8*	scanb = (u8*) scan;
+	for ( ; n>=8 ; n-=8)
+		{
+		u8 word = *(scanb++);
+		for (u32 pos=0 ; pos<8 ; pos++)
+			{
+			if (ix % 6 == 5) s[ix++] = ' ';
+			s[ix++] = ((word&1) == 1)? '+' : '-';
+			word >>= 1;
+			}
+		}
+
+	if (n == 0) return s;
+
+	u8 word = *(scanb++);
+	for ( ; n>0 ; n--)
+		{
+		if (ix % 6 == 5) s[ix++] = ' ';
+		s[ix++] = ((word&1) == 1)? '+' : '-';
+		word >>= 1;
+		}
+
+	return s;
+	}
+

@@ -115,6 +115,7 @@ int main
 	cmd->add_command_alias                       ("unitebf");
 	cmd->add_command_alias                       ("bfunite");
 	cmd->add_subcommand (new NodeStatsCommand    ("nodestats"));
+	cmd->add_command_alias                       ("treestats");
 	cmd->add_subcommand (new BitStatsCommand     ("bitstats"));
 	cmd->add_subcommand (new ValidateTreeCommand ("validatetree"));
 	cmd->add_command_alias                       ("treevalidate");
