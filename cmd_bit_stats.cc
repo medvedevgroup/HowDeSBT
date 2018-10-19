@@ -323,14 +323,14 @@ void BitStatsCommand::collect_stats
 
 	BitVector* bvDet = node->bf->get_bit_vector(0);
 	BitVector* uncDet = new BitVector(bfWidth);
-	u64 detBits = bvDet->num_bits();
+	u64 detNumBits = bvDet->num_bits();
 	RrrBitVector* rrrBvDet = nullptr;
 
 	switch (bvDet->compressor())
 		{
 		case bvcomp_uncompressed:
 			bitwise_fill(uncDet->bits->data(),0,bfWidth);
-			bitwise_copy(bvDet->bits->data(),uncDet->bits->data(),detBits);
+			bitwise_copy(bvDet->bits->data(),uncDet->bits->data(),detNumBits);
 			break;
 		case bvcomp_rrr:
 			rrrBvDet = (RrrBitVector*) bvDet;
@@ -341,7 +341,7 @@ void BitStatsCommand::collect_stats
 			break;
 		case bvcomp_ones:
 			bitwise_fill(uncDet->bits->data(),0,bfWidth);
-			bitwise_fill(uncDet->bits->data(),1,detBits);
+			bitwise_fill(uncDet->bits->data(),1,detNumBits);
 			break;
 		default:
 			fatal ("error: compression type " + BitVector::compressor_to_string(bvDet->compressor())
@@ -350,21 +350,25 @@ void BitStatsCommand::collect_stats
 		}
 
 	if (dbgBits)
-		cerr << "  det.brief = " << bit_array_string(uncDet->bits->data(),detBits) << endl;
+		{
+		//cerr << "  detType   = " << BitVector::compressor_to_string(bvDet->compressor()) << endl;
+		//cerr << "  detBits   = " << detNumBits << endl;
+		cerr << "  det.brief = " << bit_array_string(uncDet->bits->data(),detNumBits) << endl;
+		}
 
 	// decompress how; note that we allocate a full-width bit vector, same as
 	// for determined
 
-	BitVector* bvHow = node->bf->get_bit_vector(0);
+	BitVector* bvHow = node->bf->get_bit_vector(1);
 	BitVector* uncHow = new BitVector(bfWidth);
-	u64 howBits = bvHow->num_bits();
+	u64 howNumBits = bvHow->num_bits();
 	RrrBitVector* rrrBvHow = nullptr;
 
 	switch (bvHow->compressor())
 		{
 		case bvcomp_uncompressed:
 			bitwise_fill(uncHow->bits->data(),0,bfWidth);
-			bitwise_copy(bvHow->bits->data(),uncHow->bits->data(),howBits);
+			bitwise_copy(bvHow->bits->data(),uncHow->bits->data(),howNumBits);
 			break;
 		case bvcomp_rrr:
 			rrrBvHow = (RrrBitVector*) bvHow;
@@ -375,7 +379,7 @@ void BitStatsCommand::collect_stats
 			break;
 		case bvcomp_ones:
 			bitwise_fill(uncHow->bits->data(),0,bfWidth);
-			bitwise_fill(uncHow->bits->data(),1,howBits);
+			bitwise_fill(uncHow->bits->data(),1,howNumBits);
 			break;
 		default:
 			fatal ("error: compression type " + BitVector::compressor_to_string(bvHow->compressor())
@@ -384,13 +388,17 @@ void BitStatsCommand::collect_stats
 		}
 
 	if (dbgBits)
-		cerr << "  how.brief = " << bit_array_string(uncDet->bits->data(),howBits) << endl;
+		{
+		//cerr << "  howType   = " << BitVector::compressor_to_string(bvHow->compressor()) << endl;
+		//cerr << "  howBits   = " << howNumBits << endl;
+		cerr << "  how.brief = " << bit_array_string(uncHow->bits->data(),howNumBits) << endl;
+		}
 
 	// unsqueeze determined, by activeBv; this will expand determined to full
 	// width
 
 	BitVector* tmpBv = new BitVector(bfWidth);
-	bitwise_unsqueeze (uncDet->bits->data(),  detBits,
+	bitwise_unsqueeze (uncDet->bits->data(),  detNumBits,
 	                   activeBv->bits->data(),bfWidth,
 	                   tmpBv->bits->data(),   bfWidth);
 	std::swap(uncDet,tmpBv);
@@ -400,15 +408,13 @@ void BitStatsCommand::collect_stats
 
 	// unsqueeze how by determined; this will expand how to full width
 
-	bitwise_unsqueeze (uncHow->bits->data(),howBits,
+	bitwise_unsqueeze (uncHow->bits->data(),howNumBits,
 	                   uncDet->bits->data(),bfWidth,
 	                   tmpBv->bits->data(), bfWidth);
 	std::swap(uncHow,tmpBv);
 
 	if (dbgBits)
 		cerr << "  how       = " << bit_array_string(uncHow->bits->data(),bfWidth) << endl;
-
-	delete tmpBv;
 
 	// count stats
 
@@ -424,26 +430,32 @@ void BitStatsCommand::collect_stats
 		if ((uncHow->bits->data()[posWhole] & posMask) != 0) howOne[pos-startPosition]++;
 		}
 
-	// count stats in the children (if any)
+	// count stats in the children (if any); note that we compute the remaining
+	// active bits as tmpBv = activeBv maskby uncDet
 
-	for (const auto& child : node->children)
+	if (node->num_children() > 0)
 		{
-		collect_stats(child,uncDet);
+		bitwise_mask(activeBv->bits->data(),uncDet->bits->data(),tmpBv->bits->data(),bfWidth);
+		for (const auto& child : node->children)
+			collect_stats(child,tmpBv);
 		}
 
 	node->unloadable();
 	delete uncDet;
 	delete uncHow;
+	delete tmpBv;
 	}
 
 
 static string bit_array_string (const void* bits, const u64 numBits)
 	{
-	if (numBits == 0)
-		{ string s(0);  return s; }
+	u32 chunkSize = 10;
+	u64 numChars;
+	if (numBits == 0) numChars = 0;
+	             else numChars = numBits + ((numBits-1)/chunkSize);
 
-	u64 numChars = numBits + ((numBits-1)/5);
-	string	s(numChars,'#');
+	string s(numChars,'#');  // (the # to be obvious if the string isn't filled)
+	if (numBits == 0) return s;
 
 	u64*	scan = (u64*) bits;
 	u64		n, ix;
@@ -454,7 +466,7 @@ static string bit_array_string (const void* bits, const u64 numBits)
 		u64 word = *(scan++);
 		for (u32 pos=0 ; pos<64 ; pos++)
 			{
-			if (ix % 6 == 5) s[ix++] = ' ';
+			if (ix % (chunkSize+1) == chunkSize) s[ix++] = ' ';
 			s[ix++] = ((word&1) == 1)? '+' : '-';
 			word >>= 1;
 			}
@@ -468,7 +480,7 @@ static string bit_array_string (const void* bits, const u64 numBits)
 		u8 word = *(scanb++);
 		for (u32 pos=0 ; pos<8 ; pos++)
 			{
-			if (ix % 6 == 5) s[ix++] = ' ';
+			if (ix % (chunkSize+1) == chunkSize) s[ix++] = ' ';
 			s[ix++] = ((word&1) == 1)? '+' : '-';
 			word >>= 1;
 			}
@@ -479,7 +491,7 @@ static string bit_array_string (const void* bits, const u64 numBits)
 	u8 word = *(scanb++);
 	for ( ; n>0 ; n--)
 		{
-		if (ix % 6 == 5) s[ix++] = ' ';
+		if (ix % (chunkSize+1) == chunkSize) s[ix++] = ' ';
 		s[ix++] = ((word&1) == 1)? '+' : '-';
 		word >>= 1;
 		}
