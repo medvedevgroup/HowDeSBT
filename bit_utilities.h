@@ -9,6 +9,7 @@
 
 bool          bitwise_is_all_zeros (const void* bits, const std::uint64_t numBits);
 bool          bitwise_is_all_ones  (const void* bits, const std::uint64_t numBits);
+void          bitwise_copy         (const void* bits, void* dstBits, const std::uint64_t numBits);
 void          bitwise_and          (const void* bits1, const void* bits2, void* dstBits, const std::uint64_t numBits);
 void          bitwise_and          (void* dstBits, const void* bits2, const std::uint64_t numBits);
 void          bitwise_mask         (const void* bits1, const void* maskBits, void* dstBits, const std::uint64_t numBits);

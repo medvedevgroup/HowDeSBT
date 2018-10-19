@@ -8,6 +8,8 @@
 #include <random>
 
 #include "utilities.h"
+#include "bit_utilities.h"
+#include "bit_vector.h"
 #include "bloom_tree.h"
 #include "file_manager.h"
 
@@ -227,7 +229,7 @@ int BitStatsCommand::execute()
 
 	// compute the stats
 
-	BitVector* activeBv = BitVector::bit_vector(bfWidth);
+	BitVector* activeBv = new BitVector(bfWidth);
 	activeBv->fill(1);
 
 	nodeNum = 0;
@@ -295,61 +297,84 @@ void BitStatsCommand::collect_stats
 	node->load();
 	node->bf->is_consistent_with(rootBf, /*beFatal*/ true);
 
-	// reconstruct the original det,how, first decompressing (if needed), then
-	// unsqueezing to recover inactive bit positions
+	// === reconstruct the original determined,how, first decompressing (if ===
+	// === needed), then unsqueezing to recover inactive bit positions      ===
+
+	// decompress determined; note that we allocate a full-width bit vector;
+	// the decompressed vector will be usually be shorter, but we'll be
+	// unqueezing into the full width
 
 	BitVector* bvDet = node->bf->get_bit_vector(0);
-	BitVector* uncDet = BitVector::bit_vector(bfWidth);  ……… no, size should come from the compressed vector
+	BitVector* uncDet = new BitVector(bfWidth);
+	u64 detBits = bvDet->num_bits();
+	RrrBitVector* rrrBvDet = nullptr;
+
 	switch (bvDet->compressor())
 		{
 		case bvcomp_uncompressed:
-			uncDet->copy_from(bvDet->bits);
+			bitwise_fill(uncDet->bits->data(),0,bfWidth);
+			bitwise_copy(bvDet->bits->data(),uncDet->bits->data(),detBits);
 			break;
 		case bvcomp_rrr:
-			decompress_rrr(bvDet->rrrBits,uncDet->bits->data(),bvDet->num_bits());
+			rrrBvDet = (RrrBitVector*) bvDet;
+			decompress_rrr(rrrBvDet->rrrBits,uncDet->bits->data(),bfWidth);
 			break;
 		case bvcomp_zeros:
-			uncDet->fill(0);
+			bitwise_fill(uncDet->bits->data(),0,bfWidth);
 			break;
 		case bvcomp_ones:
-			uncDet->fill(1);
+			bitwise_fill(uncDet->bits->data(),0,bfWidth);
+			bitwise_fill(uncDet->bits->data(),1,detBits);
 			break;
 		default:
 			fatal ("error: compression type " + BitVector::compressor_to_string(bvDet->compressor())
-			     + " is not yet supported, for \"" + node->filename + "\" determined");
+			     + " is not yet supported, for \"" + node->bfFilename + "\" determined");
 			break;
 		}
 
+	// decompress how; note that we allocate a full-width bit vector, same as
+	// for determined
+
 	BitVector* bvHow = node->bf->get_bit_vector(0);
-	BitVector* uncHow = BitVector::bit_vector(bfWidth);  ……… no, size should come from the compressed vector
+	BitVector* uncHow = new BitVector(bfWidth);
+	u64 howBits = bvHow->num_bits();
+	RrrBitVector* rrrBvHow = nullptr;
+
 	switch (bvHow->compressor())
 		{
 		case bvcomp_uncompressed:
-			uncHow->copy_from(bvHow->bits);
+			bitwise_fill(uncHow->bits->data(),0,bfWidth);
+			bitwise_copy(bvHow->bits->data(),uncHow->bits->data(),howBits);
 			break;
 		case bvcomp_rrr:
-			decompress_rrr(bvHow->rrrBits,uncHow->bits->data(),bvHow->num_bits());
+			rrrBvHow = (RrrBitVector*) bvHow;
+			decompress_rrr(rrrBvHow->rrrBits,uncHow->bits->data(),bfWidth);
 			break;
 		case bvcomp_zeros:
-			uncHow->fill(0);
+			bitwise_fill(uncHow->bits->data(),0,bfWidth);
 			break;
 		case bvcomp_ones:
-			uncHow->fill(1);
+			bitwise_fill(uncHow->bits->data(),0,bfWidth);
+			bitwise_fill(uncHow->bits->data(),1,howBits);
 			break;
 		default:
 			fatal ("error: compression type " + BitVector::compressor_to_string(bvHow->compressor())
-			     + " is not yet supported, for \"" + node->filename + "\" how");
+			     + " is not yet supported, for \"" + node->bfFilename + "\" how");
 			break;
 		}
 
-	BitVector* tmpBv = BitVector::bit_vector(bfWidth);
-	bitwise_unsqueeze (uncDet->bits->data(),   ……numBits,
+	// unsqueeze determined, by activeBv; this will expand determined to full
+	// width
+
+	BitVector* tmpBv = new BitVector(bfWidth);
+	bitwise_unsqueeze (uncDet->bits->data(),   detBits,
 	                   activeBv->bits->data(), bfWidth,
 	                   tmpBv->bits->data(),    bfWidth);
 	std::swap(uncDet,tmpBv);
 
-	uncHow = unsqueeze by uncDet
-	bitwise_unsqueeze (uncHow->bits->data(), ……numBits,
+	// unsqueeze how by determined; this will expand how to full width
+
+	bitwise_unsqueeze (uncHow->bits->data(), howBits,
 	                   uncDet->bits->data(), bfWidth,
 	                   tmpBv->bits->data(),  bfWidth);
 	std::swap(uncHow,tmpBv);
@@ -360,10 +385,10 @@ void BitStatsCommand::collect_stats
 
 	for (u64 pos=startPosition ; pos<endPosition ; pos++)
 		{
-		if (activeBv[pos] == 0) continue
+		if ((*activeBv)[pos] == 0) continue;
 		detActive[pos-startPosition]++;
-		if (uncDet[pos] == 1) howActive[pos-startPosition]++;
-		if (uncHow[pos] == 1) howOne[pos-startPosition]++;
+		if ((*uncDet)[pos] == 1) howActive[pos-startPosition]++;
+		if ((*uncHow)[pos] == 1) howOne[pos-startPosition]++;
 		}
 
 	// count stats in the children (if any)

@@ -110,6 +110,59 @@ bool bitwise_is_all_ones
 
 //----------
 //
+// bitwise_copy--
+//	Copy one bit array to another.
+//
+//----------
+//
+// Arguments:
+//	const void*	bits:		Bit array to read.
+//	void*		dstBits:	Bit array to write.
+//	u64			numBits:	The length of the bit arrays, counted in *bits*.
+//							.. See note (1) below.
+//
+// Returns:
+//	(nothing)
+//
+//----------
+//
+// Notes:
+//	(1)	The number of bytes in the bit arrays is ceil(numBits/8). When numBits
+//		is not a multiple of 8, the remaining bits are read from the least
+//		significant bits of the final byte.
+//	(2)	We process the bytes in 64-bit chunks until we get to the final chunk.
+//		The final chunk is processed byte-by-byte, so that we do not access
+//		any bytes beyond the bit arrays.
+//
+//----------
+
+void bitwise_copy
+   (const void*	bits,
+	void*		dstBits,
+	const u64	numBits)
+	{
+	u64*		scan = (u64*) bits;
+	u64*		dst  = (u64*) dstBits;
+	u64			n;
+
+	for (n=numBits ; n>=64 ; n-=64)
+		*(dst++) = *(scan++);
+
+	if (n == 0) return;
+
+	u8*	scanb = (u8*) scan;
+	u8*	dstb   = (u8*) dst;
+	for ( ; n>=8 ; n-=8)
+		*(dstb++) = *(scanb++);
+
+	if (n == 0) return;
+
+	u8 mask = least_significant(u8,n);
+	*dstb = (*scanb) & mask;  // leftover bits intentionally set to zero
+	}
+
+//----------
+//
 // bitwise_and, bitwise_mask, bitwise_or, bitwise_or_not, bitwise_xor,
 // and bitwise_xnor--
 //	Create the bitwise AND, ANDNOT, OR, XOR, or XNOR of two bit arrays.
