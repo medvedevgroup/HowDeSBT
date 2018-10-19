@@ -384,7 +384,7 @@ void BitStatsCommand::collect_stats
 		}
 
 	if (dbgBits)
-		cerr << "  how.brief = " << bit_array_string(uncDet->bits->data(),detBits) << endl;
+		cerr << "  how.brief = " << bit_array_string(uncDet->bits->data(),howBits) << endl;
 
 	// unsqueeze determined, by activeBv; this will expand determined to full
 	// width
