@@ -31,6 +31,7 @@ public:
 	std::uint32_t* howActive;		//   "
 	std::uint32_t* howOne;			//   "
 
+	std::string showAs;
 	bool dbgTraversal;
 	bool dbgBits;
 	int nodeNum;

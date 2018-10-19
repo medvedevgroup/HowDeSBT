@@ -76,6 +76,7 @@ void BitStatsCommand::parse
 
 	startPosition = 0;
 	endPosition   = UINT64_MAX;   // this will be reduced to min filter length
+	showAs        = "n_x s_x";
 
 	// skip command name
 
@@ -106,6 +107,20 @@ void BitStatsCommand::parse
 			endPosition   = string_to_unitized_u64(argVal);
 			continue;
 			}
+
+		// --show:actives (unadvertised)
+
+		if ((arg == "--show:actives")
+		 || (arg == "--actives")
+		 || (arg == "--asactives"))
+			{ showAs = "det.active how.active how.one";  continue; }
+
+		// --show:activeone (unadvertised)
+
+		if ((arg == "--show:activeone")
+		 || (arg == "--activeone")
+		 || (arg == "--asactiveone"))
+			{ showAs = "det.active how.one";  continue; }
 
 		// --help, etc.
 
@@ -230,15 +245,18 @@ int BitStatsCommand::execute()
 
 	// allocate counting arrays
 
+	detActive = howActive = howOne = nullptr;
+
 	detActive = new u32[endPosition-startPosition];
-	howActive = new u32[endPosition-startPosition];
 	howOne    = new u32[endPosition-startPosition];
+	if (showAs == "det.active how.active how.one")
+		howActive = new u32[endPosition-startPosition];
 
 	for (u64 pos=startPosition ; pos<endPosition ; pos++)
 		{
-		detActive[pos-startPosition]
-		  = howActive[pos-startPosition]
-		  = howOne[pos-startPosition] = 0;
+		if (detActive != nullptr) detActive[pos-startPosition] = 0;
+		if (howActive != nullptr) howActive[pos-startPosition] = 0;
+		if (howOne    != nullptr) howOne   [pos-startPosition] = 0;
 		}
 
 	// compute the stats
@@ -251,19 +269,56 @@ int BitStatsCommand::execute()
 
 	// report the stats
 
-	cout << "#pos"
-	     << "\tdetActive"
-	     << "\thowActive"
-	     << "\thowOne"
-	     << endl;
-
-	for (u64 pos=startPosition ; pos<endPosition ; pos++)
+	if (showAs == "det.active how.active how.one")
 		{
-		cout << pos
-		     << "\t" << detActive[pos-startPosition]
-		     << "\t" << howActive[pos-startPosition]
-		     << "\t" << howOne[pos-startPosition]
+		cout << "#pos"
+		     << "\tdetActive"
+		     << "\thowActive"
+		     << "\thowOne"
 		     << endl;
+
+		for (u64 pos=startPosition ; pos<endPosition ; pos++)
+			{
+			// $$$ validate that detActive = 2*howActive-1
+			cout << pos
+			     << "\t" << detActive[pos-startPosition]
+			     << "\t" << howActive[pos-startPosition]
+			     << "\t" << howOne[pos-startPosition]
+			     << endl;
+			}
+		}
+	else if (showAs == "det.active how.one")
+		{
+		cout << "#pos"
+		     << "\tdetActive"
+		     << "\thowOne"
+		     << endl;
+
+		for (u64 pos=startPosition ; pos<endPosition ; pos++)
+			{
+			cout << pos
+			     << "\t" << detActive[pos-startPosition]
+			     << "\t" << howOne[pos-startPosition]
+			     << endl;
+			}
+		}
+	else // if (showAs == "n_x s_x")
+		{
+		cout << "#x"
+		     << "\tn_x"
+		     << "\ts_x"
+		     << endl;
+
+		for (u64 pos=startPosition ; pos<endPosition ; pos++)
+			{
+			u32 s = detActive[pos-startPosition];
+			u32 l = (detActive[pos-startPosition] + 1) / 2;
+			double h = ((double) howOne[pos-startPosition]) / l;
+			cout << pos
+			     << "\t" << s
+			     << "\t" << h
+			     << endl;
+			}
 		}
 
 	// cleanup
@@ -272,9 +327,9 @@ int BitStatsCommand::execute()
 								// .. opened for read gets closed
 
 	delete root;
-	delete[] detActive;
-	delete[] howActive;
-	delete[] howOne;
+	if (detActive != nullptr) delete[] detActive;
+	if (howActive != nullptr) delete[] howActive;
+	if (howOne    != nullptr) delete[] howOne;
 	delete activeBv;
 
 	return EXIT_SUCCESS;
@@ -425,9 +480,18 @@ void BitStatsCommand::collect_stats
 		u64 posMask  = ((u64)1) << posPart;
 
 		if ((activeBv->bits->data()[posWhole] & posMask) == 0) continue;
-		detActive[pos-startPosition]++;
-		if ((uncDet->bits->data()[posWhole] & posMask) != 0) howActive[pos-startPosition]++;
-		if ((uncHow->bits->data()[posWhole] & posMask) != 0) howOne[pos-startPosition]++;
+		if (detActive != nullptr)
+			detActive[pos-startPosition]++;
+		if (howActive != nullptr)
+			{
+			if ((uncDet->bits->data()[posWhole] & posMask) != 0)
+				howActive[pos-startPosition]++;
+			}
+		if (howOne != nullptr)
+			{
+			if ((uncHow->bits->data()[posWhole] & posMask) != 0)
+				howOne[pos-startPosition]++;
+			}
 		}
 
 	// count stats in the children (if any); note that we compute the remaining
