@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <iostream>
 
+#include "utilities.h"
 #include "bloom_tree.h"
 #include "commands.h"
 
@@ -34,6 +35,7 @@ public:
 	std::string showAs;
 	bool dbgTraversal;
 	bool dbgBits;
+	wall_time_ty startTime;
 	int nodeNum;
 	};
 

@@ -200,6 +200,7 @@ int BitStatsCommand::execute()
 	{
 	dbgTraversal = (contains(debug,"traversal"));
 	dbgBits      = (contains(debug,"bits"));
+	startTime    = get_wall_time();
 
 	if (contains(debug,"trackmemory"))
 		{
@@ -354,10 +355,11 @@ void BitStatsCommand::collect_stats
 
 	if (dbgTraversal)
 		{
+		double elapsedTime = elapsed_wall_time(startTime);
+
 		nodeNum++;
-		cerr << "collecting stats at "
-			 << "#" << nodeNum
-			 << " " << node->name
+		cerr << "[" << std::setprecision(6) << std::fixed << elapsedTime << " secs]" 
+		     << " collecting stats at #" << nodeNum << " " << node->name
 		     << endl;
 		}
 
