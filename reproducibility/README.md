@@ -34,7 +34,9 @@ _This section needs to be written._
 
 #### Performing queries
 
-_This section needs to be written._
+```bash  
+howdesbt query --tree=determined.culled.rrr.sbt query.fa --threshold=0.9
+```
 
 ### SSBT
 
