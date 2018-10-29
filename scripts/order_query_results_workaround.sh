@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# order_query_results <fasta1> [<fasta2> ...] <sabutan_out> <file_to_create>
+# order_query_results <fasta1> [<fasta2> ...] <howdesbt_out> <file_to_create>
 
 #thisScriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 thisScriptDir="./scripts"
@@ -12,15 +12,15 @@ while [ $# -gt 2 ]; do
     shift
     done
 
-sabutanOutput=$1
+howdesbtOutput=$1
 orderedOutput=$2
-tempFileId=`echo ${sabutanOutput} | sed "s/.*\///"`
+tempFileId=`echo ${howdesbtOutput} | sed "s/.*\///"`
 
 specificity=0   # everything we search for here is a hit anyway
 
 # collect queries by leaf they hit
 
-cat ${sabutanOutput} \
+cat ${howdesbtOutput} \
   | grep -v "^#" \
   | awk 'BEGIN   { qName = "NA"; }
          /^[*]/  { qName = substr($1,2); }
@@ -57,7 +57,7 @@ cat temp.${tempFileId}.leaf_to_queries \
       #
       cat ${queryFiles} \
         | python ${thisScriptDir}/pluck_from_fasta.py --sequences=${queries} \
-        | sabutan query \
+        | howdesbt query \
           --tree=temp.${tempFileId}.${leaf}.sbt --threshold=${specificity} \
           --countallkmerhits \
         | awk '/^[*]/  { }
@@ -68,7 +68,7 @@ cat temp.${tempFileId}.leaf_to_queries \
       done
 
 # sort the results by leaf, then by score; note that the order of the queries
-# might not match the order in the original sabutan output
+# might not match the order in the original howdesbt output
 
 cat temp.${tempFileId}.kmers.xxx \
   | sort -k 1,1d -k 4,4nr \

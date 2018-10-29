@@ -72,7 +72,7 @@ def main():
 		bytesRead = 0
 		seconds   = 0.0
 		for line in block:
-			(sabuClass,action,info) = parse_event(line)
+			(howdeClass,action,info) = parse_event(line)
 			if ("bytesRead" in info): bytesRead += info["bytesRead"]
 			if ("seconds"   in info): seconds   += info["seconds"]
 
@@ -114,8 +114,8 @@ def parse_event(line):
 	(action,infoText) = line[1:].split("]",1)
 	(action,infoText) = (action.strip(),infoText.strip())
 
-	(sabuClass,action) = action.split(None,1)
-	(sabuClass,action) = (sabuClass.strip(),action.strip())
+	(howdeClass,action) = action.split(None,1)
+	(howdeClass,action) = (howdeClass.strip(),action.strip())
 
 	info = {"text": infoText}
 
@@ -133,7 +133,7 @@ def parse_event(line):
 		except ValueError:
 			pass
 
-	return (sabuClass,action,info)
+	return (howdeClass,action,info)
 
 bytesReadRe = re_compile("^read (?P<bytes>[0-9]+) bytes")
 def parse_bytes_read(info):
