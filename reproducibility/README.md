@@ -8,7 +8,7 @@ _This section needs to be written._
 
 ```bash  
 abundance=(lookup mantis threshold for experiment1.fastq) 
-howdesbt makebf experiment1.fastq K=20 --min=${abundance} \]
+howdesbt makebf experiment1.fastq K=20 --min=${abundance} \\
   --bits=2G --out=experiment1.bf
 ```
 
