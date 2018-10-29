@@ -1,4 +1,4 @@
-# Tutorial, Creating a HowDe Sequence Bloom Filter Tree
+## Tutorial, Creating a HowDe Sequence Bloom Filter Tree
 
 (1) Estimate the best bloom filter size.
 
