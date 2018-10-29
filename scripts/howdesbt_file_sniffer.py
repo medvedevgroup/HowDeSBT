@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Read and interpret the results of sabutan's built-in file-time tracking
+Read and interpret the results of howdesbt's built-in file-time tracking
 """
 
 from sys import argv,stdin,stderr,exit
@@ -9,11 +9,11 @@ from re  import compile as re_compile
 def usage(s=None):
 	message = """
 
-usage: cat sabutan_file_log | sabutan_file_sniffer [options]
+usage: cat howdesbt_file_log | howdesbt_file_sniffer [options]
   (no options yet)"
 
 Typical input is shown below. Usually this is created by a command like
-  sabutan query
+  howdesbt query
 with
   --debug=reportopenclose,reportfilebytes,reportloadtime
 Lines that begin with [ are relevant events. Any other lines are ignored. 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Parsing support for sabutan tree hierarchy files.
+Parsing support for howde tree hierarchy files.
 
 The tree hierarchy file looks something like this (below).  It is a pre-order
 traversal of the tree, and the asterisks indicate the depth of each node. See
@@ -22,13 +22,13 @@ from sys import argv,stdin,stdout,stderr,exit
 from os  import path as os_path
 
 
-def read_sabutan_tree_file(f,keepFileExtension=False,keepTags=False,debug=False):
+def read_howde_tree_file(f,keepFileExtension=False,keepTags=False,debug=False):
 	nodeStack = []
 	topLevelSame = False
 	topLevel = None
 	forest = []
 
-	for (lineNumber,level,name,tags) in read_sabutan_list(f,keepFileExtension=keepFileExtension):
+	for (lineNumber,level,name,tags) in read_howde_list(f,keepFileExtension=keepFileExtension):
 		if (debug):
 			print >>stderr, "read %d %s" % (level,name)
 			for (dgbLevel,dbgNode) in nodeStack:
@@ -101,7 +101,7 @@ def read_sabutan_tree_file(f,keepFileExtension=False,keepTags=False,debug=False)
 	return forest
 
 
-def read_sabutan_list(f,keepFileExtension=False):
+def read_howde_list(f,keepFileExtension=False):
 	lineNumber = 0
 	for line in f:
 		lineNumber +=1 

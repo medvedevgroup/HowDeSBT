@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 """
-Draw a picture of an SBT listing file, in svg.
+Draw a picture of an SBT listing file (Solomon-Kinsford format), in svg.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from math               import ceil
-from struct             import unpack
-from sabutan_tree_parse import read_sbt_tree_file
-from pysvg.structure    import svg as Svg
-from pysvg.builders     import StyleBuilder
-from pysvg.shape        import rect as SvgRect
-from pysvg.text         import text as SvgText
-from pysvg.shape        import path as SvgPath
+from sys              import argv,stdin,stdout,stderr,exit
+from math             import ceil
+from struct           import unpack
+from howde_tree_parse import read_howde_tree_file
+from pysvg.structure  import svg as Svg
+from pysvg.builders   import StyleBuilder
+from pysvg.shape      import rect as SvgRect
+from pysvg.text       import text as SvgText
+from pysvg.shape      import path as SvgPath
 
 class DrawingControl: pass
 dc = DrawingControl()
@@ -101,7 +101,7 @@ def main():
 
 	# read the tree
 
-	tree = read_sbt_tree_file(stdin)
+	tree = read_howde_tree_file(stdin)
 	nameToNode = tree.build_dict()
 	preOrder   = tree.pre_order()
 

@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 """
-Draw a picture of an sabutan tree, in svg.
+Draw a picture of an howde tree, in svg.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from math               import ceil
-from struct             import unpack
-from sabutan_tree_parse import read_sabutan_tree_file
-from pysvg.structure    import svg as Svg
-from pysvg.builders     import StyleBuilder
-from pysvg.shape        import rect as SvgRect
-from pysvg.text         import text as SvgText
-from pysvg.shape        import path as SvgPath
+from sys              import argv,stdin,stdout,stderr,exit
+from math             import ceil
+from struct           import unpack
+from howde_tree_parse import read_howde_tree_file
+from pysvg.structure  import svg as Svg
+from pysvg.builders   import StyleBuilder
+from pysvg.shape      import rect as SvgRect
+from pysvg.text       import text as SvgText
+from pysvg.shape      import path as SvgPath
 
 class DrawingControl: pass
 dc = DrawingControl()
@@ -19,7 +19,7 @@ dc = DrawingControl()
 
 def usage(s=None):
 	message = """
-usage: cat sabutan_tree_file | sabutan_tree_to_svg [options]
+usage: cat howde_tree_file | howde_tree_to_svg [options]
   --bitvectors=<template>    read bits vectors corresponding to each leaf; this
                              has a form like {leaf}.bf.bv
                              (by default, bit vectors are not read)
@@ -39,7 +39,7 @@ usage: cat sabutan_tree_file | sabutan_tree_to_svg [options]
                              (this is the default)
   --left-to-right            tree root is at left
   --out=<filename>           this should end with ".svg"
-                             (default is sabutan_tree_to_svg.svg)
+                             (default is howde_tree_to_svg.svg)
   --node:width=<points>      node/leaf width
   --node:height=<points>     node/leaf height
   --node:sepwidth=<points>   node/leaf separating width
@@ -91,7 +91,7 @@ def main():
 	# parse the command line
 
 	bitVectorTemplate = None
-	svgFilename       = "sabutan_tree_to_svg.svg"
+	svgFilename       = "howde_tree_to_svg.svg"
 	orientation       = "T2B"
 	bitGroupSizes     = None
 	showNodesAs       = "union"
@@ -175,7 +175,7 @@ def main():
 
 	# read the tree
 
-	forest = read_sabutan_tree_file(stdin,debug="treeparse" in debug)
+	forest = read_howde_tree_file(stdin,debug="treeparse" in debug)
 	assert (len(forest) != 0), "input has no tree"
 	assert (len(forest) == 1), "input is a forest (not supported yet)"
 	tree = forest[0]
@@ -371,7 +371,7 @@ def compute_determined_how(withActive=False):
 
 
 # read_bit_vector--
-#  Bit vectors are stored is either "raw" bitvectors (from sdsl) or sabutan
+#  Bit vectors are stored is either "raw" bitvectors (from sdsl) or howdesbt
 #  bloom filter files.
 #
 #  Raw bit vectors have 4 leading bytes (little endian) indicating the number
@@ -382,12 +382,12 @@ def compute_determined_how(withActive=False):
 #    00000010  00 00 00 00 00 00 00 00  00 00 00 04 00 10 00 00
 #     ...
 #
-#  Sabutan bloom filter files have a header that indicates where, within the
+#  Howdesbt bloom filter files have a header that indicates where, within the
 #  binary file, the raw bit vector(s) can be found.  Here we hardwire it so we
 #  always use the first bit vector (bv0).  For more detail on the file format,
-#  find bloom_filter_file.h in the sabutan source code.
+#  find bloom_filter_file.h in the howdesbt source code.
 
-bffileHeaderMagic = 0xD532006662544253  # (see sabutan bloom_filter_file.h)
+bffileHeaderMagic = 0xD532006662544253  # (see howdesbt bloom_filter_file.h)
 bffileBV0         = 0x50
 bffileBV0Offset   = bffileBV0 + 8
 

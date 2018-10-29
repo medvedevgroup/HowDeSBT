@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Compare two runs of the query command in sabutan (or in bloomtree-allsome),
+Compare two runs of the query command in howdesbt (or in bloomtree-allsome),
 and report any differences.
 """
 
@@ -9,16 +9,16 @@ from sys import argv,stdin,stderr,exit
 def usage(s=None):
 	message = """
 usage: [cat query1log] | compare_query_results [query1log] query2log [options]
-  query[1|2]log       (required) output from the command "sabutan query"; if
+  query[1|2]log       (required) output from the command "howdesbt query"; if
                       query1log isn't on the command line, it is read from
                       stdin
   --fasta=<filename>  map sequences in the log(s) to names; this is useful
                       for output from bloomtree-allsome
 
-We compare two runs of the query command in sabutan (or in bloomtree-allsome),
+We compare two runs of the query command in howdesbt (or in bloomtree-allsome),
 and report any differences.
 
-Typical output from sabutan:
+Typical output from howdesbt:
   *query1 3
   # 57 nodes examined
   SRR393763.bf

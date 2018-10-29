@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """
-Compute some special stats in a sabutan allsome tree.
+Compute some special stats in a howdesbt allsome tree.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from sabutan_tree_parse import read_sabutan_tree_file
+from sys              import argv,stdin,stdout,stderr,exit
+from howde_tree_parse import read_howde_tree_file
 
 
 def usage(s=None):
 	message = """
-usage: cat annotated_tree_file | sabutan_allsome_stats [options]
+usage: cat annotated_tree_file | howde_allsome_stats [options]
   --table        print the table
                  (by default we don't print the table)
 
@@ -53,7 +53,7 @@ def main():
 
 	# read the tree
 
-	forest = read_sabutan_tree_file(stdin,keepTags=True)
+	forest = read_howde_tree_file(stdin,keepTags=True)
 	assert (len(forest) != 0), "input has no tree"
 
 	# compute the stats

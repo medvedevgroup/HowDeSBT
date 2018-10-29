@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Read the log output from a sabutan test job, and extract the useful information.
+Read the log output from a howdesbt test job, and extract the useful information.
 """
 
 from sys import argv,stdin,stdout,stderr,exit
@@ -9,8 +9,8 @@ from re  import compile
 
 def usage(s=None):
 	message = """
-usage: cat job_log_file | convert_sabutan_job_log [options]
-  --sabutan                    the log file is from a sabutan test job
+usage: cat job_log_file | convert_howdesbt_job_log [options]
+  --howdesbt                   the log file is from a howdesbt test job
                                (this is the default)
   --allsome                    the log file is from a bloomtree-allsome test job
   --split-sbt                  the log file is from a split-sbt test job
@@ -29,15 +29,15 @@ def main():
 
 	# parse the command line
 
-	logType = "sabutan"
+	logType = "howdesbt"
 	showAs  = "HMS"
 
 	for arg in argv[1:]:
 		if ("=" in arg):
 			argVal = arg.split("=",1)[1]
 
-		if (arg == "--sabutan"):
-			logType = "sabutan"
+		if (arg == "--howdesbt"):
+			logType = "howdesbt"
 		elif (arg in ["--allsome","--bloomtree-allsome","--bt-allsome"]):
 			logType = "allsome"
 		elif (arg in ["--split-sbt","--splitsbt"]):
@@ -67,19 +67,19 @@ def main():
 
 	# convert the log file
 
-	if   (logType == "sabutan"):   converter = SabutanLogReader(showAs=showAs)
+	if   (logType == "howdesbt"):  converter = HowDeSbtLogReader(showAs=showAs)
 	#elif (logType == "allsome"):   converter = AllSomeLogReader(showAs=showAs)
 	#elif (logType == "split-sbt"): converter = SplitSbtLogReader(showAs=showAs)
 	# $$$ change this, eventually
-	elif (logType == "allsome"):   converter = SabutanLogReader(showAs=showAs)
-	elif (logType == "split-sbt"): converter = SabutanLogReader(showAs=showAs)
+	elif (logType == "allsome"):   converter = HowDeSbtLogReader(showAs=showAs)
+	elif (logType == "split-sbt"): converter = HowDeSbtLogReader(showAs=showAs)
 	elif (logType == "mantis"):    converter = MantisLogReader(showAs=showAs)
 
 	converter.read_file(stdin)
 
 	print converter
 
-# SabutanLogReader--
+# HowDeSbtLogReader--
 #
 # typical log file:
 #   topologyId = detbrief.culled.rrr
@@ -94,7 +94,7 @@ def main():
 #   user	0m9.200s
 #   sys	0m32.672s
 
-class SabutanLogReader(object):
+class HowDeSbtLogReader(object):
 
 	def __init__(self,showAs="HMS"):
 		self.showAs = showAs

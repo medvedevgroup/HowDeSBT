@@ -1,19 +1,19 @@
 #!/usr/bin/env python
 """
-Rename nodes an sabutan tree, so that higher nodes have lower node numbers.
+Rename nodes an howdesbt tree, so that higher nodes have lower node numbers.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from sabutan_tree_parse import read_sabutan_tree_file
+from sys              import argv,stdin,stdout,stderr,exit
+from howde_tree_parse import read_howde_tree_file
 
 
 def usage(s=None):
 	message = """
-usage: cat sabutan_tree_file | rename_sabutan_nodes <template> [options]
+usage: cat howde_tree_file | rename_howde_nodes <template> [options]
   <template>   template for names to assign to internal tree nodes; this must
                contain the substring {node}
 
-Note that this functionality is now performed by default in "sabutan cluster"."""
+Note that this functionality is now performed by default in "howdesbt cluster"."""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -46,7 +46,7 @@ def main():
 
 	# read the tree
 
-	forest = read_sabutan_tree_file(stdin,keepFileExtension=True,debug=("parse" in debug))
+	forest = read_howde_tree_file(stdin,keepFileExtension=True,debug=("parse" in debug))
 	assert (len(forest) != 0), "input has no tree"
 
 	# collect nodes by depth

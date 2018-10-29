@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 """
-Recover the tree relationship from a sabutan tree hierarchy file.
+Recover the tree relationship from a howde tree hierarchy file.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from sabutan_tree_parse import read_sabutan_tree_file
+from sys              import argv,stdin,stdout,stderr,exit
+from howde_tree_parse import read_howde_tree_file
 
 def usage(s=None):
 	message = """
-usage: cat sabutan_tree_file | recover_sabutan_tree [options]
+usage: cat howde_tree_file | recover_howde_tree [options]
   --show=preorder        list the tree in pre-order
                          (this is the default)
   --show=postorder        list the tree in post-order
@@ -17,7 +17,7 @@ usage: cat sabutan_tree_file | recover_sabutan_tree [options]
                          of descendants
   --show:subtree=<node>  create a listing file for a node and its descendants
   --filespec=<spec>      spec describing how node names are to be output; for
-                         example /usr/nwu253/sabutan/compressed/{name}.rrr.bf"""
+                         example /usr/nwu253/howdesbt/compressed/{name}.rrr.bf"""
 
 	if (s == None): exit (message)
 	else:           exit ("%s\n%s" % (s,message))
@@ -56,7 +56,7 @@ def main():
 
 	# process the tree
 
-	forest = read_sabutan_tree_file(stdin)
+	forest = read_howde_tree_file(stdin)
 	assert (len(forest) != 0), "input has no tree"
 
 	for tree in forest:

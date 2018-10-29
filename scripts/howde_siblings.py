@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 """
-Report sibling sets in a sabutan tree.
+Report sibling sets in a howde tree.
 """
 
-from sys                import argv,stdin,stdout,stderr,exit
-from sabutan_tree_parse import read_sabutan_tree_file
+from sys              import argv,stdin,stdout,stderr,exit
+from howde_tree_parse import read_howde_tree_file
 
 
 def usage(s=None):
 	message = """
-usage: cat sabutan_tree_file | sabutan_siblings [options]
+usage: cat howde_tree_file | howde_siblings [options]
   --leafonly     only report sibling sets that are all leaves
   --withparent   report the parents as the first column in each line
                  (by default we only report siblings)"""
@@ -38,7 +38,7 @@ def main():
 
 	# read the tree
 
-	forest = read_sabutan_tree_file(stdin,keepFileExtension=True)
+	forest = read_howde_tree_file(stdin,keepFileExtension=True)
 	assert (len(forest) != 0), "input has no tree"
 
 	# report the siblings
