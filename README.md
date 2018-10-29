@@ -1,4 +1,4 @@
-# sabutan
+# HowDeSBT
 Sequence Bloom Tree, supporting determined/how split filters
 
 # Dependencies
@@ -13,10 +13,10 @@ April 2017; earlier versions had a problem with RRR in certain configurations)
 To install subutan from the source:  
 1. Download the latest version of subutan using Github  
 ```bash  
-     git clone https://github.com/medvedevgroup/sabutan  
+     git clone https://github.com/medvedevgroup/HowDeSBT  
 ```  
 2. Compile:  
 ```bash  
-    cd subutan  
+    cd HowDeSBT  
     make  
 ```

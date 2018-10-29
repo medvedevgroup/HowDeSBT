@@ -1,4 +1,4 @@
-// sabutan.cc-- work with sequence bloom trees.
+// howdesbt.cc-- work with HowDe sequence bloom trees.
 
 #include <string>
 #include <cstdlib>
@@ -42,7 +42,7 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-string programName = "sabutan";
+string programName = "howdesbt";
 
 //----------
 //
@@ -208,7 +208,7 @@ MainCommand::~MainCommand()
 void MainCommand::short_description
    (ostream& s)
 	{
-	s << commandName << "-- work with sequence bloom trees" << endl;
+	s << commandName << "-- work with HowDe sequence bloom trees" << endl;
 	}
 
 void MainCommand::usage

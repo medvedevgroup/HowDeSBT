@@ -7,16 +7,16 @@ OBJ_FILES := $(addprefix ./,$(notdir $(CPP_FILES:.cc=.o)))
 
 all:   CXXFLAGS += -DNDEBUG -O3 
 
-all:   clean sabutan
+all:   clean howdesbt
 
-sabutan: $(OBJ_FILES)
+howdesbt: $(OBJ_FILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
 %.o: %.cc
 	$(CXX) -c -o $@ $^ $(CXXFLAGS)
 
 clean: cleano
-	rm -f sabutan *.o
+	rm -f howdesbt *.o
 
 cleano: 
 	rm -f *.o

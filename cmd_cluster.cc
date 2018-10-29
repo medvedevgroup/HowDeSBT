@@ -385,7 +385,7 @@ int ClusterCommand::execute()
 
 	// build the tree (we defer this to the "build" command)
 
-	string commandLine = "sabutan build \"" + treeFilename + "\"";
+	string commandLine = "howdesbt build \"" + treeFilename + "\"";
 
 	if (inhibitBuild)
 		{
