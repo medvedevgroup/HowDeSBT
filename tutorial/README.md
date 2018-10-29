@@ -1,4 +1,4 @@
-# Tutorial, Creating a Determined,Brief Bloom Filter Tree
+# Tutorial, Creating a HowDe Sequence Bloom Filter Tree
 
 (1) Estimate the best bloom filter size.
 
@@ -17,7 +17,7 @@ _Note that this size is an overestimate._
 
 (2) Convert the fasta files to bloom filter bit vectors.
 
-We use "sabutan makebf" independently on each fastq file.
+We use "howdesbt makebf" independently on each fastq file.
 
 _As shown here, we use the same minimim abundance for each bloom filter.
 However, this is not necessary, and an abundance cutoff derived from, say, the
@@ -31,7 +31,7 @@ ls EXPERIMENT*.fastq.gz \
   | while read experiment ; do
       gzip -dc ${experiment}.fastq.gz \
         > ${experiment}.fastq
-      sabutan makebf K=20 --min=${min_abundance} --bits=${bf_size} \
+      howdesbt makebf K=20 --min=${min_abundance} --bits=${bf_size} \
         ${experiment}.fastq \
         --out=${experiment}.bf
       rm ${experiment}.fastq
@@ -43,7 +43,7 @@ EXPERIMENT1.bf, EXPERIMENT2.bf, etc.
 
 (3) Create a tree topology.
 
-We use "sabutan cluster" to create a tree topology in which the experiments'
+We use "howdesbt cluster" to create a tree topology in which the experiments'
 bloom filters correspond to leaves. Similar leaves are grouped together to
 improve the performance of later operations. Note that this step does not
 actually create any of the bloom filters for the tree -- it only creates the
@@ -61,7 +61,7 @@ number from 1 to the count of internal nodes.
 ```bash  
 cluster_bits=80K
 ls EXPERIMENT*.bf > leafnames
-sabutan cluster --list=leafnames --bits=${clusterBits} \
+howdesbt cluster --list=leafnames --bits=${clusterBits} \
   --tree=union.sbt --nodename=node{number} --keepallnodes
 rm leafnames
 ```
@@ -71,13 +71,13 @@ bloom filters are actually created in this step.
 
 (4) Build the "determined,brief" tree, compressed as RRR.
 
-We use "sabutan build" to build the filter files for the tree. We have a
+We use "howdesbt build" to build the filter files for the tree. We have a
 choice of several filter arrangements (a simple union tree, an allsome tree,
 a determined tree, or a determined,brief tree), and how the files should be
 compressed (RRR, roaring bit strings, or no compression).
 
 ```bash  
-sabutan build --determined,brief --rrr --tree=union.sbt \
+howdesbt build --determined,brief --rrr --tree=union.sbt \
   --outtree=detbrief.rrr.sbt
 ```
 
@@ -88,11 +88,11 @@ EXPERIMENT1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, etc.
 
 (5) Run a batch of queries.
 
-We use "sabutan query" to search the tree for "hits" for query sequences. The
+We use "howdesbt query" to search the tree for "hits" for query sequences. The
 input here is in fasta format, including headers for each sequence. Names from
 the headers are used in the output to identify a query.
 
-For backward compatibility with earlier tools, sabutan can also recognize a
+For backward compatibility with earlier tools, howdesbt can also recognize a
 fasta-like file that contains no headers. In that case, each input line is
 considered as a separate query sequence, and in the output the sequence itself
 is used in place of the query name.
@@ -102,7 +102,7 @@ literature). Alternatively, the query command allows a single threshold to be
 applied to all query files.
 
 ```bash  
-sabutan query --tree=detbrief.rrr.sbt \
+howdesbt query --tree=detbrief.rrr.sbt \
     queries.fa \
   > queries.hits
 ```
