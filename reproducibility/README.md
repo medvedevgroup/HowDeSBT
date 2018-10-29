@@ -8,7 +8,7 @@ _This section needs to be written._
 
 ```bash  
 abundance=(lookup mantis threshold for experiment1.fastq) 
-howdesbt makebf experiment1.fastq K=20 --min=${abundance} \\
+howdesbt makebf experiment1.fastq K=20 --min=${abundance} \
   --bits=2G --out=experiment1.bf
 ```
 
@@ -18,8 +18,8 @@ _This section needs to be written._
 
 ```bash  
 ls experiment*.bf > filterlist
-howdesbt cluster --list=filterlist --bits=500K \\
-  --tree=uncompressed.culled.sbt --nodename=node{number}.bf \\
+howdesbt cluster --list=filterlist --bits=500K \
+  --tree=uncompressed.culled.sbt --nodename=node{number}.bf
 ```
 
 #### Creating the internal Bloom filters)
@@ -27,7 +27,7 @@ howdesbt cluster --list=filterlist --bits=500K \\
 _This section needs to be written._
 
 ```bash  
-howdesbt build --determined,brief --rrr \\
+howdesbt build --determined,brief --rrr \
   --tree=uncompressed.culled.sbt --outtree=howde.culled.rrr.sbt
 ```
 
