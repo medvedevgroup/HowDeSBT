@@ -12,26 +12,28 @@
 #include "support.h"
 #include "commands.h"
 // subcommands
-#include "cmd_bf_distance.h"
-#include "cmd_bf_operate.h"
-#include "cmd_bit_stats.h"
-#include "cmd_build_sbt.h"
-#include "cmd_bv_operate.h"
+#include "cmd_make_bf.h"
 #include "cmd_cluster.h"
-#include "cmd_combine_bf.h"
+#include "cmd_build_sbt.h"
+#include "cmd_query.h"
+#include "cmd_version.h"
+#ifdef includeSecondaryCommands
 #include "cmd_compress_bf.h"
+#include "cmd_combine_bf.h"
+#include "cmd_node_stats.h"
+#include "cmd_bit_stats.h"
+#include "cmd_validate_tree.h"
+#include "cmd_make_bv.h"
+#include "cmd_random_bv.h"
 #include "cmd_dump_bf.h"
 #include "cmd_dump_bv.h"
+#include "cmd_bf_distance.h"
 #include "cmd_load_test.h"
-#include "cmd_make_bf.h"
-#include "cmd_make_bv.h"
-#include "cmd_node_stats.h"
-#include "cmd_query.h"
-#include "cmd_random_bv.h"
 #include "cmd_sabuhash_test.h"
 #include "cmd_validate_rrr.h"
-#include "cmd_validate_tree.h"
-#include "cmd_version.h"
+#include "cmd_bf_operate.h"
+#include "cmd_bv_operate.h"
+#endif // includeSecondaryCommands
 
 using std::string;
 using std::vector;
@@ -101,9 +103,11 @@ int main
 	cmd->add_subcommand (new ClusterCommand      ("cluster"));
 	cmd->add_subcommand (new BuildSBTCommand     ("build"));
 	cmd->add_subcommand (new QueryCommand        ("query"));
+	cmd->add_subcommand (new VersionCommand      ("version"));
 
 	// secondary commands
 
+#ifdef includeSecondaryCommands
 	cmd->add_subcommand (nullptr);  // marks start of secondary commands
 
 	cmd->add_subcommand (new CompressBFCommand   ("compressbf"));
@@ -135,7 +139,7 @@ int main
 	cmd->add_command_alias                       ("bfop");
 	cmd->add_subcommand (new BVOperateCommand    ("bvoperate"));
 	cmd->add_command_alias                       ("bvop");
-	cmd->add_subcommand (new VersionCommand      ("version"));
+#endif // includeSecondaryCommands
 
 	// perform the user's command; if it was succesful, collect any additional
 	// command(s) it would like us to perform
