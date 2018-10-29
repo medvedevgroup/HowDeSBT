@@ -19,7 +19,6 @@ public:
 	virtual void parse (int _argc, char** _argv);
 	virtual int execute (void);
 
-
 	std::vector<std::string> bfFilenames;
 	std::string listFilename;
 	std::uint64_t startPosition;	// origin-zero, half-open
