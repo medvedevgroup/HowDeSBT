@@ -6,7 +6,7 @@ In order to facilitate experimentation with different abundance thresholds,
 each experiment was processed with jellyfish to save kmers and counts.
 
 ```bash  
-time fastq-dump --fasta experiment1.sra --stdout \
+fastq-dump --fasta experiment1.sra --stdout \
   | jellyfish count --mer-len=20 --canonical \
       --size=3G --lower-count=1 --threads=3 \
       /dev/stdin --output=/dev/stdout \
