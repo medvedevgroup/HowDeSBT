@@ -1,20 +1,33 @@
 ## Experiments from the HowDe-SBT manuscript
 
+#### Converting sra files to jellyfish
+
+In order to facilitate experimentation with different abundance thresholds,
+each experiment was processed with jellyfish to save kmers and counts.
+
+```bash  
+time fastq-dump --fasta experiment1.sra --stdout \
+  | jellyfish count --mer-len=20 --canonical \
+      --size=3G --lower-count=1 --threads=3 \
+      /dev/stdin --output=/dev/stdout \
+  | gzip \
+  > experiment1.jf.gz
+```
+
 ### HowDe-SBT
 
-#### Converting fastq to Bloom filters
-
-_This section needs to be written._
+#### Converting jellyfish files to Bloom filters
 
 ```bash  
 abundance=(lookup mantis threshold for experiment1.fastq) 
-howdesbt makebf experiment1.fastq K=20 --min=${abundance} \
-  --bits=2G --out=experiment1.bf
+gzip -dc experiment1.jf.gz \
+  | jellyfish dump --column --lower-count=${abundance} /dev/stdin \
+  | awk '{ print $1 }' \
+  | howdesbt makebf /dev/stdin --kmersin K=20 --min=${abundance} \
+      --bits=2G --out=experiment1.bf
 ```
 
 #### Determining tree topology
-
-_This section needs to be written._
 
 ```bash  
 ls experiment*.bf > filterlist
@@ -24,8 +37,6 @@ howdesbt cluster --list=filterlist --bits=500K \
 
 #### Creating the internal Bloom filters)
 
-_This section needs to be written._
-
 ```bash  
 howdesbt build --determined,brief --rrr \
   --tree=uncompressed.culled.sbt --outtree=howde.culled.rrr.sbt
@@ -33,11 +44,13 @@ howdesbt build --determined,brief --rrr \
 
 #### Performing queries
 
-_This section needs to be written._
+```bash  
+howdesbt query --tree=howde.culled.rrr.sbt query.fa --threshold=0.9
+```
 
 ### AllSome-SBT
 
-#### Converting fastq to Bloom filters
+#### Converting jellyfish files to Bloom filters
 
 _This section needs to be written._
 
@@ -51,13 +64,11 @@ _This section needs to be written._
 
 #### Performing queries
 
-```bash  
-howdesbt query --tree=howde.culled.rrr.sbt query.fa --threshold=0.9
-```
+_This section needs to be written._
 
 ### SSBT
 
-#### Converting fastq to Bloom filters
+#### Converting jellyfish files to Bloom filters
 
 _This section needs to be written._
 
