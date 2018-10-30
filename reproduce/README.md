@@ -79,7 +79,7 @@ conversion.
 Note that AllSome-SBT and HowDe-SBT use the same clustering process to create
 a tree topology. Though HowDe-SBT has re-implemented this process, we expect
 the run time to be similar. Moreover, this is a small fraction of the total
-construction time (roughly 5 minutes).
+construction time (roughly 5 to 10 minutes).
 
 ```bash  
 ls experiment*.bf > filterlist
