@@ -119,5 +119,3 @@ EXPERIMENT12
  ...
 ```
 
-_I need to describe the output format_
-
