@@ -2,6 +2,28 @@
 
 ### Preliminaries
 
+#### SRA files
+
+Evaluation was based on 2,585 human RNA-seq runs from blood, brain, and breast
+tissues, downloaded from the Sequence Read Archive (SRA),
+(https://www.ncbi.nlm.nih.gov/sra).  The accession numbers for these runs are
+listed in experiment_list.
+
+These are the same RNA-seq runs used in the original Solomon, Kingsford SBT
+manuscript, and manuscripts for AllSome-SBT and SSBT. However, 67 of the
+RNA-seq runs used in those projects were effectively empty &mdash; they were
+comprised of reads shorter than 20 bp and thus corresponded to empty bloom
+filters. This were eliminated in this project. The mantis manuscript also uses
+this dataset, reduced to 2,586 runs.
+
+#### Abundance thresholds
+
+Kmer abundance thresholds for the RNA-seq runs are listed in
+abundance_thresholds.
+
+This file was copied from the mantis distribution (see section on mantis below
+for which version), but excluding the 67 empty runs.
+
 #### Converting SRA files to jellyfish
 
 In order to facilitate experimentation with different abundance thresholds,
@@ -94,9 +116,6 @@ cat uncompressed.non_culled.sbt \
 ```
 
 #### Creating the internal Bloom filters
-
-Build the uncompressed tree from the leaves according to the topology ... in
-sbt parlance this is a "rebuild"
 
 ```bash  
 ssbt hashes --k 20 hashfile 1
