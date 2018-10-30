@@ -20,3 +20,5 @@ To install subutan from the source:
     cd HowDeSBT  
     make  
 ```
+3. A usage tutorial can be found at
+https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial

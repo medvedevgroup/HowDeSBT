@@ -17,7 +17,10 @@ _Note that this size is an overestimate._ However, tests have shown that
 overestimating the Bloom filter size has only a minor effect on the overall
 HowDe-SBT file sizes and query times.
 
-Ntcard is available at https://github.com/bcgsc/ntCard.
+Version 1.0.1 of ntcard was used, fetched as follows:
+```bash  
+git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
+```
 
 ### (2) Convert the fasta files to Bloom filter bit vectors.
 
