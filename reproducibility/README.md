@@ -1,6 +1,6 @@
 ## Experiments from the HowDe-SBT manuscript
 
-#### Converting sra files to jellyfish
+#### Converting SRA files to jellyfish
 
 In order to facilitate experimentation with different abundance thresholds,
 each experiment was processed with jellyfish to save kmers and counts.
@@ -145,18 +145,31 @@ ssbt query --query-threshold 0.9 \
 
 ### mantis
 
-#### Computing CQF slots
-
-_This section needs to be written._
-
 #### Creating the CQFs
 
-_This section needs to be written._
+We first convert the jellyfish file to a fastq file containing all the kmers,
+in the same abundance as in the original SRA file.
+
+```bash  
+log2Slots=(look up slots for experiment1) 
+squeakr-exact/squeakr_count -k 20 -s ${log2Slots} -t 5 -f experiment1.fastq
+```
 
 #### Building the CDGB
 
-_This section needs to be written._
+```bash  
+ulimit -Sn 3000
+${mantis_may_15_2018} build \
+  -i solomon_experiments.cqfs \
+  -c experiment_cutoffs.lst \
+  -o CDBG
+```
 
 #### Performing queries
 
 _This section needs to be written._
+
+```bash  
+mantis query -p CDBG/ -o query_batch.mantis.out query_batch.fa
+```
+
