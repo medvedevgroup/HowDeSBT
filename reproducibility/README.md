@@ -45,7 +45,8 @@ howdesbt build --determined,brief --rrr \
 #### Performing queries
 
 ```bash  
-howdesbt query --tree=howde.culled.rrr.sbt query_batch.fa --threshold=0.9
+howdesbt query --tree=howde.culled.rrr.sbt query_batch.fa --threshold=0.9 \
+  > query_batch.howde.out
 ```
 
 ### AllSome-SBT
@@ -98,12 +99,12 @@ bt compress-rrr-double hashfile \
 
 #### Performing queries
 
-First we convert query_batch.fa to query_batch.sequences, containing the fasta
-sequences one per line, with no sequence names.
+First we have to convert query_batch.fa to query_batch.sequences, containing
+the fasta sequences one per line, with no sequence names.
 
 ```bash  
 bt query-redux --query-threshold 0.9 \
-  rrr.split.allsome query_batch.sequences /dev/stdout
+  rrr.split.allsome query_batch.sequences query_batch.allsome.out
 ```
 
 ### SSBT
@@ -123,11 +124,24 @@ gzip -dc experiment1.jf.gz \
 
 #### Creating the tree (topology and internal Bloom filters
 
-_This section needs to be written._
+```bash  
+ls experiment*.sim.bf.bv > filterlist
+
+ssbt build --sim-type 2 \
+  hashfile filterlist sim_type_2.ssbt
+
+ssbt compress sim_type_2.ssbt sim_type_2.compressed.ssbt
+```
 
 #### Performing queries
 
-_This section needs to be written._
+First we have to convert query_batch.fa to query_batch.sequences, containing
+the fasta sequences one per line, with no sequence names.
+
+```bash  
+ssbt query --query-threshold 0.9 \
+  sim_type_2.compressed.ssbt query_batch.sequences query_batch.ssbt.out
+```
 
 ### mantis
 
