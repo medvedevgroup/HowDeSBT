@@ -63,7 +63,11 @@ git clone https://github.com/medvedevgroup/bloomtree-allsome
 #### Converting jellyfish files to Bloom filters
 
 AllSome-SBT uses the same file format as SSBT, so we share the same leaf
-Bloom Filter files created by SSBT.
+Bloom filter files created by SSBT.
+
+Note that AllSome-SBT and SSBT share source code ancestry -- the leaf Bloom
+filters AllSome-SBT would have built would be identical to those SSBT built,
+and the run time is expected to be the same.
 
 #### Determining tree topology
 
@@ -71,6 +75,11 @@ For direct comparison to HowDe-SBT, we borrow the tree topology created by
 HowDe-SBT. However, we need the non-culled version of that tree. So we use
 HowDe-SBT to create the topology, and perform a simple topology format
 conversion.
+
+Note that AllSome-SBT and HowDe-SBT use the same clustering process to create
+a tree topology. Though HowDe-SBT has re-implemented this process, we expect
+the run time to be similar. Moreover, this is a small fraction of the total
+construction time (roughly 5 minutes).
 
 ```bash  
 ls experiment*.bf > filterlist
