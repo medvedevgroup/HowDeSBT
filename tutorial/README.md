@@ -57,8 +57,8 @@ This significantly reduces the program's memory and I/O footprints, as well as
 runtime, while still providing a reasonably good estimate of similarity.
 
 The --nodename option specifies that the names that will be used for internal
-nodes in the tree. This must contain "{number}", which will be replaced by a
-number from 1 to the count of internal nodes.
+nodes in the tree. This must contain the substring "{number}", which will be
+replaced by a number from 1 to the count of internal nodes.
 
 ```bash  
 ls EXPERIMENT*.bf > leafnames
@@ -70,22 +70,18 @@ rm leafnames
 The result of this step is a tree topology file, union.sbt. Note that no
 Bloom filters are actually created in this step.
 
-### (4) Build the "determined,brief" tree, compressed as RRR.
+### (4) Build the HowDeSBT nodes.
 
-We use "howdesbt build" to build the filter files for the tree. We have a
-choice of several filter arrangements (a simple union tree, an allsome tree,
-a determined tree, or a determined,brief tree), and how the files should be
-compressed (RRR, roaring bit strings, or no compression).
+We use "howdesbt build" to build the Bloom filter files for the tree.
 
 ```bash  
-howdesbt build --determined,brief --rrr --tree=union.sbt \
-  --outtree=detbrief.rrr.sbt
+howdesbt build --HowDe --tree=union.sbt --outtree=howde.sbt
 ```
 
 The result of this step is Bloom filter files for the leaves and internal
-nodes, in "determined,brief" format and compressed with RRR. And a new topology
-file named detbrief.rrr.sbt. The Bloom filter files are named
-EXPERIMENT1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, etc.
+nodes, in HowDeSBT format and compressed with RRR. And a new topology
+file named howde.sbt. The Bloom filter files are named
+EXPERIMENT1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, ... etc.
 
 ### (5) Run a batch of queries.
 
@@ -103,13 +99,10 @@ literature). Alternatively, the query command allows a single threshold to be
 applied to all query files.
 
 ```bash  
-howdesbt query --tree=detbrief.rrr.sbt \
+howdesbt query --tree=howde.sbt \
     queries.fa \
   > queries.hits
 ```
 
 _I need to describe the output format_
 
-### (5B) Ordering query results by how good they are.
-
-_This section needs to be written._

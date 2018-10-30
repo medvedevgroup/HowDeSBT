@@ -50,6 +50,7 @@ void BuildSBTCommand::usage
 	s << "                       input tree)" << endl;
 	s << "  --simple             create tree nodes as simple bloom filters" << endl;
 	s << "                       (this is the default)" << endl;
+	s << "  --howde              equivalent to --determined,brief --rrr" << endl;
 	s << "  --allsome            create tree nodes as all/some bloom filters" << endl;
 	s << "  --determined         create tree nodes as determined/how bloom filters" << endl;
 	s << "  --determined,brief   create tree nodes as determined/how, but only store" << endl;
@@ -136,6 +137,16 @@ void BuildSBTCommand::parse
 		 || (arg == "--union")
 		 || (arg == "--cup"))
 			{ bfKind = bfkind_simple;  continue; }
+
+		if ((arg == "--howde")
+		 || (arg == "--HowDe")
+		 || (arg == "--howdesbt")
+		 || (arg == "--HowDeSBT"))
+			{
+			bfKind     = bfkind_determined_brief;
+			compressor = bvcomp_rrr;
+			continue;
+			}
 
 		if ((arg == "--allsome")
 		 || (arg == "--all/some")
