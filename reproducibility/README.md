@@ -19,7 +19,7 @@ time fastq-dump --fasta experiment1.sra --stdout \
 #### Converting jellyfish files to Bloom filters
 
 ```bash  
-abundance=(lookup mantis threshold for experiment1.fastq) 
+abundance=(look up mantis threshold for experiment1) 
 gzip -dc experiment1.jf.gz \
   | jellyfish dump --column --lower-count=${abundance} /dev/stdin \
   | awk '{ print $1 }' \
@@ -35,7 +35,7 @@ howdesbt cluster --list=filterlist --bits=500K \
   --tree=uncompressed.culled.sbt --nodename=node{number}.bf
 ```
 
-#### Creating the internal Bloom filters)
+#### Creating the internal Bloom filters
 
 ```bash  
 howdesbt build --determined,brief --rrr \
@@ -45,34 +45,83 @@ howdesbt build --determined,brief --rrr \
 #### Performing queries
 
 ```bash  
-howdesbt query --tree=howde.culled.rrr.sbt query.fa --threshold=0.9
+howdesbt query --tree=howde.culled.rrr.sbt query_batch.fa --threshold=0.9
 ```
 
 ### AllSome-SBT
 
 #### Converting jellyfish files to Bloom filters
 
-_This section needs to be written._
+AllSome-SBT uses the same file format as SSBT, so we share the same leaf
+Bloom Filter files created by SSBT.
 
 #### Determining tree topology
 
+For direct comparison to HowDe-SBT, we borrow the tree topology created by
+HowDe-SBT. However, we need the non-culled version of that tree. So we use
+HowDe-SBT to create the topology, and perform a simple topology format
+conversion.
+
+```bash  
+ls experiment*.bf > filterlist
+howdesbt cluster --list=filterlist --bits=500K --keepallnodes \
+  --tree=uncompressed.non_culled.sbt --nodename=node{number}.bf
+
+cat uncompressed.non_culled.sbt \
+  | sed "s/\.bf/.bf.bv/" \
+  | awk '{ if (NR==1) print $0",hashfile";
+                 else print $0;  }' \
+  > uncompressed.non_culled.allsome
+```
+
+#### Creating the internal Bloom filters
+
 _This section needs to be written._
 
-#### Creating the internal Bloom filters)
+Build the uncompressed tree from the leaves according to the topology ... in
+sbt parlance this is a "rebuild"
 
-_This section needs to be written._
+```bash  
+ssbt hashes --k 20 hashfile 1
+
+bt rebuild uncompressed.non_culled.allsome
+
+bt split uncompressed.non_culled.allsome uncompressed.split.allsome
+
+cat uncompressed.non_culled.allsome \
+  | sed "s/\.bf\.bv/.bf-allsome.bv.rrr/" \
+  > rrr.split.allsome
+
+bt compress-rrr-double hashfile \
+  node1.bf-all.bv node1.bf-some.bv node1.bf-allsome.bv
+```
 
 #### Performing queries
 
-_This section needs to be written._
+First we convert query_batch.fa to query_batch.sequences, containing the fasta
+sequences one per line, with no sequence names.
+
+```bash  
+bt query-redux --query-threshold 0.9 \
+  rrr.split.allsome query_batch.sequences /dev/stdout
+```
 
 ### SSBT
 
 #### Converting jellyfish files to Bloom filters
 
-_This section needs to be written._
+```bash  
+ssbt hashes --k 20 hashfile 1
 
-#### Creating the tree (topology and internal Bloom filters)
+abundance=(look up mantis threshold for experiment1) 
+gzip -dc experiment1.jf.gz \
+  | jellyfish dump --column --lower-count=${abundance} /dev/stdin \
+  | awk '{ print ">"(++n); print $1 }' \
+  | ssbt count --cutoff 1 --threads=4 hashfile 2000000000 \
+      /dev/stdin experiment1
+```
+
+#### Creating the tree (topology and internal Bloom filters
 
 _This section needs to be written._
 
