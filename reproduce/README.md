@@ -6,10 +6,10 @@
 
 Evaluation was based on 2,585 human RNA-seq runs from blood, brain, and breast
 tissues, downloaded from the Sequence Read Archive (SRA),
-(https://www.ncbi.nlm.nih.gov/sra).  The accession numbers for these runs are
-listed in experiment_list.
+(https://www.ncbi.nlm.nih.gov/sra). The accession numbers for these runs are
+listed in experiment_list.txt.
 
-These are the same RNA-seq runs used in the original Solomon, Kingsford SBT
+These are the same RNA-seq runs used in the original Solomon-Kingsford SBT
 manuscript, and manuscripts for AllSome-SBT and SSBT. However, 67 of the
 RNA-seq runs used in those projects were effectively empty &mdash; they were
 comprised of reads shorter than 20 bp and thus corresponded to empty bloom
@@ -19,10 +19,22 @@ this dataset, reduced to 2,586 runs.
 #### Abundance thresholds
 
 Kmer abundance thresholds for the RNA-seq runs are listed in
-abundance_thresholds.
+abundance_thresholds.mantis.txt. This file was copied from the mantis
+distribution (see section on mantis below for which version), but excluding the
+67 empty runs. These thresholds were used to evaluate all four tools.
 
-This file was copied from the mantis distribution (see section on mantis below
-for which version), but excluding the 67 empty runs.
+Earlier evaluation used different abundance thresholds (mentioned briefly in
+the manuscript). These are found in abundance_thresholds.sk_inferred.txt.
+These were reverse engineered by observing the number of 1s in each Bloom
+filter provided to support the original Solomon-Kingsford SBT manuscript,
+estimating the number of kmers added to the bloom filter, then finding the
+abundance threshold that best matched hat number of kmers
+
+The reverse engineered thresholds are in many cases lower than the mantis
+thresholds, thus accepting more distinct kmers into the data structures.
+Unfortunately we had difficulty parameterizing mantis to work with these
+thresholds, so we used the higher thresholds so that we could include mantis
+in our comparisons.
 
 #### Converting SRA files to jellyfish
 
