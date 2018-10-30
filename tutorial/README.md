@@ -1,6 +1,6 @@
 ## Tutorial, Creating a HowDe Sequence Bloom Filter Tree
 
-(1) Estimate the best bloom filter size.
+### (1) Estimate the best bloom filter size.
 
 ```bash  
 ntcard --kmer=20 --pref=EXPERIMENTS EXPERIMENT*.fastq.gz
@@ -15,7 +15,7 @@ our bloom filter size. This is about 800K.
 
 _Note that this size is an overestimate._
 
-(2) Convert the fasta files to bloom filter bit vectors.
+###(2) Convert the fasta files to bloom filter bit vectors.
 
 We use "howdesbt makebf" independently on each fastq file.
 
@@ -41,7 +41,7 @@ ls EXPERIMENT*.fastq.gz \
 The result of this step is a bloom filter for each of the fastq files, named
 EXPERIMENT1.bf, EXPERIMENT2.bf, etc.
 
-(3) Create a tree topology.
+###(3) Create a tree topology.
 
 We use "howdesbt cluster" to create a tree topology in which the experiments'
 bloom filters correspond to leaves. Similar leaves are grouped together to
@@ -69,7 +69,7 @@ rm leafnames
 The result of this step is a tree topology file, union.sbt. Note that no
 bloom filters are actually created in this step.
 
-(4) Build the "determined,brief" tree, compressed as RRR.
+###(4) Build the "determined,brief" tree, compressed as RRR.
 
 We use "howdesbt build" to build the filter files for the tree. We have a
 choice of several filter arrangements (a simple union tree, an allsome tree,
@@ -86,7 +86,7 @@ nodes, in "determined,brief" format and compressed with RRR. And a new topology
 file named detbrief.rrr.sbt. The bloom filter files are named
 EXPERIMENT1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, etc.
 
-(5) Run a batch of queries.
+###(5) Run a batch of queries.
 
 We use "howdesbt query" to search the tree for "hits" for query sequences. The
 input here is in fasta format, including headers for each sequence. Names from
@@ -109,6 +109,6 @@ howdesbt query --tree=detbrief.rrr.sbt \
 
 _I need to describe the output format_
 
-(5B) Ordering query results by how good they are.
+###(5B) Ordering query results by how good they are.
 
 _This section needs to be written._
