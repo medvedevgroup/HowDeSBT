@@ -1,9 +1,13 @@
 ## Experiments from the HowDe-SBT manuscript
 
+### Preliminaries
+
 #### Converting SRA files to jellyfish
 
 In order to facilitate experimentation with different abundance thresholds,
 each experiment was processed with jellyfish to save kmers and counts.
+
+Jellyfish version 2.2.6 was used.
 
 ```bash  
 fastq-dump --fasta experiment1.sra --stdout \
@@ -51,6 +55,11 @@ howdesbt query --tree=howde.culled.rrr.sbt query_batch.fa --threshold=0.9 \
 
 ### AllSome-SBT
 
+AllSome-SBT was fetched as follows on Feb/14/2018.
+```bash  
+git clone https://github.com/medvedevgroup/bloomtree-allsome
+```
+
 #### Converting jellyfish files to Bloom filters
 
 AllSome-SBT uses the same file format as SSBT, so we share the same leaf
@@ -76,8 +85,6 @@ cat uncompressed.non_culled.sbt \
 ```
 
 #### Creating the internal Bloom filters
-
-_This section needs to be written._
 
 Build the uncompressed tree from the leaves according to the topology ... in
 sbt parlance this is a "rebuild"
@@ -108,6 +115,9 @@ bt query-redux --query-threshold 0.9 \
 ```
 
 ### SSBT
+
+Split SBT Version 0.1 was used, from
+https://github.com/Kingsford-Group/splitsbt/releases/tag/v.0.1 .
 
 #### Converting jellyfish files to Bloom filters
 
@@ -145,6 +155,16 @@ ssbt query --query-threshold 0.9 \
 
 ### mantis
 
+Squeakr exact was fetched as follows on May/17/2018.
+```bash  
+git clone https://github.com/splatlab/squeakr --branch exact
+```
+
+Mantis was fetched as follows on May/15/2018.
+```bash  
+git clone https://github.com/splatlab/mantis
+```
+
 #### Creating the CQFs
 
 We first convert the jellyfish file to a fastq file containing all the kmers,
@@ -166,8 +186,6 @@ ${mantis_may_15_2018} build \
 ```
 
 #### Performing queries
-
-_This section needs to be written._
 
 ```bash  
 mantis query -p CDBG/ -o query_batch.mantis.out query_batch.fa
