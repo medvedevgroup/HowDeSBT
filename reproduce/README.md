@@ -65,9 +65,9 @@ git clone https://github.com/medvedevgroup/bloomtree-allsome
 AllSome-SBT uses the same file format as SSBT, so we share the same leaf
 Bloom filter files created by SSBT.
 
-Note that AllSome-SBT and SSBT share source code ancestry --- the leaf Bloom
-filters AllSome-SBT would have built would be identical to those SSBT built,
-and the run time is expected to be the same.
+Note that AllSome-SBT and SSBT share source code ancestry &mdash; the leaf
+Bloom filters AllSome-SBT would have built would be identical to those SSBT
+built, and the run time is expected to be the same.
 
 #### Determining tree topology
 
