@@ -99,9 +99,24 @@ literature). Alternatively, the query command allows a single threshold to be
 applied to all query files.
 
 ```bash  
-howdesbt query --tree=howde.sbt \
-    queries.fa \
-  > queries.hits
+howdesbt query --tree=howde.sbt queries.fa > queries.dat
+```
+
+The first part of output file, queries.dat, is shown below. This reports that
+QUERY_001 theta-matches two experiments, EXPERIMENT5 and EXPERIMENT15.
+QUERY_002 theta-matches two other experiments, QUERY_003 theta-matches one, and
+so on. The actual file includes results for all 300 queries.
+
+```bash  
+*QUERY_001 2
+EXPERIMENT5
+EXPERIMENT15
+*QUERY_002 2
+EXPERIMENT17
+EXPERIMENT18
+*QUERY_003 1
+EXPERIMENT12
+ ...
 ```
 
 _I need to describe the output format_
