@@ -28,14 +28,12 @@ However, this is not necessary, and an abundance cutoff derived from the size
 of the fasta file, or its distribution of kmer counts, could be used._
 
 ```bash  
-bf_size=800K
-min_abundance=2
 ls EXPERIMENT*.fastq.gz \
   | sed "s/\.fastq\.gz//" \
   | while read experiment ; do
       gzip -dc ${experiment}.fastq.gz \
         > ${experiment}.fastq
-      howdesbt makebf K=20 --min=${min_abundance} --bits=${bf_size} \
+      howdesbt makebf K=20 --min=2 --bits=800K \
         ${experiment}.fastq \
         --out=${experiment}.bf
       rm ${experiment}.fastq
@@ -63,9 +61,8 @@ nodes in the tree. This must contain "{number}", which will be replaced by a
 number from 1 to the count of internal nodes.
 
 ```bash  
-cluster_bits=80K
 ls EXPERIMENT*.bf > leafnames
-howdesbt cluster --list=leafnames --bits=${clusterBits} \
+howdesbt cluster --list=leafnames --bits=80K \
   --tree=union.sbt --nodename=node{number} --keepallnodes
 rm leafnames
 ```
