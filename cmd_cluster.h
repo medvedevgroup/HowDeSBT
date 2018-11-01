@@ -106,6 +106,12 @@ public:
 	bool inhibitBuild;
 	bool trackMemory;
 
+	double detRatioSum;
+	double detRatioSumofSquare;
+	std::uint32_t detRatioDenom;
+	double detRatioMean;
+	double detRatioStd;
+
 	std::vector<BitVector*> leafVectors;
 	BinaryTree* treeRoot;
 	std::vector<std::uint32_t> depthToNodeCount;

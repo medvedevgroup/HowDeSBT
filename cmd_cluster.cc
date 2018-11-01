@@ -783,7 +783,7 @@ void ClusterCommand::cluster_greedily()
 //----------
 //
 // collect_det_ratio_distribution--
-//	Collect statistics describing the distribution of 'det_ratio'-- the
+//	Collect statistics describing the distribution of 'active det ratio'-- the
 //	node-by-node fraction of determined-active bits that are determined.
 //
 // Note that we are only interested in the distribution of this value over
@@ -804,6 +804,11 @@ void ClusterCommand::collect_det_ratio_distribution
    (BinaryTree*	node,
 	bool		isRoot)
 	{
+
+// at root, set detRatioMean and detRatioStd;
+//	detRatioSum   = detRatioSumofSquare = 0.0;
+//	detRatioDenom = 0;
+
 //
 //	bool isLeaf = (node->children[0] == nullptr);
 //	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
@@ -815,12 +820,15 @@ void ClusterCommand::collect_det_ratio_distribution
 
 //	………sqrt of E(X^2) - (E(X))^2
 //#bDet(c) / #bDetInf(c)
+// at root, set detRatioMean and detRatioStd;
+//	detRatioMean = detRatioSum/detRatioDenom;
+//	detRatioStd  = sqrt(detRatioMean*detRatioMean - detRatioSumofSquare/detRatioDenom);
 	}
 
 //----------
 //
 // determine_culling_threshold--
-//	Derive a culling threshold from the the distribution of 'det_ratio'.
+//	Derive a culling threshold from the the distribution of active det ratio.
 //
 // Note that the distribution's statistics are expected to have been computed
 // by collect_det_ratio_distribution.
@@ -830,7 +838,12 @@ void ClusterCommand::collect_det_ratio_distribution
 void ClusterCommand::determine_culling_threshold (void)
 	{
 	cullingThreshold = 0.2; // $$$ change this!
-//	………sqrt of E(X^2) - (E(X))^2
+
+//	cullingThreshold = detRatioMean - cullingThresholdSD*detRatioStd;
+//	if (cullingThreshold < 0.0)
+//		cullingThreshold = 0.0;
+//	else if (cullingThreshold > 1.0)
+//		cullingThreshold = 1.0;
 	}
 
 //----------
