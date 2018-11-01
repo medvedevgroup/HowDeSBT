@@ -72,7 +72,8 @@ class ClusterCommand: public Command
 	{
 public:
 	static const std::uint64_t defaultEndPosition = 100*1000;
-	static constexpr double defaultCullingThreshold = 0.2;
+	static constexpr double defaultCullingThresholdSD = 2.0;  // (two standard deviations below the mean)
+	//static constexpr double defaultCullingThreshold = 0.2;  // (no longer used)
 
 public:
 	ClusterCommand(const std::string& name): Command(name),treeRoot(nullptr) {}
@@ -84,6 +85,8 @@ public:
 	virtual int execute (void);
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
+	virtual void collect_det_ratio_distribution (BinaryTree* node,bool isRoot=false);
+	virtual void determine_culling_threshold (void);
 	virtual void cull_nodes (BinaryTree* node,bool isRoot=false);
 	virtual void top_down_numbering (BinaryTree* node,int depth,bool isRoot=false);
 	virtual void count_depths (BinaryTree* node,int depth);
@@ -96,6 +99,8 @@ public:
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
 	bool cullNodes;
+	bool deriveCullingThreshold;
+	double cullingThresholdSD;
 	double cullingThreshold;
 	bool renumberNodes;
 	bool inhibitBuild;

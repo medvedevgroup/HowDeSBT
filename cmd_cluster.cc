@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdlib>
 #include <cstdint>
+#include <limits>
 #include <iostream>
 #include <queue>
 
@@ -91,12 +92,14 @@ void ClusterCommand::parse
 
 	// defaults
 
-	startPosition    = 0;
-	endPosition      = defaultEndPosition;
-	cullNodes        = true;
-	cullingThreshold = defaultCullingThreshold;
-	renumberNodes    = true;
-	inhibitBuild     = true;
+	startPosition          = 0;
+	endPosition            = defaultEndPosition;
+	cullNodes              = true;
+	deriveCullingThreshold = true;
+	cullingThresholdSD     = defaultCullingThresholdSD;
+	cullingThreshold       = std::numeric_limits<double>::quiet_NaN();
+	renumberNodes          = true;
+	inhibitBuild           = true;
 
 	// skip command name
 
@@ -147,19 +150,19 @@ void ClusterCommand::parse
 		// --out=<filename>, --tree=<filename>, etc.
 
 		if ((is_prefix_of (arg, "--out="))
-		 ||	(is_prefix_of (arg, "--output="))
-		 ||	(is_prefix_of (arg, "--tree="))
-		 ||	(is_prefix_of (arg, "--outtree="))
-		 ||	(is_prefix_of (arg, "--topology=")))
+		 || (is_prefix_of (arg, "--output="))
+		 || (is_prefix_of (arg, "--tree="))
+		 || (is_prefix_of (arg, "--outtree="))
+		 || (is_prefix_of (arg, "--topology=")))
 			{ treeFilename = argVal;  continue; }
 
 		// --nodename=<template>
 		// (and, for backward compatibility, --node=<template>)
 
 		if ((is_prefix_of (arg, "--nodename="))
-		 ||	(is_prefix_of (arg, "--nodenames="))
+		 || (is_prefix_of (arg, "--nodenames="))
 		 || (is_prefix_of (arg, "--node="))
-		 ||	(is_prefix_of (arg, "--nodes=")))
+		 || (is_prefix_of (arg, "--nodes=")))
 			{
 			nodeTemplate = argVal; 
 
@@ -202,8 +205,8 @@ void ClusterCommand::parse
 		// --bits=<N>
 
 		if ((is_prefix_of (arg, "--bits="))
-		 ||	(is_prefix_of (arg, "B="))
-		 ||	(is_prefix_of (arg, "--B=")))
+		 || (is_prefix_of (arg, "B="))
+		 || (is_prefix_of (arg, "--B=")))
 			{
 			startPosition = 0;
 			endPosition   = string_to_unitized_u64(argVal);
@@ -214,30 +217,57 @@ void ClusterCommand::parse
 		// --nowinnow, --winnow (unadvertised; for backward compatibility)
 
 		if ((arg == "--nocull")
-		 ||	(arg == "--noculling")
-		 ||	(arg == "--dontcull")
-		 ||	(arg == "--keepallnodes")
+		 || (arg == "--noculling")
+		 || (arg == "--dontcull")
+		 || (arg == "--keepallnodes")
 		 || (arg == "--nowinnow")
-		 ||	(arg == "--nowinnowing")
-		 ||	(arg == "--dontwinnow"))
-			{ cullNodes = false;  continue; }
+		 || (arg == "--nowinnowing")
+		 || (arg == "--dontwinnow"))
+			{
+			cullNodes              = false;
+			deriveCullingThreshold = false;
+			cullingThresholdSD     = std::numeric_limits<double>::quiet_NaN();
+			cullingThreshold       = std::numeric_limits<double>::quiet_NaN();
+			continue;
+			}
 
 		if ((arg == "--cull")
-		 ||	(arg == "--culling")
+		 || (arg == "--culling")
 		 || (arg == "--winnow")
-		 ||	(arg == "--winnowing"))
-			{ cullNodes = true;  continue; }
+		 || (arg == "--winnowing"))
+			{
+			cullNodes              = true;
+			deriveCullingThreshold = true;
+			cullingThresholdSD     = defaultCullingThresholdSD;
+			cullingThreshold       = std::numeric_limits<double>::quiet_NaN();
+			continue;
+			}
 
-		// --cull=<F> (unadvertised)
-		// --winnow=<F> (unadvertised)
+		// --cull=<threshold>sd (unadvertised)
+
+		if ((is_suffix_of (arg, "sd"))
+		 && ((is_prefix_of (arg, "--cull="))
+		  || (is_prefix_of (arg, "--culling="))))
+			{
+			cullNodes              = true;
+			deriveCullingThreshold = true;
+			cullingThresholdSD     = string_to_double(strip_suffix(argVal,"sd"));
+			cullingThreshold       = std::numeric_limits<double>::quiet_NaN();
+			continue;
+			}
+
+		// --cull=<threshold> (unadvertised)
+		// --winnow=<threshold> (unadvertised; for backward compatibility)
 
 		if ((is_prefix_of (arg, "--cull="))
-		 ||	(is_prefix_of (arg, "--culling="))
+		 || (is_prefix_of (arg, "--culling="))
 		 || (is_prefix_of (arg, "--winnow="))
-		 ||	(is_prefix_of (arg, "--winnowing=")))
+		 || (is_prefix_of (arg, "--winnowing=")))
 			{
-			cullNodes = true;
-			cullingThreshold = string_to_probability(argVal);
+			cullNodes              = true;
+			deriveCullingThreshold = false;
+			cullingThresholdSD     = std::numeric_limits<double>::quiet_NaN();
+			cullingThreshold       = string_to_probability(argVal);
 			continue;
 			}
 
@@ -249,7 +279,7 @@ void ClusterCommand::parse
 		// --nobuild, --build
 
 		if ((arg == "--nobuild")
-		 ||	(arg == "--dontbuild"))
+		 || (arg == "--dontbuild"))
 			{ inhibitBuild = true;  continue; }
 
 		if (arg == "--build")
@@ -359,9 +389,17 @@ int ClusterCommand::execute()
 	cluster_greedily();
 
 	// remove fruitless nodes
-	
+
 	if (cullNodes)
+		{
+		if (deriveCullingThreshold)
+			{
+			collect_det_ratio_distribution(treeRoot,/*isRoot*/true);
+			determine_culling_threshold();
+			}
+
 		cull_nodes(treeRoot,/*isRoot*/true);
+		}
 
 	// assign nodes top-down numbers;  nodes will be assigned names from these
 
@@ -407,7 +445,7 @@ int ClusterCommand::execute()
 //
 // We don't *load* the vectors, but establish a list of BitVector objects that
 // point to the subset interval within the corresponding bloom filter file.
-//	
+//
 //----------
 
 void ClusterCommand::find_leaf_vectors()
@@ -744,6 +782,59 @@ void ClusterCommand::cluster_greedily()
 
 //----------
 //
+// collect_det_ratio_distribution--
+//	Collect statistics describing the distribution of 'det_ratio'-- the
+//	node-by-node fraction of determined-active bits that are determined.
+//
+// Note that we are only interested in the distribution of this value over
+// internal nodes (not leaves). Moreover, we are only interested in the mean
+// and variance, so we only compute the sum and the sum of squares.
+//
+//----------
+//
+// Implementation notes:
+//	(1)	The concept of "determined" bits is the same as is used for
+//		DeterminedFilter.  But the implementation here shares no code with
+//		that, instead making use of the simpler formula
+//		  bDet = bCap union complement of bCup
+// 
+//----------
+
+void ClusterCommand::collect_det_ratio_distribution
+   (BinaryTree*	node,
+	bool		isRoot)
+	{
+//
+//	bool isLeaf = (node->children[0] == nullptr);
+//	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
+//		fatal ("internal error: node[" + std::to_string(node->nodeNum) + "] has only one child");
+//
+//	if (node->bCup == nullptr)
+//		fatal ("internal error: leaf node[" + std::to_string(node->nodeNum) + "] has no bCup");
+
+
+//	………sqrt of E(X^2) - (E(X))^2
+//#bDet(c) / #bDetInf(c)
+	}
+
+//----------
+//
+// determine_culling_threshold--
+//	Derive a culling threshold from the the distribution of 'det_ratio'.
+//
+// Note that the distribution's statistics are expected to have been computed
+// by collect_det_ratio_distribution.
+// 
+//----------
+
+void ClusterCommand::determine_culling_threshold (void)
+	{
+	cullingThreshold = 0.2; // $$$ change this!
+//	………sqrt of E(X^2) - (E(X))^2
+	}
+
+//----------
+//
 // cull_nodes--
 //	Remove "fruitless" nodes from the clustered binary tree structure.
 //
@@ -757,7 +848,7 @@ void ClusterCommand::cluster_greedily()
 // Implementation notes:
 //	(1)	The concept of "determined" bits is the same as is used for
 //		DeterminedFilter.  But the implementation here shares no code with
-//		that one, instead making use of the simpler formula
+//		that, instead making use of the simpler formula
 //		  bDet = bCap union complement of bCup
 //	(2)	Fruitless nodes are left in the tree, but are marked as fruitless so
 //		that later operations (such as print_topology) can skip them.
@@ -1015,7 +1106,7 @@ void ClusterCommand::count_depths
 //----------
 //
 // print_topology--
-//	
+//
 //----------
 
 void ClusterCommand::print_topology
@@ -1080,7 +1171,7 @@ void ClusterCommand::print_topology
 //
 // dump_bits--
 //	Write a bit array to a steam, in human-readable form (for debugging).
-//	
+//
 //----------
 
 void ClusterCommand::dump_bits

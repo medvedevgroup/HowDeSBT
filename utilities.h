@@ -28,6 +28,7 @@ std::uint32_t string_to_unitized_u32 (const std::string& s, const int unitScale=
 std::uint64_t string_to_unitized_u64 (const std::string& s, const int unitScale=1000);
 std::uint32_t hex_string_to_u32      (const std::string& s);
 std::uint64_t hex_string_to_u64      (const std::string& s);
+double        string_to_double       (const std::string& s);
 double        string_to_probability  (const std::string& s);
 std::string   to_lower               (const std::string& s);
 std::string   reverse_complement     (const std::string& s);

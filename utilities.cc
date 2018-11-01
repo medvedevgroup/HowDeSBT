@@ -654,6 +654,81 @@ not_an_integer:
 
 //----------
 //
+// string_to_double--
+//	Parse a string for the floating point number it contains.
+//
+// Values can be expressed as real numbers, percentages, or fractions. Examples
+// are "0.3", "30%" and "3/10".
+//
+//----------
+//
+// Arguments:
+//	const string&	s:	The string to parse.
+//
+// Returns:
+//	The value of the string. Note that the string *must not* contain anything
+//	other than a valid floating point number-- failures result in program
+//	termination.
+//
+//----------
+
+double string_to_double
+   (const string&	s)
+	{
+	double v;
+	size_t extra;
+	string leftover;
+
+	// an empty string is not a number
+	// $$$ we should check whether the string just contains blanks
+
+	if (s == "") goto empty_string;
+
+	// use stod to parse it, but make sure stod used the entire string
+	// $$$ we should check whether the leftover suffix is just blanks
+
+	v = std::stod (s, &extra);
+	if (extra == s.length()) return v;
+
+	leftover = s.substr(extra);
+
+	// if the leftover part is a %, treat the value as a percentage
+
+	if (leftover == "%")
+		{ v /= 100.0;  return v; }
+
+	// if the leftover part is a /, treat the value as a numerator, and parse
+	// the denominator
+	// $$$ we shouldn't allow 0 as a denominator
+
+	if (leftover[0] == '/') // (nota bene: leftover cannot be empty)
+		{
+		leftover = leftover.substr(1);
+		if (leftover == "") goto not_a_number;
+		double denom = std::stod (leftover, &extra);
+		if (extra != leftover.length()) goto not_a_number;
+		v /= denom;
+		return v;
+		}
+
+	// otherwise, it's not a valid number
+
+	goto not_a_number;
+
+	//////////
+	// failure exits
+	//////////
+
+empty_string:
+	fatal ("an empty string is not a number");
+
+not_a_number:
+	fatal ("\"" + s + "\" is not a valid number");
+	return 0;  // execution never reaches here
+	}
+
+//----------
+//
 // string_to_probability--
 //	Parse a string for the probability value it contains.
 //
@@ -666,9 +741,8 @@ not_an_integer:
 //	const string&	s:	The string to parse.
 //
 // Returns:
-//	The value of the string. Note that the string *must not* contain
-//	anything other than a valid probability-- failures result in program
-//	termination.
+//	The value of the string. Note that the string *must not* contain anything
+//	other than a valid probability-- failures result in program termination.
 //
 //----------
 
@@ -699,6 +773,7 @@ double string_to_probability
 
 	// if the leftover part is a /, treat the value as a numerator, and parse
 	// the denominator
+	// $$$ we shouldn't allow 0 as a denominator
 
 	if (leftover[0] == '/') // (nota bene: leftover cannot be empty)
 		{
