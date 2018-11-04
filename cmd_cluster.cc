@@ -80,7 +80,8 @@ void ClusterCommand::debug_help
 	s << "  mergings" << endl;
 	s << "  numbers" << endl;
 	s << "  cull" << endl;
-	s << "  cullratio" << endl;
+	s << "  detratio" << endl;
+	s << "  detratiodistrib" << endl;
 	}
 
 void ClusterCommand::parse
@@ -392,12 +393,9 @@ int ClusterCommand::execute()
 
 	if (cullNodes)
 		{
+		compute_det_ratio(treeRoot,/*isRoot*/true);
 		if (deriveCullingThreshold)
-			{
-			collect_det_ratio_distribution(treeRoot,/*isRoot*/true);
-			determine_culling_threshold();
-			}
-
+			determine_culling_threshold(treeRoot,/*isRoot*/true);
 		cull_nodes(treeRoot,/*isRoot*/true);
 		}
 
@@ -782,13 +780,9 @@ void ClusterCommand::cluster_greedily()
 
 //----------
 //
-// collect_det_ratio_distribution--
-//	Collect statistics describing the distribution of 'active det ratio'-- the
-//	node-by-node fraction of determined-active bits that are determined.
-//
-// Note that we are only interested in the distribution of this value over
-// internal nodes (not leaves). Moreover, we are only interested in the mean
-// and variance, so we only compute the sum and the sum of squares.
+// compute_det_ratio--
+//	Collect statistics describing the 'active det ratio'-- the node-by-node
+//	fraction of determined-active bits that are determined.
 //
 //----------
 //
@@ -800,75 +794,7 @@ void ClusterCommand::cluster_greedily()
 // 
 //----------
 
-void ClusterCommand::collect_det_ratio_distribution
-   (BinaryTree*	node,
-	bool		isRoot)
-	{
-
-// at root, set detRatioMean and detRatioStd;
-//	detRatioSum   = detRatioSumofSquare = 0.0;
-//	detRatioDenom = 0;
-
-//
-//	bool isLeaf = (node->children[0] == nullptr);
-//	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
-//		fatal ("internal error: node[" + std::to_string(node->nodeNum) + "] has only one child");
-//
-//	if (node->bCup == nullptr)
-//		fatal ("internal error: leaf node[" + std::to_string(node->nodeNum) + "] has no bCup");
-
-
-//	………sqrt of E(X^2) - (E(X))^2
-//#bDet(c) / #bDetInf(c)
-// at root, set detRatioMean and detRatioStd;
-//	detRatioMean = detRatioSum/detRatioDenom;
-//	detRatioStd  = sqrt(detRatioMean*detRatioMean - detRatioSumofSquare/detRatioDenom);
-	}
-
-//----------
-//
-// determine_culling_threshold--
-//	Derive a culling threshold from the the distribution of active det ratio.
-//
-// Note that the distribution's statistics are expected to have been computed
-// by collect_det_ratio_distribution.
-// 
-//----------
-
-void ClusterCommand::determine_culling_threshold (void)
-	{
-	cullingThreshold = 0.2; // $$$ change this!
-
-//	cullingThreshold = detRatioMean - cullingThresholdSD*detRatioStd;
-//	if (cullingThreshold < 0.0)
-//		cullingThreshold = 0.0;
-//	else if (cullingThreshold > 1.0)
-//		cullingThreshold = 1.0;
-	}
-
-//----------
-//
-// cull_nodes--
-//	Remove "fruitless" nodes from the clustered binary tree structure.
-//
-// The culling process consists of removing nodes that have a low percentage of
-// bits that will "determine" present/absent for their subtree.  Experiments
-// (using real queries) have shown that this ratio correlates well with the
-// probability that a node will resolve a query.
-//
-//----------
-//
-// Implementation notes:
-//	(1)	The concept of "determined" bits is the same as is used for
-//		DeterminedFilter.  But the implementation here shares no code with
-//		that, instead making use of the simpler formula
-//		  bDet = bCap union complement of bCup
-//	(2)	Fruitless nodes are left in the tree, but are marked as fruitless so
-//		that later operations (such as print_topology) can skip them.
-// 
-//----------
-
-void ClusterCommand::cull_nodes
+void ClusterCommand::compute_det_ratio
    (BinaryTree*	node,
 	bool		isRoot)
 	{
@@ -882,7 +808,7 @@ void ClusterCommand::cull_nodes
 	if (node->bCup == nullptr)
 		fatal ("internal error: leaf node[" + std::to_string(node->nodeNum) + "] has no bCup");
 
-	// allocate bit vector for bCap
+	// allocate bit vectors for bCap and bDet
 
 	node->bCap = (u64*) new char[numBytes];
 	if (node->bCap == nullptr)
@@ -891,18 +817,30 @@ void ClusterCommand::cull_nodes
 	if (trackMemory)
 		cerr << "@+" << node->bCap << " allocating bCap for node[" << node->nodeNum << "]" << endl;
 
-	// if this is a leaf, just copy bCup to bCap
+	node->bDet = (u64*) new char[numBytes];
+	if (node->bDet == nullptr)
+		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
+			 + " for node " + std::to_string(node->nodeNum) + "'s bDet array");
+	if (trackMemory)
+		cerr << "@+" << node->bDet << " allocating bDet for node[" << node->nodeNum << "]" << endl;
+
+	// if this is a leaf, just copy bCup to bCap, and 'compute' bDet from that
+	// $$$ we don't really need bDet, since it will be all ones
 
 	if (isLeaf)
 		{
 		std::memcpy (/*to*/ node->bCap, /*from*/ node->bCup, /*how much*/ numBytes);
+		bitwise_or_not(/*from*/     node->bCap,
+					   /*or not*/   node->bCup,
+					   /*to*/       node->bDet,
+					   /*how much*/ numBits);
 		return;
 		}
 
-	// otherwise, this is a non-leaf node;  first, cull the descendents
+	// otherwise, this is a non-leaf node;  first, process the descendents
 
-	cull_nodes(node->children[0]);
-	cull_nodes(node->children[1]);
+	compute_det_ratio(node->children[0]);
+	compute_det_ratio(node->children[1]);
 
 	// compute bCap from the children
 	//
@@ -910,114 +848,99 @@ void ClusterCommand::cull_nodes
 	//   bCap(n) = bCap(c0) intersect bCap(c1)
 
 	bitwise_and(/*from*/     node->children[0]->bCap,
-	            /*and*/      node->children[1]->bCap,
-	            /*to*/       node->bCap,
-	            /*how much*/ numBits);
+				/*and*/      node->children[1]->bCap,
+				/*to*/       node->bCap,
+				/*how much*/ numBits);
 
 	// compute bDet from bCap and bCup
 	//
 	// for this node n,
 	//   bDet(n) = bCap(n) union (not bCup(n))
 
-	node->bDet = (u64*) new char[numBytes];
-	if (node->bDet == nullptr)
-		fatal ("error: failed to allocate " + std::to_string(numBytes) + " bytes"
-		     + " for node " + std::to_string(node->nodeNum) + "'s bDet array");
-	if (trackMemory)
-		cerr << "@+" << node->bDet << " allocating bDet for node[" << node->nodeNum << "]" << endl;
-
 	bitwise_or_not(/*from*/     node->bCap,
-	               /*or not*/   node->bCup,
-	               /*to*/       node->bDet,
-	               /*how much*/ numBits);
+				   /*or not*/   node->bCup,
+				   /*to*/       node->bDet,
+				   /*how much*/ numBits);
 
-	// determine whether the children are fruitful;  note that leaves are
-	// always considered fruitful
-  	//
+	// compute det_ratio of the children
+	//
 	// for each child c,
 	//   bDetInf(c) = not bDet(n)   (informative bits of bDet at c)
-	//   fruitfulness ratio = #bDet(c) / #bDetInf(c)
-	//                      = #(bDet(c) and not bDetInf(c)) / #(not bDet(n))
-	//                      = #(bDet(c) and not bDet(n))    / (numBits - #bDet(n))
+	//   det_ratio = #bDet(c) / #bDetInf(c)
+	//             = #(bDet(c) and not bDetInf(c)) / #(not bDet(n))
+	//             = #(bDet(c) and not bDet(n))    / (numBits - #bDet(n))
 
-	u64 numer,denom;
-
-	denom = numBits - bitwise_count(node->bDet,numBits);
-
+	u64 numDetInf = numBits - bitwise_count(node->bDet,numBits);
 	for (int childIx=0 ; childIx<2 ; childIx++)
 		{
 		BinaryTree* child = node->children[childIx];
-		bool childIsLeaf = (child->children[0] == nullptr);
-		if (childIsLeaf) continue;  // leaves are always fruitful
 
-		numer = bitwise_mask_count(/*in*/         child->bDet,
-		                           /*but not in*/ node->bDet,
-		                           /*how much*/   numBits);
+		child->numDetOne = bitwise_mask_count(/*in*/         child->bDet,
+		                                      /*but not in*/ node->bDet,
+		                                      /*how much*/   numBits);
+		child->numDetInf = numDetInf;
 
-		if (contains(debug,"cullratio"))
-			cerr << "cull node[" << child->nodeNum << "] "
-			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
-			     << endl;
-
-		if (numer < denom*cullingThreshold) // (numer/denom < cullingThreshold)
+		if (contains(debug,"detratio"))
 			{
-			child->fruitful = false;
-			if (contains(debug,"cull"))
-				cerr << "culling removes node[" << child->nodeNum << "] "
-				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
-				     << endl;
+			bool childIsLeaf = (child->children[0] == nullptr);
+			if (childIsLeaf)
+				cerr << "detRatio node[" << child->nodeNum << "]";
+			else
+				cerr << "detRatio node[" << child->nodeNum << "]"
+				     << " (=" << child->children[0]->nodeNum << "+" << child->children[1]->nodeNum << ")";
+			cerr << " " << child->numDetOne << "/" << child->numDetInf
+				 << " (" << (float(child->numDetOne)/child->numDetInf) << ")"
+				 << endl;
 			}
 		}
 
-	// if this node has no parent, determine whether it is fruitful
+	// if this node has no parent, compute its det_ratio
 	//
-	// fruitfulness ratio = #bDet / #bDetInf
-	//                    = #bDet / numBits
+	// det_ratio = #bDet / #bDetInf
+	//           = #bDet / numBits
 
 	if (isRoot)
 		{
-		numer = bitwise_count(node->bDet,numBits);
-		denom = numBits;
+		node->numDetOne = bitwise_count(node->bDet,numBits);
+		node->numDetInf = numBits;
 
-		if (contains(debug,"cullratio"))
-			cerr << "cull node[" << node->nodeNum << "] "
-			     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
-			     << endl;
-
-		if (numer < denom*cullingThreshold) // (numer/denom < cullingThreshold)
+		if (contains(debug,"detratio"))
 			{
-			node->fruitful = false;
-			if (contains(debug,"cull"))
-				cerr << "culling removes node[" << node->nodeNum << "] "
-				     << numer << "/" << denom << " (" << (float(numer)/denom) << ")"
-				     << endl;
+			cerr << "detRatio node[" << node->nodeNum << "]"
+			     << " (=" << node->children[0]->nodeNum << "+" << node->children[1]->nodeNum << ")"
+			     << " " << node->numDetOne << "/" << node->numDetInf
+			     << " (" << (float(node->numDetOne)/node->numDetInf) << ")"
+			     << endl;
 			}
 		}
 
 	// dispose of childrens' bit vectors
 
-	for (int childIx=0 ; childIx<2 ; childIx++)
+	if (not isLeaf)
 		{
-		BinaryTree* child = node->children[childIx];
-
-		if (trackMemory)
+		for (int childIx=0 ; childIx<2 ; childIx++)
 			{
+			BinaryTree* child = node->children[childIx];
+
+			if (trackMemory)
+				{
+				if (child->bCup != nullptr)
+					cerr << "@-" << child->bCup << " discarding bCup for node[" << child->nodeNum << "]" << endl;
+				if (child->bCap != nullptr)
+					cerr << "@-" << child->bCap << " discarding bCap for node[" << child->nodeNum << "]" << endl;
+				if (child->bDet != nullptr)
+					cerr << "@-" << child->bDet << " discarding bDet for node[" << child->nodeNum << "]" << endl;
+				}
+
 			if (child->bCup != nullptr)
-				cerr << "@-" << child->bCup << " discarding bCup for node[" << child->nodeNum << "]" << endl;
+				{ delete[] child->bCup;  child->bCup = nullptr; }
+
 			if (child->bCap != nullptr)
-				cerr << "@-" << child->bCap << " discarding bCap for node[" << child->nodeNum << "]" << endl;
+				{ delete[] child->bCap;  child->bCap = nullptr; }
+
 			if (child->bDet != nullptr)
-				cerr << "@-" << child->bDet << " discarding bDet for node[" << child->nodeNum << "]" << endl;
+				{ delete[] child->bDet;  child->bDet = nullptr; }
 			}
-
-		if (child->bCup != nullptr)
-			{ delete[] child->bCup;  child->bCup = nullptr; }
-
-		if (child->bCap != nullptr)
-			{ delete[] child->bCap;  child->bCap = nullptr; }
-
-		if (child->bDet != nullptr)
-			{ delete[] child->bDet;  child->bDet = nullptr; }
 		}
 
 	// if this node has no parent, dispose of its bit vectors
@@ -1044,6 +967,136 @@ void ClusterCommand::cull_nodes
 			{ delete[] node->bDet;  node->bDet = nullptr; }
 		}
 
+	}
+
+//----------
+//
+// determine_culling_threshold--
+//	Derive a culling threshold from the distribution of active det ratio.
+//
+// Note that the active det ratio at each is expected to have been computed by
+// compute_det_ratio().
+// 
+//----------
+
+void ClusterCommand::determine_culling_threshold
+   (BinaryTree*	node,
+	bool		isRoot)
+	{
+	bool isLeaf = (node->children[0] == nullptr);
+	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
+		fatal ("internal error: node[" + std::to_string(node->nodeNum) + "] has only one child");
+
+	// initialize sums at the root
+
+	if (isRoot)
+		{
+		detRatioSum   = detRatioSumofSquare = 0.0;
+		detRatioDenom = 0;
+		}
+
+	// add this node's det_ratio to the sums; note that leaves don't contribute
+	// to the distribution we're interested in
+
+	if ((not isLeaf) and (node->numDetInf > 0))
+		{
+		double detRatio = double(node->numDetOne) / node->numDetInf;
+		detRatioSum         += detRatio;
+		detRatioSumofSquare += detRatio*detRatio;
+		detRatioDenom++;
+
+		if (contains(debug,"detratiodistrib"))
+			cerr << "detRatio node[" << node->nodeNum << "] " << detRatio << endl;
+		}
+
+	// process the descendents
+
+	if (not isLeaf)
+		{
+		determine_culling_threshold(node->children[0]);
+		determine_culling_threshold(node->children[1]);
+		}
+
+	// if we're the root, compute the threshold
+
+	if (isRoot)
+		{
+		if (detRatioDenom == 0)
+			fatal ("internal error: can't compute culling threshold, tree has no participating nodes");
+		double detRatioMean = detRatioSum/detRatioDenom;
+		double detRatioStd  = sqrt(detRatioSumofSquare/detRatioDenom - detRatioMean*detRatioMean);
+		cullingThreshold = detRatioMean - cullingThresholdSD*detRatioStd;
+
+		if (contains(debug,"detratiodistrib"))
+			cerr << "detRatio mean="  << detRatioMean
+			     << " stdev=" << detRatioStd
+			     << " cull=" << cullingThreshold
+			     << endl;
+
+		if (cullingThreshold < 0.0)
+			cullingThreshold = 0.0;
+		else if (cullingThreshold > 1.0)
+			cullingThreshold = 1.0;
+
+		cout << "setting culling threshold to "
+		     << std::setprecision(1) << std::fixed << 100*cullingThreshold << "%"
+		     << std::setprecision(6) << std::fixed
+		     << " (mean=" << detRatioMean << " stdev=" << detRatioStd << ")"
+		     << endl;
+		}
+	}
+
+//----------
+//
+// cull_nodes--
+//	Remove "fruitless" nodes from the clustered binary tree structure.
+//
+// The culling process consists of removing nodes that have a low percentage of
+// bits that will "determine" present/absent for their subtree.  Experiments
+// (using real queries) have shown that this ratio correlates well with the
+// probability that a node will resolve a query.
+//
+// Note that the active det ratio at each is expected to have been computed by
+// compute_det_ratio(), and cullingThreshold has either been set manually or
+// computed by determine_culling_threshold().
+// 
+//----------
+//
+// Implementation notes:
+//	(1)	Fruitless nodes are left in the tree, but are marked as fruitless so
+//		that later operations (such as print_topology) can skip them.
+// 
+//----------
+
+void ClusterCommand::cull_nodes
+   (BinaryTree*	node,
+	bool		isRoot)
+	{
+	bool isLeaf = (node->children[0] == nullptr);
+	if ((node->children[0] == nullptr) != (node->children[1] == nullptr))
+		fatal ("internal error: node[" + std::to_string(node->nodeNum) + "] has only one child");
+
+	// if this is a leaf, ignore it; leaves are always considered fruitful
+
+	if (isLeaf) return;
+
+	// otherwise, this is a non-leaf node;  first, cull the descendents
+
+	cull_nodes(node->children[0]);
+	cull_nodes(node->children[1]);
+
+	// determine whether this node is fruitful
+	//   fruitfulness ratio = #bDet(n) / #bDetInf(n)
+
+	if (node->numDetOne < node->numDetInf*cullingThreshold)
+		{ // (node->numDetOne/node->numDetInf < cullingThreshold)
+		node->fruitful = false;
+		if (contains(debug,"cull"))
+			cerr << "culling removes node[" << node->nodeNum << "] "
+				 << node->numDetOne << "/" << node->numDetInf
+				 << " (" << (float(node->numDetOne)/node->numDetInf) << ")"
+				 << endl;
+		}
 	}
 
 //----------

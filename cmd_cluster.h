@@ -64,6 +64,10 @@ public:
 	std::uint64_t* bCap;		// inersection of all leaves in the subtree
 	std::uint64_t* bDet;		// "determined" bits at this node
 	BinaryTree* children[2];
+
+	std::uint64_t numDetInf;	// number of active bits in B_det
+	std::uint64_t numDetOne;	// number of bits for which B_det==1
+
 	bool trackMemory;
 	};
 
@@ -85,8 +89,8 @@ public:
 	virtual int execute (void);
 	virtual void find_leaf_vectors (void);
 	virtual void cluster_greedily (void);
-	virtual void collect_det_ratio_distribution (BinaryTree* node,bool isRoot=false);
-	virtual void determine_culling_threshold (void);
+	virtual void compute_det_ratio (BinaryTree* node,bool isRoot=false);
+	virtual void determine_culling_threshold (BinaryTree* node,bool isRoot=false);
 	virtual void cull_nodes (BinaryTree* node,bool isRoot=false);
 	virtual void top_down_numbering (BinaryTree* node,int depth,bool isRoot=false);
 	virtual void count_depths (BinaryTree* node,int depth);
@@ -109,8 +113,6 @@ public:
 	double detRatioSum;
 	double detRatioSumofSquare;
 	std::uint32_t detRatioDenom;
-	double detRatioMean;
-	double detRatioStd;
 
 	std::vector<BitVector*> leafVectors;
 	BinaryTree* treeRoot;
