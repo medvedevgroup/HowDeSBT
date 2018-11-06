@@ -69,7 +69,7 @@ gzip -dc experiment1.jf.gz \
 
 ```bash  
 ls experiment*.bf > filterlist
-howdesbt cluster --list=filterlist --bits=500K \
+howdesbt cluster --list=filterlist --cull=20% --bits=500K \
   --tree=uncompressed.culled.sbt --nodename=node{number}.bf
 ```
 

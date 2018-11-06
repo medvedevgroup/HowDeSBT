@@ -57,8 +57,15 @@ void ClusterCommand::usage
 	s << "                    algorithm only considers this subset of each filter's bits" << endl;
 	s << "                    (by default we use the first " << defaultEndPosition << " bits)" << endl;
 	s << "  --bits=<N>        number of bits to use from each filter; same as 0..<N>" << endl;
+	s << "  --cull            remove nodes from the binary tree; remove those for which" << endl;
+	s << "                    saturation of determined is more than 2 standard deviations" << endl;
+	s << "                    below the mean" << endl;
+	s << "                    (this is the default)" << endl;
+	s << "  --cull=<Z>sd      remove nodes for which saturation of determined is more" << endl;
+	s << "                    than <Z> standard deviations below the mean" << endl;
+	s << "  --cull=<S>        remove nodes for which saturation of determined is less" << endl;
+	s << "                    than <S>; e.g. <S> can be \"0.20\" or \"20%\"" << endl;
 	s << "  --keepallnodes    keep all nodes of the binary tree" << endl;
-	s << "                    (by default we remove nodes that appear fruitless)" << endl;
 	s << "  --nocull          (same as --keepallnodes)" << endl;
 	s << "  --nobuild         perform the clustering but don't build the tree's nodes" << endl;
 	s << "                    (this is the default)" << endl;
@@ -244,7 +251,7 @@ void ClusterCommand::parse
 			continue;
 			}
 
-		// --cull=<threshold>sd (unadvertised)
+		// --cull=<Z>sd
 
 		if ((is_suffix_of (arg, "sd"))
 		 && ((is_prefix_of (arg, "--cull="))
@@ -257,8 +264,8 @@ void ClusterCommand::parse
 			continue;
 			}
 
-		// --cull=<threshold> (unadvertised)
-		// --winnow=<threshold> (unadvertised; for backward compatibility)
+		// --cull=<S>
+		// --winnow=<S> (unadvertised; for backward compatibility)
 
 		if ((is_prefix_of (arg, "--cull="))
 		 || (is_prefix_of (arg, "--culling="))
