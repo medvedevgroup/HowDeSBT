@@ -1031,6 +1031,7 @@ void ClusterCommand::determine_culling_threshold
 			cerr << "detRatio mean="  << detRatioMean
 			     << " stdev=" << detRatioStd
 			     << " cull=" << cullingThreshold
+			     << " (across " << detRatioDenom << " nodes)"
 			     << endl;
 
 		if (cullingThreshold < 0.0)
