@@ -1230,7 +1230,7 @@ int DeterminedFilter::lookup
 //
 // DeterminedBriefFilter--
 //
-// Attribution: the use of rank/select and removal of uninformative bits was
+// Attribution: the use of rank/select and removal of inactive bits was
 // inspired by [1], but the application of it to a determined/brief split is
 // original with this program.
 //

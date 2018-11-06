@@ -805,13 +805,13 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 	bf->union_with(bvHow,0);
 
 	// incorporate bits from this filter, to finish the child nodes
-	//   Idet(c) = informative bits of Bdet(c)            = complement of Bdet(x)
-	//   Ihow(c) = informative bits of Bhow(c)            = Bdet(c) intersect Idet(c)
-	//   bvs[0]  = Bdet(c) with uninformative bits zeroed = Bdet(c) intersect Idet(c)
-	//                                                    = Bdet(c) intersect complement of Bdet(x)
-	//   bvs[1]  = Bhow(c) with uninformative bits zeroed = Bhow(c) intersect Ihow(c)
-	//                                                    = Bhow(c) intersect Bdet(c) intersect Idet(c)
-	//                                                    = Bhow(c) intersect bvs[0]
+	//   Idet(c) = active bits of Bdet(c)            = complement of Bdet(x)
+	//   Ihow(c) = active bits of Bhow(c)            = Bdet(c) intersect Idet(c)
+	//   bvs[0]  = Bdet(c) with inactive bits zeroed = Bdet(c) intersect Idet(c)
+	//                                               = Bdet(c) intersect complement of Bdet(x)
+	//   bvs[1]  = Bhow(c) with inactive bits zeroed = Bhow(c) intersect Ihow(c)
+	//                                               = Bhow(c) intersect Bdet(c) intersect Idet(c)
+	//                                               = Bhow(c) intersect bvs[0]
 
 	if (not dbgInhibitChildUpdate)
 		{
@@ -833,13 +833,13 @@ void BloomTree::construct_determined_nodes (u32 compressor)
 		}
 
 	// if this node has no parent, we need to finish it now
-	//   Idet(x) = informative bits of Bdet(x)            = all 1s
-	//   Ihow(x) = informative bits of Bhow(x)            = Bdet(x) intersect Idet(x)
-	//                                                    = Bdet(x)
-	//   bvs[0]  = Bdet(x) with uninformative bits zeroed = Bdet(x) intersect Idet(x)
-	//                                                    = Bdet(x), no modification needed
-	//   bvs[1]  = Bhow(x) with uninformative bits zeroed = Bhow(x) intersect Ihow(x)
-	//                                                    = Bhow(x) intersect Bdet(x)
+	//   Idet(x) = active bits of Bdet(x)            = all 1s
+	//   Ihow(x) = active bits of Bhow(x)            = Bdet(x) intersect Idet(x)
+	//                                               = Bdet(x)
+	//   bvs[0]  = Bdet(x) with inactive bits zeroed = Bdet(x) intersect Idet(x)
+	//                                               = Bdet(x), no modification needed
+	//   bvs[1]  = Bhow(x) with inactive bits zeroed = Bhow(x) intersect Ihow(x)
+	//                                               = Bhow(x) intersect Bdet(x)
 
 	bool finished = false;
 	if ((parent == nullptr) || (parent->is_dummy()))
@@ -1022,10 +1022,10 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 	bf->union_with(bvHow,0);
 
 	// incorporate bits from this filter, to finish the child nodes
-	//   Idet(c) = informative bits of Bdet(c)             = complement of Bdet(x)
-	//   Ihow(c) = informative bits of Bhow(c)             = Bdet(c) intersect Idet(c)
-	//   bvs[0]  = Bdet(c) with uninformative bits removed = Bdet(c) squeeze Idet(c)
-	//   bvs[1]  = Bhow(c) with uninformative bits removed = Bhow(c) squeeze Ihow(c)
+	//   Idet(c) = active bits of Bdet(c)             = complement of Bdet(x)
+	//   Ihow(c) = active bits of Bhow(c)             = Bdet(c) intersect Idet(c)
+	//   bvs[0]  = Bdet(c) with inactive bits removed = Bdet(c) squeeze Idet(c)
+	//   bvs[1]  = Bhow(c) with inactive bits removed = Bhow(c) squeeze Ihow(c)
 
 	if (not dbgInhibitChildUpdate)
 		{
@@ -1068,13 +1068,13 @@ void BloomTree::construct_determined_brief_nodes (u32 compressor)
 		}
 
 	// if this node has no parent, we need to finish it now
-	//   Idet(x) = informative bits of Bdet(x)             = all 1s
-	//   Ihow(x) = informative bits of Bhow(x)             = Bdet(x) intersect Idet(x)
-	//                                                     = Bdet(x)
-	//   bvs[0]  = Bdet(x) with uninformative bits removed = Bdet(x) squeeze Idet(x)
-	//                                                     = Bdet(x), no modification needed
-	//   bvs[1]  = Bhow(x) with uninformative bits removed = Bhow(x) squeeze Ihow(x)
-	//                                                     = Bhow(x) squeeze Bdet(x)
+	//   Idet(x) = active bits of Bdet(x)             = all 1s
+	//   Ihow(x) = active bits of Bhow(x)             = Bdet(x) intersect Idet(x)
+	//                                                = Bdet(x)
+	//   bvs[0]  = Bdet(x) with inactive bits removed = Bdet(x) squeeze Idet(x)
+	//                                                = Bdet(x), no modification needed
+	//   bvs[1]  = Bhow(x) with inactive bits removed = Bhow(x) squeeze Ihow(x)
+	//                                                = Bhow(x) squeeze Bdet(x)
 
 	bool finished = false;
 	if ((parent == nullptr) || (parent->is_dummy()))
@@ -1536,8 +1536,8 @@ void BloomTree::perform_batch_query
 
 	// adjust kmer/position lists as we move down the tree; for most node types
 	// this would be a null operation, but for nodes that use rank/select the
-	// position values are modified to reflect the removal of uninformative
-	// bits in the bloom filters
+	// position values are modified to reflect the removal of inactive bits in
+	// the bloom filters
 
 	if (isPositionAdjustor)
 		{

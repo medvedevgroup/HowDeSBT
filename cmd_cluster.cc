@@ -865,9 +865,9 @@ void ClusterCommand::compute_det_ratio
 	// compute det_ratio of the children
 	//
 	// for each child c,
-	//   bDetInf(c) = not bDet(n)   (informative bits of bDet at c)
-	//   det_ratio = #bDet(c) / #bDetInf(c)
-	//             = #(bDet(c) and not bDetInf(c)) / #(not bDet(n))
+	//   bDetAct(c) = not bDet(n)   (active bits of bDet at c)
+	//   det_ratio = #bDet(c) / #bDetAct(c)
+	//             = #(bDet(c) and not bDetAct(c)) / #(not bDet(n))
 	//             = #(bDet(c) and not bDet(n))    / (numBits - #bDet(n))
 
 	u64 numDetInf = numBits - bitwise_count(node->bDet,numBits);
@@ -896,7 +896,7 @@ void ClusterCommand::compute_det_ratio
 
 	// if this node has no parent, compute its det_ratio
 	//
-	// det_ratio = #bDet / #bDetInf
+	// det_ratio = #bDet / #bDetAct
 	//           = #bDet / numBits
 
 	if (isRoot)
@@ -1087,7 +1087,7 @@ void ClusterCommand::cull_nodes
 	cull_nodes(node->children[1]);
 
 	// determine whether this node is fruitful
-	//   fruitfulness ratio = #bDet(n) / #bDetInf(n)
+	//   fruitfulness ratio = #bDet(n) / #bDetAct(n)
 
 	if (node->numDetOne < node->numDetInf*cullingThreshold)
 		{ // (node->numDetOne/node->numDetInf < cullingThreshold)

@@ -54,7 +54,7 @@ void BuildSBTCommand::usage
 	s << "  --allsome            create tree nodes as all/some bloom filters" << endl;
 	s << "  --determined         create tree nodes as determined/how bloom filters" << endl;
 	s << "  --determined,brief   create tree nodes as determined/how, but only store" << endl;
-	s << "                       informative bits" << endl;
+	s << "                       active bits" << endl;
 	s << "  --uncompressed       create the nodes as uncompressed bit vector(s)" << endl;
 	s << "                       (this is the default)" << endl;
 	s << "  --rrr                create the nodes as rrr-compressed bit vector(s)" << endl;
