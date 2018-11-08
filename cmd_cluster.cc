@@ -384,6 +384,10 @@ int ClusterCommand::execute()
 	if (contains(debug,"interval"))
 		cerr << "interval is " << startPosition << ".." << endPosition << endl;
 
+	// $$$ consider deterministically shuffling the leaf list, i.e. sort it
+	//     .. then shuffle with a seed-based PRNG; this would produce the same
+	//     .. tree for the same input regardless of order of the list
+
 	find_leaf_vectors ();
 
 	if (contains(debug,"offsets"))

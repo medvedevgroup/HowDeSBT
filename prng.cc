@@ -34,7 +34,7 @@ typedef unsigned int uint;
 //			x <- ((69069x + 2*seed[i]) | 1) mod 2^32
 //		When the end of the seed string is reached, the remaining seed[i]
 //		values are considered to be zero. At that point, the remainder of the
-//		state vector is similar to the generator fom Line 15 of Table 1, page
+//		state vector is similar to the generator from Line 15 of Table 1, page
 //		106, section 3.3.4 of Knuth's "The Art of Computer Programming", volume
 //		2, 3rd edition. The use of that sequence is based on the (apparent)
 //		recommendation of Shawn Cokus appearing in many pre-C++ implementations
