@@ -1,0 +1,12 @@
+# Compiled source #
+###################
+*.o
+howdesbt
+
+# Makefile variants #
+###################
+Makefile.*
+
+# OS generated files #
+######################
+.DS_Store
