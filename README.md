@@ -7,6 +7,7 @@ Sequence Bloom Tree, supporting determined/how split filters
 * SDSL-lite (Has to be cloned from github.com/simongog/sdsl-lite or after
 April 2017; earlier versions had a problem with RRR in certain configurations)
 * CRoaring (https://github.com/RoaringBitmap/CRoaring)
+* The tutorial makes use of ntCard (https://github.com/bcgsc/ntCard)
 
 # Installation
 
