@@ -4,7 +4,7 @@ Sequence Bloom Tree, supporting determined/how split filters
 # Dependencies
 
 * Jellyfish (Version 2.2.0 or later)
-* SDSL-lite (Has to be cloned from github.com/simongog/sdsl-lite or after
+* SDSL-lite (Has to be cloned from github.com/simongog/sdsl-lite after
 April 2017; earlier versions had a problem with RRR in certain configurations)
 * CRoaring (https://github.com/RoaringBitmap/CRoaring)
 * The tutorial makes use of ntCard (https://github.com/bcgsc/ntCard)
