@@ -12,6 +12,7 @@ April 2017; earlier versions had a problem with RRR in certain configurations)
 # Installation
 
 To install subutan from the source:  
+
 1a. Download the latest version of subutan using Github  
 ```bash  
      git clone https://github.com/medvedevgroup/HowDeSBT  
@@ -20,6 +21,7 @@ To install subutan from the source:
 <code>${HOME}</code>, you need to modify the Makefile. Specifically, in
 both the <code>CXXFLAGS</code> and <code>LDFLAGS</code> definitions
 <code>$${HOME}</code> should be changed to your install path.
+
 1c. Jellyfish installation requires an extra step for its include
 directory. After you have installed Jellyfish, do
 ```bash  
