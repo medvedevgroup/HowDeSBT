@@ -1,5 +1,5 @@
-CXXFLAGS =  -Wall -std=c++11 -I~/include
-LDFLAGS  =  -L~/lib -lroaring -lsdsl -ljellyfish-2.0 -lpthread
+CXXFLAGS =  -Wall -std=c++11 -I$${HOME}/include
+LDFLAGS  =  -L$${HOME}/lib -lroaring -lsdsl -ljellyfish-2.0 -lpthread
 
 CPP_FILES := howdesbt.cc \
              cmd_make_bf.cc cmd_cluster.cc cmd_build_sbt.cc cmd_query.cc \
