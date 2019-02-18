@@ -16,9 +16,9 @@ To install subutan from the source:
      git clone https://github.com/medvedevgroup/HowDeSBT  
 ```  
 2. If you have installed the dependencies somewhere other than
-<code>${HOME}</code>, you need to modify the Makefile. Specifically,
-<code>$${HOME}</code> should be changed to your install path in both the
-<code>CXXFLAGS</code> and <code>LDFLAGS</code> definitions.
+<code>${HOME}</code>, you need to modify the Makefile. Specifically, in
+both the <code>CXXFLAGS</code> and <code>LDFLAGS</code> definitions
+<code>$${HOME}</code> should be changed to your install path.
 3. Compile:  
 ```bash  
     cd HowDeSBT  
