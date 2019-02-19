@@ -18,12 +18,16 @@ To install subutan from the source:
      git clone https://github.com/medvedevgroup/HowDeSBT  
 ```  
 
-## 1b. If you have installed the dependencies somewhere other than
+## 1b. Modify the Makefile
+
+If you have installed the dependencies somewhere other than
 <code>${HOME}</code>, you need to modify the Makefile. Specifically, in
 both the <code>CXXFLAGS</code> and <code>LDFLAGS</code> definitions
 <code>$${HOME}</code> should be changed to your install path.
 
-## 1c. (There are other ways to accomplish this, see the note at the end
+## 1c. Jellyfish install workaround 
+
+(There are other ways to accomplish this, see the note at the end
 of this step) Jellyfish installation requires an extra step for its include
 directory. After you have installed Jellyfish, do
 ```bash  
