@@ -73,5 +73,24 @@ https://github.com/gmarcais/Jellyfish/issues/139 for more details.
 Another alternative is to make sure the path to the HowDeSBT directory is in
 your PATH environment variable.
 
-## 4. A usage tutorial can be found at
+# Quick Start
+
+## A usage tutorial can be found at
 https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial
+
+The command <code>howdesbt ?</code> will show a list of subcommands with brief
+descriptions. As of this writing, that will look like this:
+```bash  
+    $ howdesbt ?
+    makebf--  convert a sequence file to a bloom filter
+    cluster-- determine a tree topology by clustering bloom filters
+    build--   build a sequence bloom tree from a topology file and leaves
+    query--   query a sequence bloom tree
+    version-- report this program's version
+
+```
+
+The command <code>howdesbt ?\<subcommand\></code> will give a more detailed
+description of a subcommand.  For example, <code>howdesbt ?makebf</code>
+gives details for how to convert a sequence file to a bloom filter.
+
