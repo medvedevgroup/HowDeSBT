@@ -50,10 +50,11 @@ for the version you've installed:
 
 Note: the symbolic link is a workaround for the way that Jellyfish installs
 its files. That install expects the user to have the program pkg-config
-installed and an environment variable PKG_CONFIG_PATH defined. While that
+installed and an environment variable PKG_CONFIG_PATH defined. The Makefile
+here woud then use pkg-config to get the path to the include files. While that
 paradigm is apparently widespread it isn't universal. The symbolic link
-workaround seems less of a burden than requiring users install another package
-and set up an environment variable.  See
+workaround seems less of a burden than requiring that users install another
+package and set up an environment variable. See
 https://github.com/gmarcais/Jellyfish/issues/139 for more details.
 
 ## 2. Compile:  
