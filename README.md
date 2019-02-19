@@ -63,5 +63,15 @@ https://github.com/gmarcais/Jellyfish/issues/139 for more details.
     make  
 ```
 
-## 3. A usage tutorial can be found at
+## 3. Install:  
+
+```bash  
+    cd HowDeSBT  
+    cp howdesbt ${HOME}/bin
+```
+
+Another alternative is to make sure the path to the HowDeSBT directory is in
+your PATH environment variable.
+
+## 4. A usage tutorial can be found at
 https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial
