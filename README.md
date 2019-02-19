@@ -28,7 +28,9 @@ both the <code>CXXFLAGS</code> and <code>LDFLAGS</code> definitions
 ## 1c. Jellyfish install workaround 
 
 (There are other ways to accomplish this, see the note at the end
-of this step) Jellyfish installation requires an extra step for its include
+of this step.)
+
+Jellyfish installation requires an extra step for its include
 directory. After you have installed Jellyfish, do
 ```bash  
     cd ${HOME}/include
