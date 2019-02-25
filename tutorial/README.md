@@ -10,12 +10,12 @@ sequences.
 
 An SBT represents a set of sequencing experiments, where each experiment is a
 set of sequences (e.g. reads). The `makebf` subcommand is used to convert each
-experiment into a bloom filter of its kmers. The `cluster` and `build`
-subcommands convert these bloom filters into an SBT, and the `query` subcommand
+experiment into a Bloom filter of its kmers. The `cluster` and `build`
+subcommands convert these Bloom filters into an SBT, and the `query` subcommand
 then uses the SBT to identify experiments likely to contain a given query
 sequence.
 
-Note that all bloom filters must have the same number of bits. In step 1 we
+Note that all Bloom filters must have the same number of bits. In step 1 we
 show how this setting can be estimated from the data. Similarly, all bloom
 filters must have the same k-mer size. Here we use K=20, which is typical in
 the SBT literature.
@@ -50,7 +50,7 @@ git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
 
 ### (2) Convert the fasta files to Bloom filter bit vectors.
 
-We use `howdesbt makebf` independently on each fastq file.
+We use `howdesbt makebf` to create a Bloom filter for each experiment.
 
 _The --min setting causes low-abundance kmers to be discarded. Such kmers are
 expected to contain sequencing errors. As shown here, we use the same minimim
@@ -71,7 +71,7 @@ ls EXPERIMENT*.fastq.gz \
       done
 ```
 
-The result of this step is a Bloom filter for each of the fastq files, named
+The result of this step is a Bloom filter for each experiment, named
 EXPERIMENT1.bf, EXPERIMENT2.bf, etc.
 
 ### (3) Create a tree topology.
