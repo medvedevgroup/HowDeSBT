@@ -2,6 +2,12 @@
 
 ### Overview.
 
+This directory contains twenty files of sequenced reads, EXPERIMENT1.fastq.gz,
+EXPERIMENT2.fastq.gz, etc, each representing a sequencing experiment. (These
+are not actual reads, but model reads sampled from a set of transcript-like
+sequences). There is also a file, queries.fa, that contains 300 query
+sequences.
+
 An SBT represents a set of sequencing experiments, where each experiment is a
 set of sequences (e.g. reads). The `makebf` subcommand is used to convert each
 experiment into a bloom filter of its kmers. The `cluster` and `build`
@@ -10,12 +16,15 @@ then uses the SBT to identify experiments likely to contain a given query
 sequence.
 
 Note that all bloom filters must have the same number of bits. In step 1 we
-show how this setting can be estimated from the data.
+show how this setting can be estimated from the data. Similarly, all bloom
+filters must have the same k-mer size. Here we use K=20, which is typical in
+the SBT literature.
 
 In this tutorial the reads for an experiment are in a single file. But in
-practice they are often spread among several files. So while step 2 shows
-`makebf` used with only one input fastq file, it can accept any number of
-fasta or fastq files.
+practice they are often spread among several files. For example, paired
+sequencing often produces two files per sequencing run or per lane. So while
+step 2 shows `makebf` used with only one input fastq file, it can accept any
+number of fasta or fastq files.
 
 ### (1) Estimate the best Bloom filter size.
 
@@ -41,12 +50,12 @@ git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
 
 ### (2) Convert the fasta files to Bloom filter bit vectors.
 
-We use "howdesbt makebf" independently on each fastq file.
+We use `howdesbt makebf` independently on each fastq file.
 
 _The --min setting causes low-abundance kmers to be discarded. Such kmers are
 expected to contain sequencing errors. As shown here, we use the same minimim
 abundance for each Bloom filter. However, this is not necessary, and an
-abundance cutoff derived from the size of the fasta/fastq file, or its
+abundance cutoff derived from the size of the fasta/fastq files, or the
 distribution of kmer counts, could be used._
 
 ```bash  
@@ -67,7 +76,7 @@ EXPERIMENT1.bf, EXPERIMENT2.bf, etc.
 
 ### (3) Create a tree topology.
 
-We use "howdesbt cluster" to create a tree topology in which the experiments'
+We use `howdesbt cluster` to create a tree topology in which the experiments'
 Bloom filters correspond to leaves. Similar leaves are grouped together to
 improve the performance of later operations. Note that this step does not
 actually create any of the Bloom filters for the tree &mdash; it only creates
@@ -94,7 +103,7 @@ Bloom filters are actually created in this step.
 
 ### (4) Build the HowDeSBT nodes.
 
-We use "howdesbt build" to build the Bloom filter files for the tree.
+We use `howdesbt build` to build the Bloom filter files for the tree.
 
 ```bash  
 howdesbt build --HowDe --tree=union.sbt --outtree=howde.sbt
@@ -107,7 +116,7 @@ EXPERIMENT1.detbrief.rrr.bf, ..., node1.detbrief.rrr.bf, ... etc.
 
 ### (5) Run a batch of queries.
 
-We use "howdesbt query" to search the tree for "hits" for query sequences. The
+We use `howdesbt query` to search the tree for "hits" for query sequences. The
 input here is in fasta format, including headers for each sequence. Names from
 the headers are used in the output to identify a query.
 
