@@ -75,7 +75,7 @@ your PATH environment variable.
 
 # Quick Start
 
-## A usage tutorial can be found at
+A usage tutorial can be found at
 https://github.com/medvedevgroup/HowDeSBT/tree/master/tutorial
 
 The command <code>howdesbt ?</code> will show a list of subcommands with brief

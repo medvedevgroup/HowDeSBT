@@ -1,5 +1,22 @@
 ## Tutorial, Creating a HowDe Sequence Bloom Filter Tree
 
+### Overview.
+
+An SBT represents a set of sequencing experiments, where each experiment is a
+set of sequences (e.g. reads). The `makebf` subcommand is used to convert each
+experiment into a bloom filter of its kmers. The `cluster` and `build`
+subcommands convert these bloom filters into an SBT, and the `query` subcommand
+then uses the SBT to identify experiments likely to contain a given query
+sequence.
+
+Note that all bloom filters must have the same number of bits. In step 1 we
+show how this setting can be estimated from the data.
+
+In this tutorial the reads for an experiment are in a single file. But in
+practice they are often spread among several files. So while step 2 shows
+`makebf` used with only one input fastq file, it can accept any number of
+fasta or fastq files.
+
 ### (1) Estimate the best Bloom filter size.
 
 ```bash  
@@ -26,9 +43,11 @@ git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
 
 We use "howdesbt makebf" independently on each fastq file.
 
-_As shown here, we use the same minimim abundance for each Bloom filter.
-However, this is not necessary, and an abundance cutoff derived from the size
-of the fasta file, or its distribution of kmer counts, could be used._
+_The --min setting causes low-abundance kmers to be discarded. Such kmers are
+expected to contain sequencing errors. As shown here, we use the same minimim
+abundance for each Bloom filter. However, this is not necessary, and an
+abundance cutoff derived from the size of the fasta/fastq file, or its
+distribution of kmer counts, could be used._
 
 ```bash  
 ls EXPERIMENT*.fastq.gz \
