@@ -43,6 +43,12 @@ _Note that this size is an overestimate._ However, tests have shown that
 overestimating the Bloom filter size has only a minor effect on the overall
 HowDe-SBT file sizes and query times.
 
+_Also note that this size is much smaller than would be typical for real data._
+This tutorial has atypically small reads files and a small number of
+experiments. SBTs for real data typically use much larger Bloom filters, with
+sizes in the billions.
+
+
 Version 1.0.1 of ntcard was used, fetched as follows:
 ```bash  
 git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
