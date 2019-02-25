@@ -561,7 +561,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent kmer size " + std::to_string(bf->kmerSize)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(kmerSize)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same kmer size)");
 		}
 
 	if (bf->numHashes != numHashes)
@@ -570,7 +571,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent number of hashes " + std::to_string(bf->numHashes)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(numHashes)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same number of hashes)");
 		}
 
 	if (bf->hashSeed1 != hashSeed1)
@@ -579,7 +581,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent hash seed " + std::to_string(bf->hashSeed1)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(hashSeed1)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same hash seeds)");
 		}
 
 	if (bf->hashSeed2 != hashSeed2)
@@ -588,7 +591,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent hash seed 2 " + std::to_string(bf->hashSeed2)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(hashSeed2)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same hash seeds)");
 		}
 
 	if (bf->hashModulus != hashModulus)
@@ -597,7 +601,9 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent hash modulus " + std::to_string(bf->hashModulus)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(hashModulus)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same hash modulus -- the same"
+			 + "\nnumber of bits)");
 		}
 
 	if (bf->numBits != numBits)
@@ -606,7 +612,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent number of bits " + std::to_string(bf->numBits)
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(numBits)
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to have the same number of bits)");
 		}
 
 	if (bf->kind() != kind())
@@ -615,7 +622,8 @@ bool BloomFilter::is_consistent_with
 		fatal ("error: inconsistent bloom filter kind " + std::to_string(bf->kind())
 			 + " in \"" + bf->filename + "\""
 			 + " (expected " + std::to_string(kind())
-			 + " like in \"" + filename + "\")");
+			 + " like in \"" + filename + "\")"
+			 + "\n(all bloom filters are required to be of the same kind)");
 		}
 
 	return true;
