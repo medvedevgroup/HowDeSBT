@@ -48,7 +48,8 @@ Query::~Query()
 
 void Query::kmerize
    (BloomFilter*	bf,
-	bool			distinct)
+	bool			distinct,
+	bool			populateKmers)
 	{
 	bf->preload();
 	u32 kmerSize = bf->kmerSize;
@@ -63,7 +64,7 @@ void Query::kmerize
 		return;
 
 	// scan the sequence's kmers, convert to hash positions, and collect the
-	// distinct positions
+	// distinct positions; optionally collect the corresponding kmers
 
     set<u64> positionSet;
 	pair<set<u64>::iterator,bool> status;
@@ -85,6 +86,7 @@ void Query::kmerize
 					continue;
 				}
 			kmerPositions.emplace_back(pos);
+			if (populateKmers) kmers.emplace_back(mer);
 			}
 
 		if (dbgKmerize || dbgKmerizeAll)

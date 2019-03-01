@@ -18,6 +18,7 @@
 #include "cmd_query.h"
 #include "cmd_version.h"
 #ifdef includeSecondaryCommands
+#include "cmd_query_bf.h"
 #include "cmd_compress_bf.h"
 #include "cmd_combine_bf.h"
 #include "cmd_node_stats.h"
@@ -110,6 +111,9 @@ int main
 #ifdef includeSecondaryCommands
 	cmd->add_subcommand (nullptr);  // marks start of secondary commands
 
+	cmd->add_subcommand (new QueryBFCommand      ("querybf"));
+	cmd->add_command_alias                       ("bfquery");
+	cmd->add_command_alias                       ("queryfilter");
 	cmd->add_subcommand (new CompressBFCommand   ("compressbf"));
 	cmd->add_command_alias                       ("bfcompress");
 	cmd->add_command_alias                       ("compressfilter");

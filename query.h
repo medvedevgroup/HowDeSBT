@@ -28,7 +28,7 @@ public:
 	Query(const querydata& qd, double threshold);
 	virtual ~Query();
 
-	virtual void kmerize (BloomFilter* bf, bool distinct=false);
+	virtual void kmerize (BloomFilter* bf, bool distinct=false, bool populateKmers=false);
 	virtual void sort_kmer_positions ();
 	virtual void dump_kmer_positions (std::uint64_t numUnresolved=-1);
 	virtual std::uint64_t kmer_positions_hash (std::uint64_t numUnresolved=-1);
@@ -39,10 +39,18 @@ public:
 	std::string seq;		// nucleotide sequence
 	double threshold;		// search threshold
 	std::vector<std::uint64_t> kmerPositions; // the kmers (converted to hash
-										// values) corresponding to this query;
-										// the first numUnresolved entries are
-										// the yet-to-be-resolved kmers; the
-										// resolved kmers are moved to the tail
+										// .. values) corresponding to this
+										// .. query; the first numUnresolved
+										// .. entries are the yet-to-be-resolved
+										// .. kmers; the resolved kmers are
+										// .. moved to the tail
+	std::vector<std::string> kmers;		// the kmers; this is only populated
+										// .. in special instances (e.g. for
+										// .. cmd_query_bf), and in those
+										// .. cases care should be taken to
+										// .. assure that the kmerPositions[ix]
+										// .. corresponds to kmers[ix] for each
+										// .. ix
 
 	std::uint64_t numPositions;			// total size of kmerPositions
 	std::uint64_t neededToPass;			// number of kmers required, to judge
