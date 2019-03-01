@@ -28,7 +28,7 @@ using std::endl;
 void QueryBFCommand::short_description
    (std::ostream& s)
 	{
-	s << commandName << "-- query a bloom filter" << endl;
+	s << commandName << "-- query a bloom filter, listing the kmers that \"hit\"" << endl;
 	}
 
 void QueryBFCommand::usage
