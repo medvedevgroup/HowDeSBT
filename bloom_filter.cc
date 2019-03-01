@@ -1229,7 +1229,7 @@ int DeterminedFilter::lookup
 	BitVector* bvHow = bvs[1];
 
 	// we assume, without checking, that 0 <= pos < numBits
-	if      ((*bvDet)[pos] == 0) return unresolved ;
+	if      ((*bvDet)[pos] == 0) return unresolved;
 	else if ((*bvHow)[pos] == 1) return present;
 	else                         return absent;
 	}

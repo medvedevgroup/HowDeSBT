@@ -26,6 +26,7 @@ public:
 	std::vector<double> queryThresholds;
 	double generalQueryThreshold;
 	bool distinctKmers;
+	bool reportAllKmers;
 
 	std::vector<Query*> queries;
 	};

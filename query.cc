@@ -58,6 +58,9 @@ void Query::kmerize
 		fatal ("internal error: "
 		     + bf->identity() + " uses more than one hash function");
 
+	kmerPositions.clear();
+	kmers.clear();
+
 	// if the sequence is too short, there are no kmers
 
 	if (seq.length() < kmerSize)

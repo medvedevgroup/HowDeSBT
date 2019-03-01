@@ -59,6 +59,10 @@ void QueryBFCommand::usage
 	s << "                       (default is " << QueryCommand::defaultQueryThreshold << ")" << endl;
 	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
 	s << "                       (by default we count a query kmer each time it occurs)" << endl;
+	s << "  --distinctkmers      perform the query counting each distinct kmer only once" << endl;
+	s << "                       (by default we count a query kmer each time it occurs)" << endl;
+	s << "  --report:all         report both present and absent kmers" << endl;
+	s << "                       (by default we only report kmers that are present)" << endl;
 	}
 
 void QueryBFCommand::debug_help
@@ -81,6 +85,7 @@ void QueryBFCommand::parse
 
 	generalQueryThreshold = -1.0;		// (unassigned threshold)
 	distinctKmers         = false;
+	reportAllKmers          = false;
 
 	// skip command name
 
@@ -121,7 +126,7 @@ void QueryBFCommand::parse
 
 		if ((is_prefix_of (arg, "--filter="))
 		 ||	(is_prefix_of (arg, "--bf=")))
-			{ bfFilenames.emplace_back(strip_blank_ends(arg));  continue; }
+			{ bfFilenames.emplace_back(strip_blank_ends(argVal));  continue; }
 
 		// (unadvertised) --query=<filename>
 		//             or --query=<filename>=<F> or --query=<filename>:<F>
@@ -167,6 +172,11 @@ void QueryBFCommand::parse
 		 || (arg == "--distinct-kmers")
 		 || (arg == "--distinct"))
 			{ distinctKmers = true;  continue; }
+
+		// --report:all
+
+		if (arg == "--report:all")
+			{ reportAllKmers = true;  continue; }
 
 		// (unadvertised) debug options
 
@@ -276,23 +286,32 @@ int QueryBFCommand::execute()
 
 		if (bf->kind() != bfkind_simple)
 			fatal (commandName + " can't use \"" + bfFilename + "\""
-			     + "\nit can't work for "
-			     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters");
+			     + "\n(it can't work for "
+			     + BloomFilter::filter_kind_to_string(bf->kind(),false) + " filters)");
 
 		for (auto& q : queries)
 			{
-			q->kmerize(bf,distinctKmers);
+			q->kmerize(bf,distinctKmers,/*populateKmers*/ true);
 
 			for (u64 posIx=0 ; posIx<q->kmerPositions.size() ; posIx++)
 				{
 				u64 pos = q->kmerPositions[posIx];
 
 				int resolution = bf->lookup(pos);
-				if (resolution == BloomFilter::present)
-					cout << bfFilename << " " << q->name << " " << q->kmers[posIx] << endl;
-				}
 
-			q->kmerPositions.clear();
+				if (reportAllKmers)
+					{
+					if (resolution == BloomFilter::absent)
+						cout << bfFilename << " " << q->name << " " << q->kmers[posIx] << " absent" << endl;
+					else
+						cout << bfFilename << " " << q->name << " " << q->kmers[posIx] << " present" << endl;
+					}
+				else
+					{
+					if (resolution != BloomFilter::absent)
+						cout << bfFilename << " " << q->name << " " << q->kmers[posIx] << endl;
+					}
+				}
 			}
 
 		delete bf;
