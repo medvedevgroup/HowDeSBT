@@ -555,6 +555,7 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 
 	const auto jfAry = merHash.ary();
 	const auto end   = jfAry->end();
+	u64 kmersAdded = 0;
 	for (auto kmer=jfAry->begin() ; kmer!=end ; ++kmer)
 		{
 		auto& keyValuePair = *kmer;
@@ -567,6 +568,8 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 				bf->add (keyValuePair.first.to_str());
 			else
 				bf->add ((u64*) keyValuePair.first.data());
+
+			kmersAdded++;
 			}
 		}
 
@@ -582,6 +585,13 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 	bf->reportSave = true;
 	bf->save();
 	delete bf;
+
+	if (contains(debug,"fprate"))
+		{
+		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
+		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
+		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
+		}
 	}
 
 
@@ -599,6 +609,7 @@ void MakeBFCommand::make_bloom_filter_kmers()
 
 	bf->new_bits (compressor);
 
+	u64 kmersAdded = 0;
 	for (const auto& kmersFilename : seqFilenames)
 		{
 		std::ifstream in (kmersFilename);
@@ -630,6 +641,7 @@ void MakeBFCommand::make_bloom_filter_kmers()
 				cerr << kmer << endl;
 
 			bf->add (kmer);
+			kmersAdded++;
 			}
 		}
 
@@ -643,6 +655,13 @@ void MakeBFCommand::make_bloom_filter_kmers()
 	bf->reportSave = true;
 	bf->save();
 	delete bf;
+
+	if (contains(debug,"fprate"))
+		{
+		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
+		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
+		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
+		}
 	}
 
 
