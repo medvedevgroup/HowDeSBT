@@ -588,6 +588,8 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 
 	if (contains(debug,"fprate"))
 		{
+		// $$$ make a subroutine that computes this as
+		// $$$   (1-exp(-numHashes*kmersAdded/numBits)) ** numHashes
 		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
 		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
 		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
@@ -658,6 +660,8 @@ void MakeBFCommand::make_bloom_filter_kmers()
 
 	if (contains(debug,"fprate"))
 		{
+		// $$$ make a subroutine that computes this as
+		// $$$   (1-exp(-numHashes*kmersAdded/numBits)) ** numHashes
 		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
 		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
 		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
