@@ -730,7 +730,9 @@ int QueryCommand::execute()
 //
 // read_queries--
 //	Read the query file(s), populating the queries list.
-//	
+//
+// $$$ this should warn the user if the queries have any name used more than
+//     once for sequences that aren't the same
 //----------
 
 void QueryCommand::read_queries()
