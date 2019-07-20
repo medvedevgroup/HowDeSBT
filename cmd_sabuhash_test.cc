@@ -49,6 +49,7 @@ void SabuhashTestCommand::usage
 	s << "  --strings        hash strings instead of bits; applies only when input is" << endl;
 	s << "                   from sequence files" << endl;
 	s << "                   (by default kmers are hashed in 2-bit encoded form)" << endl;
+	s << "  --negate         negate hash values; replace values by their ones-complement" << endl;
 	s << "  --modulus=<M>    set the hash modulus" << endl;
 	s << "                   (by default, the hash values have no modulus)" << endl;
 	s << "  --seed=<number>  set the hash function's 32-bit seed" << endl;
@@ -75,6 +76,7 @@ void SabuhashTestCommand::parse
 
 	kmerSize       = defaultKmerSize;
 	useStringKmers = false;
+	negateHash     = false;
 	modulus        = 0;
 	hashSeed       = 0;
 #ifdef useJellyHash
@@ -135,6 +137,11 @@ void SabuhashTestCommand::parse
 
 		if (arg == "--strings")
 		 	{ useStringKmers = true;  continue; }
+
+		// --negate
+
+		if (arg == "--negate")
+		 	{ negateHash = true;  continue; }
 
 		// --modulus=<M>
 
@@ -278,6 +285,13 @@ void SabuhashTestCommand::perform_hash_test
 		h64  = hasher->hash(seq);
 		h64r = hasher->hash(revCompSeq);
 		}
+
+	if (negateHash)
+		{
+		h64  = ~h64;
+		h64r = ~h64r;
+		}
+
 	if (modulus == 0)
 		isMatch = (h64 == h64r);
 	else

@@ -28,6 +28,7 @@ public:
 	std::vector<std::string> seqFilenames;
 	std::uint32_t kmerSize;
 	bool useStringKmers;
+	bool negateHash;
 	std::uint32_t modulus;
 	std::uint64_t hashSeed;
 	HashCanonical* hasher = nullptr;

@@ -129,6 +129,7 @@ public:
 	unsigned int  k;
 	std::uint64_t seed;
 	bool          allowN;
+	bool          validNt;  // true => latest nucleotide was valid
 	unsigned int  charsAccumulated;
 	std::uint64_t kernelTable[256], forwardByK[256], forwardByK2[4];
 	std::uint64_t hForward;
@@ -141,6 +142,7 @@ public:
 	  :	k(_k),
 	    seed(_seed),
 	    allowN(_allowN),
+	    validNt(false),
 	    charsAccumulated(0),
 	    hForward(0)
 		{
@@ -258,11 +260,13 @@ public:
 		if (kernelTable[chIn] == 0)
 			{
 			// chIn not in {A,C,G,T}
+			validNt = false;
 		    charsAccumulated = 0;
 			hForward = 0;
 			return 0;
 			}
 
+		validNt = true;
 		if (charsAccumulated < k)
 			{
 			hForward = forward(hForward) ^ kernelTable[chIn];
@@ -371,6 +375,7 @@ public:
 	unsigned int  k;
 	std::uint64_t seed;
 	bool          allowN;
+	bool          validNt;  // true => latest nucleotide was valid
 	unsigned int  charsAccumulated;
 	std::uint64_t kernelTable[256], kernelTable_RC[256], kernelTable2_RC[4];
 	std::uint64_t forwardByK[256],  forwardByK_RC[256],  forwardByK2[4];
@@ -384,6 +389,7 @@ public:
 	  :	k(_k),
 	    seed(_seed),
 	    allowN(_allowN),
+	    validNt(false),
 	    charsAccumulated(0),
 	    hForward(0),
 	    hRevComp(0)
@@ -545,11 +551,13 @@ public:
 		if (kernelTable[chIn] == 0)
 			{
 			// chIn not in {A,C,G,T}
+			validNt = false;
 		    charsAccumulated = 0;
 			hForward = hRevComp = 0;
 			return 0;
 			}
 
+		validNt = true;
 		if (charsAccumulated < k)
 			{
 			hForward = SabuHash::forward(hForward) ^ kernelTable[chIn];
