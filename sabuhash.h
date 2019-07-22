@@ -204,6 +204,8 @@ public:
 			hF = forward(hF) ^ kernelTable[chIn];
 			}
 
+		hForward = hF;
+
 		hF = avalanche(hF);
 		if (hF == 0) return 1;
 		        else return hF;
@@ -223,6 +225,8 @@ public:
 			if (kernelTable[chIn] == 0) return 0;
 			hF = forward(hF) ^ kernelTable[chIn];
 			}
+
+		hForward = hF;
 
 		hF = avalanche(hF);
 		if (hF == 0) return 1;
@@ -246,6 +250,8 @@ public:
 			hF = backward(hF ^ forwardByK2[twoBits]);
 			}
 
+		hForward = hF;
+
 		hF = avalanche(hF);
 		if (hF == 0) return 1;
 		        else return hF;
@@ -253,7 +259,7 @@ public:
 
 	inline std::uint64_t rolling_hash
 	   (const unsigned char chIn,
-		const unsigned char chOut=0)
+		const unsigned char chOut=0)  // this was chIn k characters earlier
 		{
 		// note that we return 0 iff we don't yet have k characters
 
@@ -493,6 +499,9 @@ public:
 			hR = SabuHash::backward(hR ^ forwardByK_RC[chIn]);
 			}
 
+		hForward = hF;
+		hRevComp = hR;
+
 		std::uint64_t h = SabuHash::avalanche(hF+hR);
 		if (h == 0) return 1;
 		       else return h;
@@ -514,6 +523,9 @@ public:
 			hF = SabuHash::forward(hF) ^ kernelTable[chIn];
 			hR = SabuHash::backward(hR ^ forwardByK_RC[chIn]);
 			}
+
+		hForward = hF;
+		hRevComp = hR;
 
 		std::uint64_t h = SabuHash::avalanche(hF+hR);
 		if (h == 0) return 1;
@@ -537,6 +549,9 @@ public:
 			hR = SabuHash::forward(hR) ^ kernelTable2_RC[twoBits];
 			}
 
+		hForward = hF;
+		hRevComp = hR;
+
 		std::uint64_t h = SabuHash::avalanche(hF+hR);
 		if (h == 0) return 1;
 		       else return h;
@@ -544,7 +559,7 @@ public:
 
 	inline std::uint64_t rolling_hash
 	   (const unsigned char chIn,
-		const unsigned char chOut=0)
+		const unsigned char chOut=0)  // this was chIn k characters earlier
 		{
 		// note that we return 0 iff we don't yet have k characters
 
