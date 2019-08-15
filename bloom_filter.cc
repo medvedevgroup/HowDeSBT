@@ -6,10 +6,12 @@
 //        Transcriptomic Sequencing Databases Using Split Sequence Bloom
 //        Trees." International Conference on Research in Computational
 //        Molecular Biology. Springer, Cham, 2017.
+//   [2]  https://en.wikipedia.org/wiki/Bloom_filter#Probability_of_false_positives
 
 #include <string>
 #include <cstdlib>
 #include <cstdint>
+#include <cmath>
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -1928,3 +1930,46 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	return content;
 	}
+
+//----------
+//
+// false_positive_rate--
+//	Estimate the kmer false positive rate of a bloom filter.
+//
+//----------
+//
+// Arguments:
+//	u32		numHashes:	The bloom filter's number of hash functions.
+//	u64		numBits:	The number of bits in the bloom filter's (conceptual)
+//						bit vector.
+//	u64		numItems:	The number of distinct items that have been inserted
+//						into the bloom filter. This is the size of the set the
+//						bloom filter represents.
+//
+// Returns:
+//	An estimate of the false positive rate.
+//
+//----------
+//
+// Implementation notes:
+//	(1)	The formula comes from the bloom filter wikipedia page (reference [2]).
+//		In that description, k is the number of hash functions, m is the number
+//		of bits, and n is the number of inserted elements.
+//
+//----------
+
+double BloomFilter::false_positive_rate
+   (u32		numHashes,
+	u64		numBits,
+	u64		numItems)
+	{
+	double fpRate;
+	if (numHashes < 1)
+		fpRate = 1.0;
+	else if (numHashes == 1)
+		fpRate = 1 - exp(-double(numItems)/double(numBits));
+	else
+		fpRate = pow(1 - exp(-double(numHashes*numItems)/double(numBits)),numHashes);
+	return fpRate;
+	}
+

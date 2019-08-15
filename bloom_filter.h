@@ -140,6 +140,8 @@ public:
 	    (const BloomFilter* templateBf, const std::string& newFilename="");
 	static std::vector<std::pair<std::string,BloomFilter*>> identify_content
 	    (std::ifstream& in, const std::string& filename="");
+	static double false_positive_rate
+		(std::uint32_t numHashes,std::uint64_t numBits,std::uint64_t numItems);
 
 public:
 	bool dbgBV               = false;	// some of these are only meaningful

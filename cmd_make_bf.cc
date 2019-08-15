@@ -78,6 +78,9 @@ void MakeBFCommand::usage
 	s << "                     (this is the default)" << endl;
 	s << "  --rrr              make the filter with RRR-compressed bit vector(s)" << endl;
 	s << "  --roar             make the filter with roar-compressed bit vector(s)" << endl;
+	s << "  --stats[=<filename>] write bloom filter stats to a text file" << endl;
+	s << "                     (if no filename is given this is derived from the bloom" << endl;
+	s << "                     filter filename)" << endl;
 	s << endl;
 	s << "When --list is used, each line of the file corresponds to a bloom filter. The" << endl;
 	s << "format of each line is" << endl;
@@ -117,18 +120,20 @@ void MakeBFCommand::parse
 
 	// defaults
 
-	listFilename = "";
-	inputIsKmers = false;
-	bfFilename   = "";
-	kmerSize     = defaultKmerSize;      bool kmerSizeSet     = false;
-	minAbundance = defaultMinAbundance;       minAbundanceSet = false;
-	numThreads   = defaultNumThreads;
-	numHashes    = defaultNumHashes;     bool numHashesSet    = false;
-	hashSeed1    = 0;                    bool hashSeed1Set    = false;
-	hashSeed2    = 0;                    bool hashSeed2Set    = false;
-	numBits      = defaultNumBits;       bool numBitsSet      = false;
-	hashModulus  = 0;                    bool hashModulusSet  = false;
-	compressor   = bvcomp_uncompressed;  bool compressorSet   = false;
+	listFilename  = "";
+	inputIsKmers  = false;
+	bfFilename    = "";
+	kmerSize      = defaultKmerSize;      bool kmerSizeSet     = false;
+	minAbundance  = defaultMinAbundance;       minAbundanceSet = false;
+	numThreads    = defaultNumThreads;
+	numHashes     = defaultNumHashes;     bool numHashesSet    = false;
+	hashSeed1     = 0;                    bool hashSeed1Set    = false;
+	hashSeed2     = 0;                    bool hashSeed2Set    = false;
+	numBits       = defaultNumBits;       bool numBitsSet      = false;
+	hashModulus   = 0;                    bool hashModulusSet  = false;
+	compressor    = bvcomp_uncompressed;  bool compressorSet   = false;
+	outputStats   = false;
+	statsFilename = "";
 
 #ifdef useJellyHash
 	hashSeed1 = JellyHashSeed;
@@ -343,6 +348,18 @@ void MakeBFCommand::parse
 			continue;
 			}
 
+		// --stats[=<filename>]
+
+		if (arg == "--stats")
+			{ outputStats = true; continue; }
+
+		if ((is_prefix_of (arg, "--stats=")))
+			{
+			outputStats   = true;
+			statsFilename = argVal;
+			continue;
+			}
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -407,6 +424,8 @@ void MakeBFCommand::parse
 
 		if (not bfFilename.empty())
 			chastise ("cannot use --list with a filter filename (" + bfFilename + ") in the command");
+		if (not statsFilename.empty())
+			chastise ("cannot use --list with a stats filename (" + statsFilename + ") in the command");
 		}
 
 	if (kmerSize == 0)
@@ -586,14 +605,10 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 	bf->save();
 	delete bf;
 
-	if (contains(debug,"fprate"))
-		{
-		// $$$ make a subroutine that computes this as
-		// $$$   (1-exp(-numHashes*kmersAdded/numBits)) ** numHashes
-		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
-		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
-		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
-		}
+	// report stats to a file and/or the console
+
+	if ((outputStats) or (contains(debug,"fprate")))
+		report_stats(bfOutFilename,kmersAdded);
 	}
 
 
@@ -658,11 +673,40 @@ void MakeBFCommand::make_bloom_filter_kmers()
 	bf->save();
 	delete bf;
 
+	// report stats to a file and/or the console
+
+	if ((outputStats) or (contains(debug,"fprate")))
+		report_stats(bfOutFilename,kmersAdded);
+	}
+
+
+void MakeBFCommand::report_stats(const string& bfOutFilename, u64 kmersAdded)
+	{
+	double fpRate = BloomFilter::false_positive_rate(numHashes,numBits,kmersAdded);
+
+	if (outputStats)
+		{
+		string statsOutFilename = build_stats_filename(bfOutFilename);
+		cerr << "writing bloom filter stats to \"" << statsOutFilename << "\"" << endl;
+
+	    std::ofstream statsF(statsOutFilename);
+
+		statsF << "#filename"
+		       << "\tnumHashes"
+		       << "\tnumBits"
+		       << "\tkmersAdded"
+		       << "\tbfFpRate"
+		       << endl;
+		statsF <<         bfOutFilename
+		       << "\t" << numHashes
+		       << "\t" << numBits
+		       << "\t" << kmersAdded
+		       << "\t" << fpRate
+		       << endl;
+		}
+
 	if (contains(debug,"fprate"))
 		{
-		// $$$ make a subroutine that computes this as
-		// $$$   (1-exp(-numHashes*kmersAdded/numBits)) ** numHashes
-		double fpRate = 1 - exp(-double(kmersAdded)/double(numBits));
 		cerr << bfOutFilename << " kmers inserted: " << kmersAdded << endl;
 		cerr << bfOutFilename << " estimated BF false positive rate: " << fpRate << endl;
 		}
@@ -687,4 +731,23 @@ string MakeBFCommand::build_output_filename()
 		}
 
 	return bfOutFilename;
+	}
+
+
+string MakeBFCommand::build_stats_filename(const string& bfOutFilename)
+	{
+	string statsOutFilename = statsFilename;
+
+	if (statsOutFilename.empty())
+		{
+		string ext = ".stats";
+
+		string::size_type dotIx = bfOutFilename.find_last_of(".");
+		if (dotIx == string::npos)
+			statsOutFilename = bfOutFilename + ext;
+		else
+			statsOutFilename = bfOutFilename.substr(0,dotIx) + ext;
+		}
+
+	return statsOutFilename;
 	}
