@@ -81,8 +81,18 @@ struct bffileprefix // convenience type, matching the beginning of bffileheader;
 	std::uint32_t	version;
 	};
 
+const std::uint64_t bffileheaderVersion  = 2;
 struct bffileheader
 	{
+	// current version of the header format; note that file format versions
+	// track with the major program version (in cmd_version.h); e.g. file
+	// format version 2 begins with program version 2; file version 2 might
+	// also be in vogue for higher program versions if those program versions
+	// don't necessitate a new file version
+	//
+	// NOTE: any new versions of the header MUST be at least as large as
+	//       earlier versions, and MUST overlay bffileheaderv1
+	//
 	std::uint64_t	magic;		// [00] (bffileheaderMagic)
 	std::uint32_t	headerSize;	// [08] number of bytes in the header record;
 								//      .. this can be more than
@@ -90,7 +100,7 @@ struct bffileheader
 								//      .. includes, e.g., all entries in the
 								//      .. info[] array, and bfvectorinfo.name
 								//      .. characters (if any)
-	std::uint32_t	version;	// [0C] file format version (1)
+	std::uint32_t	version;	// [0C] file format version (2)
     std::uint32_t	bfKind;		// [10] (one of bfkind_xxx) identifier for the
     							//      .. type of bloom filter
 	std::uint32_t	padding1;	// [14] (expected to be 0)
@@ -108,22 +118,63 @@ struct bffileheader
 								//      .. in the filter's bit vectors may
 								//      .. differ from this (and from each other)
 	std::uint32_t	numVectors;	// [40]
-	std::uint32_t	padding2;	// [44] (expected to be 0)
-	std::uint32_t	padding3;	// [48] (expected to be 0)
-	std::uint32_t	padding4;	// [4C] (expected to be 0)
+	std::uint32_t	setSizeKnown;//[44] (was padding2 in v1)
+								//      1 => the setSize field is valid
+								//      0 => the value of setSize is unknown
+	std::uint32_t	setSize;	// [48] (was padding3 and padding4 in v1)
+								//      number of distinct kmers that were
+								//      .. inserted during construction
     bfvectorinfo	info[1];	// [50] (array with numVectors entries)
     // after info[], characters for the bfvectorinfo.name fields 
 	};
 
+const std::uint64_t bffileheaderVersion1 = 1;
+//struct bffileheaderv1
+//	{
+//	// older version of the header format
+//	//
+//	// this type isn't used, as it overlays the newer version completely
+//	//
+//	std::uint64_t	magic;		// [00] (bffileheaderMagic)
+//	std::uint32_t	headerSize;	// [08] number of bytes in the header record;
+//								//      .. this can be more than
+//								//      .. sizeof(bffileheader), since it
+//								//      .. includes, e.g., all entries in the
+//								//      .. info[] array, and bfvectorinfo.name
+//								//      .. characters (if any)
+//	std::uint32_t	version;	// [0C] file format version (1)
+//    std::uint32_t	bfKind;		// [10] (one of bfkind_xxx) identifier for the
+//    							//      .. type of bloom filter
+//	std::uint32_t	padding1;	// [14] (expected to be 0)
+//	std::uint32_t	kmerSize;	// [18]
+//	std::uint32_t	numHashes;	// [1C]
+//	std::uint64_t	hashSeed1;	// [20]
+//	std::uint64_t	hashSeed2;	// [28]
+//	std::uint64_t	hashModulus;// [30]
+//	std::uint64_t	numBits;	// [38] (confusingly named) this usually matches
+//								//      .. hashModulus; this is the subset of
+//								//      .. hash values that contribute to the
+//								//      .. filter; e.g. if this is 100 only hash
+//								//      .. values 0 thru 9 exist in the filter;
+//								//      .. note that the number of bits stored
+//								//      .. in the filter's bit vectors may
+//								//      .. differ from this (and from each other)
+//	std::uint32_t	numVectors;	// [40]
+//	std::uint32_t	padding2;	// [44] (expected to be 0)
+//	std::uint32_t	padding3;	// [48] (expected to be 0)
+//	std::uint32_t	padding4;	// [4C] (expected to be 0)
+//	bfvectorinfo	info[1];	// [50] (array with numVectors entries)
+//	// after info[], characters for the bfvectorinfo.name fields 
+//	};
+
 #define bffileheader_size(numVectors) (sizeof(bffileheader) + ((numVectors)-1)*sizeof(bfvectorinfo))
 
-const std::uint64_t bffileheaderMagic   = 0xD532006662544253; // little-endian ascii "SBTbf" plus some extra bits
-const std::uint64_t bffileheaderMagicUn = 0xCD96AD692C96649A; // (used for header written to an unfinished file)
-const std::uint64_t bffileheaderVersion = 1;
+const std::uint64_t bffileheaderMagic    = 0xD532006662544253; // little-endian ascii "SBTbf" plus some extra bits
+const std::uint64_t bffileheaderMagicUn  = 0xCD96AD692C96649A; // (used for header written to an unfinished file)
 
 #define max_bffile_bit_vectors (1000*1000)
 #define bffile_avg_chars_per_name 15
-#define max_bffileheader_size (bffileheader_size(max_bffile_bit_vectors) + max_bffile_bit_vectors*(bffile_avg_chars_per_name+1))
+#define max_bffileheader_size (bffileheader_size(max_bffile_bit_vectors)   + max_bffile_bit_vectors*(bffile_avg_chars_per_name+1))
 
 enum
 	{

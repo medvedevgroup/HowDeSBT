@@ -99,6 +99,11 @@ public:
 									// .. in each bit vector
 									// .. hashModulus >= numBits >= 2
 
+	bool          setSizeKnown;		// true  => the setSize field is valid
+									// false => the value of setSize is unknown
+	std::uint64_t setSize;			// number of distinct kmers that were
+									// .. inserted during construction
+
 	int numBitVectors;				// how many bit vectors are in use
 									// .. nota bene: in this default class,
 									// .. numBitVectors is 1

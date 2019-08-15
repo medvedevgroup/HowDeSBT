@@ -167,6 +167,8 @@ BloomFilter::BloomFilter
 		hashSeed2(0),
 		hashModulus(0),
 		numBits(0),
+		setSizeKnown(false),
+		setSize(0),
 		numBitVectors(1)
 	{
 	// nota bene: we clear all maxBitVectors entries (instead of just
@@ -390,6 +392,9 @@ void BloomFilter::save()
 
 	// allocate the header, with enough room for a bfvectorinfo record for each
 	// component
+	//
+	// note that we are assuming that the header size for the current file
+	// format version is at least as large as that for any earlier versions
 
 	u64 headerBytesNeeded = bffileheader_size(numBitVectors);
 	headerBytesNeeded = round_up_16(headerBytesNeeded);
@@ -428,21 +433,20 @@ void BloomFilter::save()
 
 	// start the real header
 
-	header->magic       = bffileheaderMagic;
-	header->headerSize  = headerSize;
-	header->version     = bffileheaderVersion;
-	header->bfKind      = kind();
-	header->padding1    = 0;
-	header->kmerSize    = kmerSize;
-	header->numHashes   = numHashes;
-	header->hashSeed1   = hashSeed1;
-	header->hashSeed2   = hashSeed2;
-	header->hashModulus = hashModulus;
-	header->numBits     = numBits;
-	header->numVectors  = numBitVectors;
-	header->padding2    = 0;
-	header->padding3    = 0;
-	header->padding4    = 0;
+	header->magic        = bffileheaderMagic;
+	header->headerSize   = headerSize;
+	header->version      = bffileheaderVersion;
+	header->bfKind       = kind();
+	header->padding1     = 0;
+	header->kmerSize     = kmerSize;
+	header->numHashes    = numHashes;
+	header->hashSeed1    = hashSeed1;
+	header->hashSeed2    = hashSeed2;
+	header->hashModulus  = hashModulus;
+	header->numBits      = numBits;
+	header->numVectors   = numBitVectors;
+	header->setSizeKnown = setSizeKnown;
+	header->setSize      = (setSizeKnown)? setSize : 0;
 
 	// write the component(s)
 
@@ -1661,7 +1665,7 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 	double elapsedTime = 0.0;
 	vector<pair<string,BloomFilter*>> content;
 
-	// read and validate the header prefix
+	//---- read and validate the header prefix ----
 
 	bffileprefix prefix;
 
@@ -1693,7 +1697,8 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		       " doesn't look like a bloom filter file"
 		       " (incorrect magic number)");
 
-	if (prefix.version != bffileheaderVersion)
+	if ((prefix.version != bffileheaderVersion)
+	 && (prefix.version != bffileheaderVersion1))
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " bloom filter file version " + std::to_string(prefix.version)
 		     + " is not supported by this program");
@@ -1707,13 +1712,13 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		       " headers larger than " + std::to_string(max_bffileheader_size) + " bytes are not supported,"
 		     + " this file's header claims to be " + std::to_string(prefix.headerSize) + " bytes");
 
-	// read the rest of the header, and validate
+	//---- read the rest of the header, and validate ----
 
 	bffileheader* header = (bffileheader*) new char[prefix.headerSize];
 	if (header == nullptr)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " failed to allocate " + std::to_string(prefix.headerSize) + " bytes"
-		     + " for file header");
+			   " failed to allocate " + std::to_string(prefix.headerSize) + " bytes"
+			 + " for file header");
 	std::memcpy (/*to*/ header, /*from*/ &prefix, /*how much*/ sizeof(prefix));
 
 	if (trackMemory)
@@ -1745,7 +1750,9 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " bad filter type: " + std::to_string(header->bfKind));
 
-	size_t minHeaderSize = sizeof(header) + (header->numVectors-1)*sizeof(bfvectorinfo);
+	// make sure header size and number of vectors make sense
+
+	size_t minHeaderSize = bffileheader_size(header->numVectors);
 	if (header->headerSize < minHeaderSize)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
 		       " expected " + std::to_string(minHeaderSize) + " byte header (or larger)"
@@ -1765,16 +1772,26 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 
 	if (header->padding1 != 0)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " non-zero padding field: " + std::to_string(header->padding1));
-	if (header->padding2 != 0)
-		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " non-zero padding field: " + std::to_string(header->padding2));
-	if (header->padding3 != 0)
-		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " non-zero padding field: " + std::to_string(header->padding3));
-	if (header->padding4 != 0)
-		fatal ("error: BloomFilter::identify_content(" + filename + ")"
-		       " non-zero padding field: " + std::to_string(header->padding4));
+		       " non-zero padding field 1: " + std::to_string(header->padding1));
+
+	if (prefix.version == bffileheaderVersion1)
+		{
+		u32* padding2 = (u32*) &header->setSizeKnown;
+		u32* padding3 = (u32*) &header->setSize;
+		u32* padding4 = (u32*) ((((char*)padding3)+sizeof(u32)));
+
+		if (*padding2 != 0)
+			fatal ("error: BloomFilter::identify_content(" + filename + ")"
+			       " non-zero padding field 2: " + std::to_string(*padding2));
+
+		if (*padding3 != 0)
+			fatal ("error: BloomFilter::identify_content(" + filename + ")"
+			       " non-zero padding field 3: " + std::to_string(*padding3));
+
+		if (*padding4 != 0)
+			fatal ("error: BloomFilter::identify_content(" + filename + ")"
+			       " non-zero padding field 4: " + std::to_string(*padding4));
+		}
 
 	if (header->numHashes < 1)
 		fatal ("error: BloomFilter::identify_content(" + filename + ")"
@@ -1903,6 +1920,12 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			                  filename, header->kmerSize,
 			                  header->numHashes, header->hashSeed1, header->hashSeed2,
 			                  header->numBits, header->hashModulus);
+
+			if (prefix.version == bffileheaderVersion1)
+				{ bf->setSizeKnown = false;  bf->setSize = 0; }
+			else
+				{ bf->setSizeKnown = header->setSizeKnown;  bf->setSize = header->setSize; }
+
 			if (reportCreation)
 				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;
 			bf->bvs[0] = BitVector::bit_vector(filename,bvInfo.compressor,bvInfo.offset,bvInfo.numBytes);

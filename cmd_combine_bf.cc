@@ -532,21 +532,21 @@ string CombineBFCommand::combine_bloom_filters ()
 
 	// start the real header
 
-	header->magic       = bffileheaderMagic;
-	header->headerSize  = headerSize;
-	header->version     = bffileheaderVersion;
-	header->bfKind      = modelBf->kind();
-	header->padding1    = 0;
-	header->kmerSize    = modelBf->kmerSize;
-	header->numHashes   = modelBf->numHashes;
-	header->hashSeed1   = modelBf->hashSeed1;
-	header->hashSeed2   = modelBf->hashSeed2;
-	header->hashModulus = modelBf->hashModulus;
-	header->numBits     = modelBf->numBits;
-	header->numVectors  = totalBitVectors;
-	header->padding2    = 0;
-	header->padding3    = 0;
-	header->padding4    = 0;
+	header->magic        = bffileheaderMagic;
+	header->headerSize   = headerSize;
+	header->version      = bffileheaderVersion;
+	header->bfKind       = modelBf->kind();
+	header->padding1     = 0;
+	header->kmerSize     = modelBf->kmerSize;
+	header->numHashes    = modelBf->numHashes;
+	header->hashSeed1    = modelBf->hashSeed1;
+	header->hashSeed2    = modelBf->hashSeed2;
+	header->hashModulus  = modelBf->hashModulus;
+	header->numBits      = modelBf->numBits;
+	header->numVectors   = totalBitVectors;
+	header->setSizeKnown = false;  // note: setSize is stored with the *file*
+	header->setSize      = 0;      //       not with the vector; this is a
+	                               //       design shortcoming
 
 	// write the component(s)
 
