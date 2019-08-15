@@ -109,6 +109,7 @@ void MakeBFCommand::debug_help
 	s << "  contains" << endl;
 	s << "  kmers" << endl;
 	s << "  strings" << endl;
+	s << "  v1file" << endl;
 	}
 
 void MakeBFCommand::parse
@@ -594,8 +595,11 @@ void MakeBFCommand::make_bloom_filter_fasta()  // this also supports fastq
 
 	jellyfish::mer_dna::k(savedKmerSize);	// restore jellyfish kmer size
 
-	bf->setSizeKnown = true;
-	bf->setSize      = kmersAdded;
+	if (not contains(debug,"v1file"))
+		{
+		bf->setSizeKnown = true;
+		bf->setSize      = kmersAdded;
+		}
 
 	if ((compressor == bvcomp_unc_rrr)
 	 || (compressor == bvcomp_unc_roar))
@@ -665,8 +669,11 @@ void MakeBFCommand::make_bloom_filter_kmers()
 			}
 		}
 
-	bf->setSizeKnown = true;
-	bf->setSize      = kmersAdded;
+	if (not contains(debug,"v1file"))
+		{
+		bf->setSizeKnown = true;
+		bf->setSize      = kmersAdded;
+		}
 
 	if ((compressor == bvcomp_unc_rrr)
 	 || (compressor == bvcomp_unc_roar))
