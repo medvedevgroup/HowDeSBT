@@ -55,7 +55,7 @@ struct bfvectorinfo
     							//        .. the bit vector's data
 	std::uint64_t	filterInfo;	// [x+18] filter-dependent info for this bit
     							//        .. vector; typically zero
-	};
+	};							// size: 0x20
 
 enum
 	{
@@ -126,7 +126,7 @@ struct bffileheader
 								//      .. inserted during construction
     bfvectorinfo	info[1];	// [50] (array with numVectors entries)
     // after info[], characters for the bfvectorinfo.name fields 
-	};
+	};							// size: 0x70 (of just this base struct)
 
 const std::uint64_t bffileheaderVersion1 = 1;
 //struct bffileheaderv1

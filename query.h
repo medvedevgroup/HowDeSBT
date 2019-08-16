@@ -66,10 +66,21 @@ public:
 										// .. in all leaves of the subtree
 	std::uint64_t nodesExamined;		// number of nodes that were "examined"
 										// by this query
+	bool adjustKmerCounts;				// true  => populate matchesAdjusted[]
+										// false => don't
     std::vector<std::string> matches;	// names of leaves that match this query
     std::vector<std::uint64_t> matchesNumPassed;  // numPassed corresponding to
-										// .. each match (only used by
-										// .. BloomTree::batch_count_kmer_hits)
+										// .. each match; only valid if the
+										// .. search reached the leaf without
+										// .. having been pruned
+    std::vector<std::uint64_t> matchesAdjustedHits;  // adjusted value of
+										// .. numPassed (corresponding to each
+										// .. match), to .. account for
+										// .. estimated bloom filter false
+										// .. positives; only valid if the
+										// .. search reached the leaf without
+										// .. having been pruned, and only if
+										// .. adjustKmerCounts is true
 
 										// stacks to maintain numUnresolved,
 										// .. numPassed, and numFailed as we

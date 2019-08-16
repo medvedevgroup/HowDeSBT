@@ -199,6 +199,8 @@ void FileManager::preload_content
 			if (dbgContentLoad)
 				cerr << "  using existing (but not ready) BF for \"" << bfName << "\"" << endl;
 			node->bf->copy_properties(templateBf);
+			node->bf->setSizeKnown = templateBf->setSizeKnown;
+			node->bf->setSize      = templateBf->setSize;
 			}
 
 		node->bf->steal_bits(templateBf);

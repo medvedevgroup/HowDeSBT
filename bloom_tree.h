@@ -71,7 +71,8 @@ public:
 
 	virtual void batch_query (std::vector<Query*> queries,
 	                          bool isLeafOnly=false, bool distinctKmers=false,
-	                          bool completeKmerCounts=false);
+	                          bool completeKmerCounts=false,
+	                          bool adjustKmerCounts=false);
 private:
 	virtual void perform_batch_query (std::uint64_t activeQueries, std::vector<Query*> queries,
 	                                  bool completeKmerCounts=false);
@@ -101,9 +102,11 @@ public:
 	BloomTree* parent;
 	std::vector<BloomTree*> children;	// this will either be empty or have size
 										// .. at least 2 (never size 1)
+	bool fpRateKnown;
+	double fpRate;						// bloom filter false positive rate
 
 	bool nodesShareFiles;				// (only applicable at root)
-										// true => tree may contains nodes that
+										// true => tree may contain nodes that
 										//         .. share files with each other
 
 public:

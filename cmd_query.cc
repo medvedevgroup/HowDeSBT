@@ -3,12 +3,14 @@
 #include <string>
 #include <cstdlib>
 #include <cstdint>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <vector>
 
 #include "utilities.h"
 #include "bit_vector.h"
+#include "bloom_filter.h"
 #include "bloom_tree.h"
 #include "file_manager.h"
 #include "query.h"
@@ -64,6 +66,8 @@ void QueryCommand::usage
 	s << "                       this only applies to query files for which <F> is not" << endl;
 	s << "                       otherwise specified (by <queryfilename>=<F>)" << endl;
 	s << "                       (default is " << defaultQueryThreshold << ")" << endl;
+	s << "  --adjust             adjust reported number of kmers present, compensating" << endl;
+	s << "                       for bloom filter false positives" << endl;
 	s << "  --sort               sort matched leaves by the number of query kmers present," << endl;
 	s << "                       and report the number of kmers present" << endl;
 	s << "                       (by default we just report the matched leaves without" << endl;
@@ -80,11 +84,12 @@ void QueryCommand::usage
 	s << "                       query/leaf" << endl;
 	s << "  --stat:nodesexamined report the count of nodes examined for each query (as a" << endl;
 	s << "                       comment in the output" << endl;
-	s << "  --backwardcompatible (only for --sort) output is backward compatible with" << endl;
-	s << "                       order_query_results.sh" << endl;
 	s << "  --time               report wall time and node i/o time" << endl;
 	s << "  --out=<filename>     file for query results; if this is not provided, results" << endl;
 	s << "                       are written to stdout" << endl;
+// (no longer advertised -- order_query_results.sh isn't part of the distribution)
+//	s << "  --backwardcompatible (requires --adjust or --sort) output is backward" << endl;
+//	s << "                       compatible with order_query_results.sh" << endl;
 	}
 
 void QueryCommand::debug_help
@@ -127,6 +132,7 @@ void QueryCommand::parse
 	// defaults
 
 	generalQueryThreshold   = -1.0;		// (unassigned threshold)
+	adjustKmerCounts        = false;
 	sortByKmerCounts        = false;
 	onlyLeaves              = false;
 	distinctKmers           = false;
@@ -218,6 +224,11 @@ void QueryCommand::parse
 			continue;
 			}
 
+		// --adjust
+
+		if (arg == "--adjust")
+			{ adjustKmerCounts = true;  continue; }
+
 		// --sort
 
 		if (arg == "--sort")
@@ -274,7 +285,7 @@ void QueryCommand::parse
 		 || (arg == "--nodesexamined"))
 			{ reportNodesExamined = true;  continue; }
 
-		// --backwardcompatible
+		// --backwardcompatible (unadvertised)
 
 		if (arg == "--backwardcompatible")
 			{ backwardCompatibleStyle = true;  continue; }
@@ -350,11 +361,16 @@ void QueryCommand::parse
 			chastise ("--collectnodestats cannot be used with --countallkmerhits");
 		}
 
+	if ((justReportKmerCounts) and (adjustKmerCounts))
+		chastise ("--adjust cannot be used with --justcountkmers");
+
 	if ((justReportKmerCounts) and (sortByKmerCounts))
 		chastise ("--sort cannot be used with --justcountkmers");
 
-	if ((backwardCompatibleStyle) and (not sortByKmerCounts))
-		chastise ("--backwardcompatible cannot be used without --sort");
+	if ((backwardCompatibleStyle) and (not adjustKmerCounts) and (not sortByKmerCounts))
+		chastise ("--backwardcompatible cannot be used without one of --adjust or --sort");
+
+	completeKmerCounts = (adjustKmerCounts) or (sortByKmerCounts);
 
 	// assign threshold to any unassigned queries
 
@@ -622,8 +638,7 @@ int QueryCommand::execute()
 		{
 		// perform the query
 
-		root->batch_query(queries,onlyLeaves,distinctKmers,
-		                  /*completeKmerCounts*/ sortByKmerCounts);
+		root->batch_query(queries,onlyLeaves,distinctKmers,completeKmerCounts,adjustKmerCounts);
 
 		// report results
 
@@ -632,7 +647,7 @@ int QueryCommand::execute()
 
 		if (matchesFilename.empty())
 			{
-			if (sortByKmerCounts)
+			if (completeKmerCounts)
 				print_matches_with_kmer_counts (cout);
 			else
 				print_matches (cout);
@@ -640,7 +655,7 @@ int QueryCommand::execute()
 		else
 			{
 			std::ofstream out(matchesFilename);
-			if (sortByKmerCounts)
+			if (completeKmerCounts)
 				print_matches_with_kmer_counts (out);
 			else
 				print_matches (out);
@@ -771,24 +786,24 @@ void QueryCommand::sort_matches_by_kmer_counts (void)
 	for (auto& q : queries)
 		{
 		vector<pair<u64,string>> matches;
-		int ix = 0;
+		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
-			u64 numPassed = q->matchesNumPassed[ix++];
+			u64 numPassed = q->matchesNumPassed[matchIx++];
 			matches.emplace_back(-(numPassed+1),name);  // negated so we get the sort order we want
 			}
 
 		sort(matches.begin(),matches.end());
 
-		ix = 0;
+		matchIx = 0;
 		for (const auto& matchPair : matches)
 			{
 			u64    negNumPassed = matchPair.first;
 			string name         = matchPair.second;
 
-			q->matches         [ix] = name;
-			q->matchesNumPassed[ix] = (-negNumPassed) - 1;
-			ix++;
+			q->matches         [matchIx] = name;
+			q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
+			matchIx++;
 			}
 		}
 	}
@@ -821,6 +836,8 @@ void QueryCommand::print_matches
 void QueryCommand::print_matches_with_kmer_counts
    (std::ostream& out) const
 	{
+	std::ios::fmtflags saveOutFlags(out.flags());
+
 	for (auto& q : queries)
 		{
 		if (not backwardCompatibleStyle)
@@ -830,10 +847,10 @@ void QueryCommand::print_matches_with_kmer_counts
 				out << "# " << q->nodesExamined << " nodes examined" << endl;
 			}
 
-		int ix = 0;
+		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
-			u64 numPassed = q->matchesNumPassed[ix++];
+			u64 numPassed = q->matchesNumPassed[matchIx];
 
 			if (backwardCompatibleStyle)
 				out << q->name << " ";
@@ -844,9 +861,23 @@ void QueryCommand::print_matches_with_kmer_counts
 				out << " 0"; // instead of dividing by zero
 			else
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
+
+			if (adjustKmerCounts)
+				{
+				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
+				out << " " << adjustedHits << "/" << q->numPositions;
+				if (q->numPositions == 0)
+					out << " 0"; // instead of dividing by zero
+				else
+					out << " " << std::setprecision(6) << std::fixed << (adjustedHits/float(q->numPositions));
+				}
+
 			out << endl;
+			matchIx++;
 			}
 		}
+
+	out.flags(saveOutFlags);
 	}
 
 //----------
@@ -863,19 +894,19 @@ void QueryCommand::print_kmer_hit_counts
 	for (auto& q : queries)
 		{
 		int matchCount = 0;
-		for (size_t ix=0 ; ix<q->matches.size() ; ix++)
+		for (size_t matchIx=0 ; matchIx<q->matches.size() ; matchIx++)
 			{
-			u64 numPassed = q->matchesNumPassed[ix];
+			u64 numPassed = q->matchesNumPassed[matchIx];
 			bool queryPasses = (numPassed >= q->neededToPass);
 			if (queryPasses) matchCount++;
 			}
 
 		out << "*" << q->name << " " << matchCount << endl;
 
-		int ix = 0;
+		int matchIx = 0;
 		for (auto& name : q->matches)
 			{
-			u64 numPassed = q->matchesNumPassed[ix];
+			u64 numPassed = q->matchesNumPassed[matchIx];
 			bool queryPasses = (numPassed >= q->neededToPass);
 
 			out << q->name << " vs " << name
@@ -886,7 +917,7 @@ void QueryCommand::print_kmer_hit_counts
 				out << " " << std::setprecision(6) << std::fixed << (numPassed/float(q->numPositions));
 			if (queryPasses) out << " hit";
 			out << endl;
-			ix++;
+			matchIx++;
 			}
 		}
 

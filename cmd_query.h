@@ -33,6 +33,7 @@ public:
 	std::vector<double> queryThresholds;
 	std::string matchesFilename;
 	double generalQueryThreshold;
+	bool adjustKmerCounts;
 	bool sortByKmerCounts;
 	bool onlyLeaves;
 	bool distinctKmers;
@@ -44,6 +45,7 @@ public:
 	bool collectNodeStats;
 	bool reportTime;
 	bool backwardCompatibleStyle;
+	bool completeKmerCounts;
 
 	std::vector<Query*> queries;
 	};

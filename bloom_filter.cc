@@ -198,6 +198,8 @@ BloomFilter::BloomFilter
 		hashSeed1(_hashSeed1),
 		hashSeed2(_hashSeed2),
 		numBits(_numBits),
+		setSizeKnown(false),
+		setSize(0),
 		numBitVectors(1)
 	{
 	// (see note in first constructor)
@@ -224,6 +226,8 @@ BloomFilter::BloomFilter
 		hashSeed2(templateBf->hashSeed2),
 		hashModulus(templateBf->hashModulus),
 		numBits(templateBf->numBits),
+		setSizeKnown(false),
+		setSize(0),
 		numBitVectors(templateBf->numBitVectors)
 	{
 	// (see note in first constructor)
@@ -330,6 +334,8 @@ bool BloomFilter::preload(bool bypassManager,bool stopOnMultipleContent)
 			     + " but file has kind=" + filter_kind_to_string(templateBfKind,false));
 
 		copy_properties(templateBf);
+		setSizeKnown = templateBf->setSizeKnown;
+		setSize      = templateBf->setSize;
 		steal_bits(templateBf);
 		delete templateBf;
 		FileManager::close_file(in);
@@ -1922,9 +1928,19 @@ vector<pair<string,BloomFilter*>> BloomFilter::identify_content
 			                  header->numBits, header->hashModulus);
 
 			if (prefix.version == bffileheaderVersion1)
-				{ bf->setSizeKnown = false;  bf->setSize = 0; }
+				{
+				bf->setSizeKnown = false;
+				bf->setSize      = 0;
+				}
 			else
-				{ bf->setSizeKnown = header->setSizeKnown;  bf->setSize = header->setSize; }
+				{
+				if (header->setSizeKnown > 1)
+					fatal ("error: BloomFilter::identify_content(" + filename + ")"
+					       " set size known flag (" + std::to_string(header->setSizeKnown) + ")"
+					     + " is not zero or one");
+				bf->setSizeKnown = (header->setSizeKnown == 1);
+				bf->setSize      = header->setSize;
+				}
 
 			if (reportCreation)
 				cerr << "about to construct BitVector for " << filename << " content " << whichBv << endl;

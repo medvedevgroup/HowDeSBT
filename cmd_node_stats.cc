@@ -251,7 +251,9 @@ int NodeStatsCommand::execute()
 	     << "\theight"
 	     << "\tsubtree"
 	     << "\tsiblings"
-	     << "\tniblings";
+	     << "\tniblings"
+	     << "\tbf.items"
+	     << "\tbf.fpRate";
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++)
 		cout << "\t" << "bf" << bvIx << ".bytes"
 		     << "\t" << "bf" << bvIx << ".bits"
@@ -301,6 +303,16 @@ int NodeStatsCommand::execute()
 		     << "\t" << node->subTreeSize
 		     << "\t" << siblings
 		     << "\t" << niblings;
+		if (not bf->setSizeKnown)
+			{
+			cout << "\tNA\tNA";
+			}
+		else
+			{
+			double fpRate = BloomFilter::false_positive_rate(bf->numHashes,bf->numBits,bf->setSize);
+			cout << "\t" << bf->setSize
+			     << "\t" << fpRate;
+			}
 
 		for (int bvIx=0 ; bvIx<bf->numBitVectors ; bvIx++)
 			{
