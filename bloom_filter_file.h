@@ -121,7 +121,7 @@ struct bffileheader
 	std::uint32_t	setSizeKnown;//[44] (was padding2 in v1)
 								//      1 => the setSize field is valid
 								//      0 => the value of setSize is unknown
-	std::uint32_t	setSize;	// [48] (was padding3 and padding4 in v1)
+	std::uint64_t	setSize;	// [48] (was padding3 and padding4 in v1)
 								//      number of distinct kmers that were
 								//      .. inserted during construction
     bfvectorinfo	info[1];	// [50] (array with numVectors entries)
