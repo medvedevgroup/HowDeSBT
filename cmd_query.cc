@@ -785,13 +785,6 @@ void QueryCommand::read_queries()
 
 void QueryCommand::sort_matches_by_kmer_counts (void)
 	{
-	// nota bene: we could probably get by using numPassed as the sort key
-	//            for both cases (because everything in the adjusted list
-	//            has the same querySize); but we'd still have to manage the
-	//            difference between sorting pairs and sorting triplets, so
-	//            it's no more difficult to handle each case with it's own sort
-	//            key
-
 	if (adjustKmerCounts)
 		{
 		for (auto& q : queries)
