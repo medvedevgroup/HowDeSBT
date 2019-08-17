@@ -7,6 +7,7 @@
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <tuple>
 
 #include "utilities.h"
 #include "bit_vector.h"
@@ -22,6 +23,7 @@
 using std::string;
 using std::vector;
 using std::pair;
+using std::tuple;
 using std::cin;
 using std::cout;
 using std::cerr;
@@ -783,27 +785,71 @@ void QueryCommand::read_queries()
 
 void QueryCommand::sort_matches_by_kmer_counts (void)
 	{
-	for (auto& q : queries)
+	// nota bene: we could probably get by using numPassed as the sort key
+	//            for both cases (because everything in the adjusted list
+	//            has the same querySize); but we'd still have to manage the
+	//            difference between sorting pairs and sorting triplets, so
+	//            it's no more difficult to handle each case with it's own sort
+	//            key
+
+	if (adjustKmerCounts)
 		{
-		vector<pair<u64,string>> matches;
-		int matchIx = 0;
-		for (auto& name : q->matches)
+		for (auto& q : queries)
 			{
-			u64 numPassed = q->matchesNumPassed[matchIx++];
-			matches.emplace_back(-(numPassed+1),name);  // negated so we get the sort order we want
+			vector<tuple<u64,string,u64>> matches;
+			int matchIx = 0;
+			for (auto& name : q->matches)
+				{
+				u64 numPassed    = q->matchesNumPassed[matchIx];
+				u64 adjustedHits = q->matchesAdjustedHits[matchIx];
+
+				// (adjustedHits is negated sort will give decreasing order)
+				matches.emplace_back(std::make_tuple(-(adjustedHits+1),name,numPassed));
+				matchIx++;
+				}
+
+			sort(matches.begin(),matches.end());
+
+			matchIx = 0;
+			for (const auto& matchTriplet : matches)
+				{
+				u64    negAdjustedHits;
+				string name;
+				u64    numPassed;
+				std::tie(negAdjustedHits,name,numPassed) = matchTriplet;
+				q->matches            [matchIx] = name;
+				q->matchesNumPassed   [matchIx] = numPassed;
+				q->matchesAdjustedHits[matchIx] = (-negAdjustedHits) - 1;
+				matchIx++;
+				}
 			}
-
-		sort(matches.begin(),matches.end());
-
-		matchIx = 0;
-		for (const auto& matchPair : matches)
+		}
+	else
+		{
+		for (auto& q : queries)
 			{
-			u64    negNumPassed = matchPair.first;
-			string name         = matchPair.second;
+			vector<pair<u64,string>> matches;
+			int matchIx = 0;
+			for (auto& name : q->matches)
+				{
+				u64 numPassed = q->matchesNumPassed[matchIx];
+				// (numPassed is negated sort will give decreasing order)
+				matches.emplace_back(-(numPassed+1),name);
+				matchIx++;
+				}
 
-			q->matches         [matchIx] = name;
-			q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
-			matchIx++;
+			sort(matches.begin(),matches.end());
+
+			matchIx = 0;
+			for (const auto& matchPair : matches)
+				{
+				u64    negNumPassed = matchPair.first;
+				string name         = matchPair.second;
+
+				q->matches         [matchIx] = name;
+				q->matchesNumPassed[matchIx] = (-negNumPassed) - 1;
+				matchIx++;
+				}
 			}
 		}
 	}
