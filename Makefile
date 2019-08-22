@@ -16,6 +16,8 @@ all:   clean howdesbt
 howdesbt: $(OBJ_FILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+query_fp_rate_compiled: scripts/query_fp_rate_compiled.so
+
 scripts/query_fp_rate_compiled.so:
 	cd scripts ; python query_fp_rate_compiled.setup.py build_ext --inplace
 
