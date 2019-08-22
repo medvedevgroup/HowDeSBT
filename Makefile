@@ -16,11 +16,18 @@ all:   clean howdesbt
 howdesbt: $(OBJ_FILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
 
+scripts/query_fp_rate_compiled.so:
+	cd scripts ; python query_fp_rate_compiled.setup.py build_ext --inplace
+
 %.o: %.cc
 	$(CXX) -c -o $@ $^ $(CXXFLAGS)
 
 clean: cleano
 	rm -f howdesbt
+	rm -f scripts/query_fp_rate_compiled.so
 
 cleano: 
 	rm -f *.o
+	rm -f  scripts/query_fp_rate_compiled.c
+	rm -rf scripts/build
+	rm -f  scripts/*.pyc
