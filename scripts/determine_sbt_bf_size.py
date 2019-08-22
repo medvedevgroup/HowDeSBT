@@ -80,6 +80,7 @@ def main():
 				containment = parse_probability(argVal)
 		elif (arg.startswith("--hashes=")) or (arg.startswith("H=")):
 			numHashFuncs = int(argVal)
+			assert (numHashFuncs > 0)
 		elif (arg.startswith("--resolution=")) or (arg.startswith("M=")):
 			resolutionBits = int_with_unit(argVal)
 			if (resolutionBits < 1): resolutionBits = 1
