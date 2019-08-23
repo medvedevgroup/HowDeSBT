@@ -28,6 +28,10 @@ number of fasta or fastq files.
 
 ### (1) Estimate the best Bloom filter size.
 
+There are a few schemes for deciding what size to use for an SBT's Bloom
+filters. Here we describe the scheme analogous to the one recommended in the
+original SBT paper. Alternate schemes are described later in this document.
+
 ```bash  
 ntcard --kmer=20 --pref=EXPERIMENTS EXPERIMENT*.fastq.gz
 cat EXPERIMENTS_k20.hist
@@ -64,6 +68,9 @@ abundance for each Bloom filter. However, this is not necessary, and an
 abundance cutoff derived from the size of the fasta/fastq files, or the
 distribution of kmer counts, could be used._
 
+_The --stats option would not normally be used. We use it here only as part of
+the validation process._
+
 ```bash  
 ls EXPERIMENT*.fastq.gz \
   | sed "s/\.fastq\.gz//" \
@@ -72,13 +79,51 @@ ls EXPERIMENT*.fastq.gz \
         > ${experiment}.fastq
       howdesbt makebf K=20 --min=2 --bits=800K \
         ${experiment}.fastq \
-        --out=${experiment}.bf
+        --out=${experiment}.bf \
+        --stats
       rm ${experiment}.fastq
       done
 ```
 
 The result of this step is a Bloom filter for each experiment, named
 EXPERIMENT1.bf, EXPERIMENT2.bf, etc.
+
+### (2a) Validation.
+
+When the --stats option is used with makebf, a small stats file is created for
+each experiment,  named EXPERIMENT1.stats, EXPERIMENT2.stats, etc.
+
+These can be collected into a table, like this:
+```bash  
+cat EXPERIMENT*.stats \
+  | sort \
+  | awk '/^#/ { if (n++ == 0) print $0 }
+        !/^#/ { print $0 }' \
+```
+and the result should match the table below.
+```bash  
+#filename       numHashes numBits kmersAdded bfFpRate
+EXPERIMENT1.bf  1         800000  50886      0.0616268
+EXPERIMENT10.bf 1         800000  26906      0.0330732
+EXPERIMENT11.bf 1         800000  43542      0.0529728
+EXPERIMENT12.bf 1         800000  93117      0.109878
+EXPERIMENT13.bf 1         800000  78632      0.093614
+EXPERIMENT14.bf 1         800000  96079      0.113167
+EXPERIMENT15.bf 1         800000  56645      0.0683576
+EXPERIMENT16.bf 1         800000  94638      0.111568
+EXPERIMENT17.bf 1         800000  31226      0.0382805
+EXPERIMENT18.bf 1         800000  76546      0.0912475
+EXPERIMENT19.bf 1         800000  63051      0.075788
+EXPERIMENT2.bf  1         800000  63657      0.0764878
+EXPERIMENT20.bf 1         800000  21149      0.0260899
+EXPERIMENT3.bf  1         800000  26860      0.0330176
+EXPERIMENT4.bf  1         800000  47006      0.0570646
+EXPERIMENT5.bf  1         800000  91929      0.108555
+EXPERIMENT6.bf  1         800000  37736      0.0460748
+EXPERIMENT7.bf  1         800000  72996      0.087206
+EXPERIMENT8.bf  1         800000  61366      0.0738393
+EXPERIMENT9.bf  1         800000  65365      0.0784574
+```
 
 ### (3) Create a tree topology.
 
@@ -155,4 +200,87 @@ EXPERIMENT18
 EXPERIMENT12
  ...
 ```
+
+## Alternatives for estimated the Bloom filter size.
+
+### (ALT1) Set the _Bloom filter_ false positive rate for the largest experiment.
+
+Be aware that the Bloom filter false positive rate is different that the query
+false positive rate. A Bloom filter false positive is kmer which the Bloom
+filter reports as present in the experiment when it is not.
+
+ntcard is run independently on each experiment, and the estimated number of
+distinct kmers are collected into a table.
+
+```bash  
+:> EXPERIMENTS.ntcard.dat    
+ls EXPERIMENT*.fastq.gz \
+  | sed "s/.*\///" \
+  | sed "s/\.fastq\.gz//" \
+  | while read experiment ; do
+      ntcard --kmer=20 --pref=${experiment} ${experiment}.fastq.gz
+      cat ${experiment}_k20.hist \
+        | awk '{
+               if      ($1=="F0") F0=$2;
+               else if ($1=="f1") f1=$2;
+               }
+           END {
+               print experiment,F0,f1,F0-f1;
+               }' experiment=${experiment} \
+        >> EXPERIMENTS.ntcard.dat    
+      rm ${experiment}_k20.hist
+      done
+
+cat EXPERIMENTS.ntcard.dat \
+  | sort -nr -k 4 \
+  | awk '{
+         if (n++ == 0) print "#name F0 f1 numItems";
+         print $0;
+         }'
+```
+
+The resulting table:
+```bash  
+#name        F0     f1     numItems
+EXPERIMENT16 208961 116097 92864
+EXPERIMENT12 198465 106625 91840
+EXPERIMENT5  198401 108865 89536
+EXPERIMENT14 203393 114945 88448
+EXPERIMENT13 172672 95424  77248
+EXPERIMENT18 167296 91584  75712
+EXPERIMENT7  160704 88512  72192
+EXPERIMENT9  142656 79104  63552
+EXPERIMENT19 141440 78144  63296
+EXPERIMENT2  144256 81344  62912
+EXPERIMENT8  132608 70336  62272
+EXPERIMENT15 123648 66688  56960
+EXPERIMENT1  110400 61952  48448
+EXPERIMENT4  103168 56384  46784
+EXPERIMENT11 91264  49408  41856
+EXPERIMENT6  84544  45760  38784
+EXPERIMENT17 72256  38912  33344
+EXPERIMENT3  62656  34432  28224
+EXPERIMENT10 61184  33536  27648
+EXPERIMENT20 46592  27136  19456
+```
+
+So the largest number of distinct kmers is 92864. If we want a bloom filter
+with a 10% false positive rate, we can determine the appropriate size like
+this
+
+```bash  
+./scripts/simple_bf_size_estimate.py 92864 0.10
+```
+
+In the output, B is the number of bits; in this case, it's about 880K.
+
+```bash  
+#numItems bfFP     H B
+92864     0.100000 1 881393
+```
+
+### (ALT2) Set the _Query_ false positive rate for the largest experiment.
+
+_to be written_
+
 
