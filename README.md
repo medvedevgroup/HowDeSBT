@@ -75,8 +75,8 @@ your PATH environment variable.
 
 ## 4. Validation:  
 
-The quick start tutorial contains validation files which can be compared
-against your tutorial results.
+The quick start tutorial shows expected results which can be compared against
+your tutorial results.
 
 # Quick Start
 
