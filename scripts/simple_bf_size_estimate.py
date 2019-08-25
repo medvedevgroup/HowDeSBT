@@ -68,7 +68,7 @@ def main():
 		numBits = -(numHashFuncs*distinctKmers) / log(1-(fpRate)**(1/numHashFuncs))
 	numBits = int(ceil(numBits))
 
-	print "#numItems\tbfFP\tH\tB"
+	print "#numItems\tbfFP\tnumHashes\tnumBits"
 	print "%d\t%.6f\t%d\t%d" % (distinctKmers,fpRate,numHashFuncs,numBits)
 
 

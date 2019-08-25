@@ -3,6 +3,10 @@
 *.o
 howdesbt
 
+# python bytecode #
+###################
+*.pyc
+
 # Makefile variants #
 ###################
 Makefile.*

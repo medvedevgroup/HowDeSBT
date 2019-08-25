@@ -16,7 +16,7 @@ then uses the SBT to identify experiments likely to contain a given query
 sequence. Typically, low-abundance kmers are left out of the Bloom filters.
 
 Note that all Bloom filters must have the same number of bits. In step 1 we
-show how this setting can be estimated from the data. Similarly, all bloom
+show how this setting can be estimated from the data. Similarly, all Bloom
 filters must have the same k-mer size. Here we use K=20, which is typical in
 the SBT literature.
 
@@ -33,9 +33,10 @@ filters. Here we describe the scheme analogous to the one recommended in the
 original SBT paper. Alternate schemes are described later in this document;
 see ALT1 and ALT2.
 
-In the original SBT paper [Solomon 2016], it was argued that the size of the
-Bloom filters should be set to an estimate of the total number of unique k-mers
-in the union of the experiments. We use ntcard to estimate this count.
+In the original SBT paper (Solomon, Brad, and Carl Kingsford. "Fast search of
+thousands of short-read sequencing experiments.") it was argued that the size
+of the Bloom filters should be set to an estimate of the total number of unique
+k-mers in the union of the experiments. We use ntcard to estimate this count.
 
 ```bash  
 ntcard --kmer=20 --pref=EXPERIMENTS EXPERIMENT*.fastq.gz
@@ -186,48 +187,58 @@ fasta-like file that contains no headers. In that case, each input line is
 considered as a separate query sequence, and in the output the sequence itself
 is used in place of the query name.
 
-Here we give each query file its own threshold (called "theta" in the SBT
-literature). Alternatively, the query command allows a single threshold to be
-applied to all query files.
+Here we use the default threshold (called "theta" in the SBT literature) of 70%
+for all queries. Alternatively, the query command allows a separate threshold
+to be applied to each query file.
 
 ```bash  
 howdesbt query --tree=howde.sbt queries.fa > queries.dat
 ```
 
 The first part of output file, queries.dat, is shown below. This reports that
-QUERY_001 theta-matches two experiments, EXPERIMENT5 and EXPERIMENT15.
-QUERY_002 theta-matches two other experiments, QUERY_003 theta-matches one, and
-so on. The actual file includes results for all 300 queries.
+QUERY_001 theta-matches three experiments, EXPERIMENT2, EXPERIMENT5, and
+EXPERIMENT15. QUERY_002 theta-matches four experiments, QUERY_003 theta-matches
+two, and so on. The actual file includes results for all 300 queries.
 
 ```bash  
-*QUERY_001 2
+*QUERY_001 3
+EXPERIMENT2
 EXPERIMENT5
 EXPERIMENT15
-*QUERY_002 2
+*QUERY_002 4
+EXPERIMENT4
+EXPERIMENT13
 EXPERIMENT17
 EXPERIMENT18
-*QUERY_003 1
+*QUERY_003 2
+EXPERIMENT5
 EXPERIMENT12
  ...
 ```
 
 ## Alternatives for estimated the Bloom filter size.
 
-### (ALT1) Set the _Query_ false positive rate for the largest experiment.
+### (1-ALT1) Set the _Query_ false positive rate for the largest experiment.
 
-_to be written_
+A query false positive occurs when SBT reports that a query theta-matches an
+experiment, when in fact it does not. This can happen because Bloom filter
+false positives inflate the count of query kmers present in the experiment.
 
-_A _query_ false positive occurs when_
+This is more likely to happen for larger experiments, because the Bloom filter
+false positive rate increases with the number of distinct kmers in the
+experiment. To bound the query false positive rate we needn't consider any
+experiments except the largest.
 
-### (ALT2) Set the _Bloom filter_ false positive rate for the largest experiment.
+The query false positive rate also depends on the query size, the threshold
+(theta), and how close the query would be to the threshold (epsilon). A smaller
+epsilon means fewer Bloom filter false positives are needed to achieve theta,
+increasing the query false positive rate. Similarly a smaller query increases
+the query false positive rate.
 
-Be aware that the Bloom filter false positive rate is different that the query
-false positive rate. A Bloom filter false positive is kmer which the Bloom
-filter reports as present in the experiment when it is not.
-
-We run ntcard independently on each experiment, and the estimated number of
-distinct kmers are collected into a table. As in the examples above, we assume
-that when we build our Bloom filters we'll exclude those that occur only once.
+To find size of the the largest experiment, we run ntcard independently on each
+experiment, and the estimated number of distinct kmers are collected into a
+table. As in earlier example, we assume that when we build our Bloom filters
+we'll exclude those that occur only once.
 
 ```bash  
 :> EXPERIMENTS.ntcard.dat    
@@ -256,7 +267,7 @@ cat EXPERIMENTS.ntcard.dat \
          }'
 ```
 
-The resulting table:
+The resulting table shows the largest experiment has 92,864 distinct kmers.
 ```bash  
 #name        F0     f1     numKmers
 EXPERIMENT16 208961 116097 92864
@@ -281,34 +292,87 @@ EXPERIMENT10 61184  33536  27648
 EXPERIMENT20 46592  27136  19456
 ```
 
-The largest number of distinct kmers is 92,864. If we want a bloom filter
-with a 10% false positive rate, we can determine the appropriate size using the
-simple_bf_size_estimate script.
+We can then use the determine_sbt_bf_size script to estimate the Bloom filter
+size. We have to make some choices about the other parameters. Here we set the
+query size to 300, which is approximately the size of the smallest query in
+this example. We set theta to the search default of 70%, with epsilon of 5%,
+and set the desired query false positive rate to 10%.
 
 ```bash  
-./scripts/simple_bf_size_estimate.py 92864 0.10
+./scripts/determine_sbt_bf_size.py \
+  --experiment=92864 --query=300 \
+  --theta=70% --epsilon=5% \
+  --queryfp=10%
 ```
 
-In the output, B is the number of bits; in this case, it's about 880K.
+The output shows the number of bits is 811,606.
 
 ```bash  
-#numItems bfFP     H B
-92864     0.100000 1 881393
+#numItems bfFP     numHashes numBits
+92864     0.100000 1         881393
 ```
 
-## Adjusting reported kmer hit counts to account for Bloom filter false positives.
+### (1-ALT2) Set the _Bloom filter_ false positive rate for the largest experiment.
 
-_requires version 2.0 or later_
+As we found in the previous section, the largest number of distinct kmers is
+92,864. If we want a Bloom filter with a 10% false positive rate, we can
+determine the appropriate size using the simple_bf_size_estimate script.
 
-_SBT must have been built with version 2.0 or later_
+```bash  
+./scripts/simple_bf_size_estimate.py 92864 10%
+```
 
-_also discuss sorting by hit count, and pruning_
+The output shows the number of bits to be about 880K.
 
-### (ALT5) _need a title_
+```bash  
+#numItems bfFP     numHashes numBits
+92864     0.100000 1         881393
+```
 
-_to be written_
+## Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
 
-## References.
+_Note: the adjustment capability described here is not available for SBT's
+built with versions earlier than 2.0._
 
-[Solomon 2016] Solomon, Brad, and Carl Kingsford. "Fast search of thousands of
-short-read sequencing experiments." Nature biotechnology 34.3 (2016): 300.
+The original SBT design concept was that it would only report whether a query
+is (or is not) a theta-match for an experiment. This allows the search to
+ignore many branches of the tree, improving search speed.
+
+In some uses, it is desirable not just to know what queries match an
+experiment, but to order them from best match to least. HowDeSBT supports this,
+albeit at a sacrifice of some speed. Moreover, it can adjust the number of
+matching kmers downward to account for Bloom filter false positives.
+
+### (5-ALT) Run a batch of queries
+
+We can run the same query as earlier, but sorting by adjusted kmer count.
+
+```bash  
+howdesbt query --tree=howde.sbt --adjust --sort queries.fa > adjusted_queries.dat
+```
+
+As before, the number of hits for each query are reported (see table below).
+However, for each hit we now see the fraction of kmers in common (according to
+the Bloom filters), and an adjusted version of that fraction. The hits are
+ordered by decreasing adjusted fraction.
+
+For example, according to the Bloom filters, QUERY_001 had 600 kmers in common
+with EXPERIMENT15 and 605 with EXPERIMENT5. But since EXPERIMENT5 has a higher
+Bloom filter false positive rate, after adjustment we estimate there are really
+564 and 544 kmers in common, respectively.
+
+```bash  
+*QUERY_001 3
+EXPERIMENT15 600/790 0.759494 564/790 0.713924
+EXPERIMENT5  605/790 0.765823 544/790 0.688608
+EXPERIMENT2  559/790 0.707595 509/790 0.644304
+*QUERY_002 4
+EXPERIMENT18 330/403 0.818859 310/403 0.769231
+EXPERIMENT17 291/403 0.722084 280/403 0.694789
+EXPERIMENT4  284/403 0.704715 265/403 0.657568
+EXPERIMENT13 291/403 0.722084 260/403 0.645161
+*QUERY_003 2
+EXPERIMENT12 490/637 0.769231 441/637 0.692308
+EXPERIMENT5  458/637 0.718995 399/637 0.626374
+ ...
+```

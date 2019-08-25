@@ -25,6 +25,7 @@ usage: determine_sbt_bf_size <size> [options]
   --theta=<value>          (T) search theta -- a query will be reported as a
                            match if this fraction of its kmers are present in
                            the experiment; 0<value<1
+  --epsilon=<value>        (E) same as --containment=theta-<value>
   --containment=<value>    (C) containment index -- the fraction of a query's
                            kmers that are present in the experiment; 0<value<1
   --containment=theta-<value>  special case, to specify C relative to theta
@@ -73,6 +74,8 @@ def main():
 			querySize = int_with_unit(argVal)
 		elif (arg.startswith("--theta=")) or (arg.startswith("T=")):
 			theta = parse_probability(argVal)
+		elif (arg.startswith("--epsilon=")) or (arg.startswith("E=")):
+			containment = ("theta-",parse_probability(argVal))
 		elif (arg.startswith("--containment=")) or (arg.startswith("C=")):
 			if (argVal.startswith("theta-")):
 				containment = ("theta-",parse_probability(argVal.split("-",1)[1]))
