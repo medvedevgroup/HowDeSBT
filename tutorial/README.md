@@ -216,7 +216,7 @@ EXPERIMENT12
  ...
 ```
 
-## Alternatives for estimated the Bloom filter size.
+## Alternatives for estimating the Bloom filter size.
 
 ### (1-ALT1) Set the _Query_ false positive rate for the largest experiment.
 
@@ -329,7 +329,7 @@ The output shows the number of bits to be about 880K.
 92864     0.100000 1         881393
 ```
 
-## Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
+## Alternative for querying -- Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
 
 _Note: the adjustment capability described here is not available for SBT's
 built with versions earlier than 2.0._
