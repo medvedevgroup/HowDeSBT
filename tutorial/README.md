@@ -331,7 +331,7 @@ The output shows the number of bits to be about 880K.
 
 ## Alternative for querying -- Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
 
-_Note: the adjustment capability described here is not available for SBT's
+_Note: the adjustment capability described here is not available for SBTs
 built with versions earlier than 2.0._
 
 The original SBT design concept was that it would only report whether a query
