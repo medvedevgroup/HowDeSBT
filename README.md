@@ -98,4 +98,8 @@ descriptions. As of this writing, that will look like this:
 The command <code>howdesbt ?\<subcommand\></code> will give a more detailed
 description of a subcommand.  For example, <code>howdesbt ?makebf</code>
 gives details for how to convert a sequence file to a bloom filter.
+     
+# Citation
+If you use HowDeSBT, please cite
+* Robert S Harris and Paul Medvedev, Improved representation of sequence bloom trees, Bioinformatics, btz662
 
