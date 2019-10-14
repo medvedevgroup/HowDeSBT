@@ -31,7 +31,7 @@ number of fasta or fastq files.
 There are a few schemes for deciding what size to use for an SBT's Bloom
 filters. Here we describe the scheme analogous to the one recommended in the
 original SBT paper. Alternate schemes are described later in this document;
-see ALT1 and ALT2.
+see 1-ALT1 and 1-ALT2.
 
 In the original SBT paper (Solomon, Brad, and Carl Kingsford. "Fast search of
 thousands of short-read sequencing experiments.") it was argued that the size
@@ -216,7 +216,7 @@ EXPERIMENT12
  ...
 ```
 
-## Alternatives for estimated the Bloom filter size.
+## Alternatives for estimating the Bloom filter size.
 
 ### (1-ALT1) Set the _Query_ false positive rate for the largest experiment.
 
@@ -329,9 +329,9 @@ The output shows the number of bits to be about 880K.
 92864     0.100000 1         881393
 ```
 
-## Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
+## Alternative for querying -- Sorting matched queries by kmer hit counts, and adjusting for Bloom filter false positives.
 
-_Note: the adjustment capability described here is not available for SBT's
+_Note: the adjustment capability described here is not available for SBTs
 built with versions earlier than 2.0._
 
 The original SBT design concept was that it would only report whether a query
