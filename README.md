@@ -11,7 +11,7 @@ April 2017; earlier versions had a problem with RRR in certain configurations)
 
 # Installation
 
-To install subutan from the source:  
+To install HowDeSBT from the source:  
 
 ## 1a. Download the latest version of subutan using Github  
 ```bash  
