@@ -780,7 +780,7 @@ void QueryCommand::read_queries()
 //
 // sort_matches_by_kmer_counts--
 //	Sort query matches by decreasing kmer hit counts.
-//	
+//
 //----------
 
 void QueryCommand::sort_matches_by_kmer_counts (void)
