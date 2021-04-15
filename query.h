@@ -6,7 +6,6 @@
 #include <iostream>
 
 #include "bloom_filter.h"
-#include "query.h"
 
 //----------
 //
