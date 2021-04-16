@@ -69,7 +69,7 @@ Version 1.0.1 of ntcard was used, fetched as follows:
 git clone https://github.com/bcgsc/ntCard --branch "1.0.1"
 ```
 
-### (2) Convert the fasta files to Bloom filter bit vectors.
+### (2) Convert the fastq files to Bloom filter bit vectors.
 
 We use `howdesbt makebf` to create a Bloom filter for each experiment.
 
