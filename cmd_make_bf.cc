@@ -695,7 +695,8 @@ void MakeBFCommand::make_bloom_filter_kmers()
 
 void MakeBFCommand::report_stats(const string& bfOutFilename, u64 kmersAdded)
 	{
-	double fpRate = BloomFilter::false_positive_rate(numHashes,numBits,kmersAdded);
+	// (in earlier versions, this incorrectly used numBits instead of hashModulus)
+	double fpRate = BloomFilter::false_positive_rate(numHashes,hashModulus,kmersAdded);
 
 	if (outputStats)
 		{
@@ -712,7 +713,7 @@ void MakeBFCommand::report_stats(const string& bfOutFilename, u64 kmersAdded)
 		       << endl;
 		statsF <<         bfOutFilename
 		       << "\t" << numHashes
-		       << "\t" << numBits
+		       << "\t" << hashModulus // (in earlier versions, this was incorrectly numBits)
 		       << "\t" << kmersAdded
 		       << "\t" << fpRate
 		       << endl;
