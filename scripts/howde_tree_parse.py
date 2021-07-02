@@ -185,7 +185,7 @@ class TreeNode(object):
 				allChildrenAreLeafs = False
 				break
 
-		if (allChildrenAreLeafs):
+		if (allChildrenAreLeafs) and (self.children != []):
 			print >>f, " ".join([child.name for child in self.children])
 		else:
 			for child in self.children:
