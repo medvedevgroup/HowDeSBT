@@ -13,19 +13,20 @@ usage: cat annotated_tree_file | howde_allsome_stats [options]
   --table        print the table
                  (by default we don't print the table)
 
-  Input is a tree hieracrchy file with two extra columns, the number of 1s in
-  the node's all and some bitvectors, respectively.
+  Input is a tree hieracrchy file with three extra columns -- the number of
+  bits in the node's bitvectors, the number of 1s in the node's all
+  bitvector, and the number of 1s in the node's some bitvector.
 
-  node1.allsome.bf          0        1981168343
-  *node2.allsome.bf         408      886469084
-  **node4.allsome.bf        95       498278915
-  ***node8.allsome.bf       640      285714006
-  ****node16.allsome.bf     28013409 134312368
-  *****SRR953492.allsome.bf 64744298 0
-  *****SRR953493.allsome.bf 69568070 0
-  ****node17.allsome.bf     0        174165865
-  *****node26.allsome.bf    869      82689667
-  ******node44.allsome.bf   5639628  36696635
+  node1.allsome.bf                        40000 0    24205
+  *node2.allsome.bf                       40000 0    14482
+  **node4.allsome.bf                      40000 187  7867
+  ***EXPERIMENT16.subsample.allsome.bf    40000 4351 0
+  ***node8.allsome.bf                     40000 267  4263
+  ****EXPERIMENT1.subsample.allsome.bf    40000 1982 0
+  ****EXPERIMENT15.subsample.allsome.bf   40000 2281 0
+  **node5.allsome.bf                      40000 1    9957
+  ***node9.allsome.bf                     40000 12   5283
+  ****EXPERIMENT19.subsample.allsome.bf   40000 3004 0
    ..."""
 
 
