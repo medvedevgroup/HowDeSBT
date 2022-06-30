@@ -379,7 +379,7 @@ void BFOperateCommand::op_unrrr()
 	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
 	dstBf->bvs[0]->new_bits (numBits);
 
-	decompress_rrr(rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits)
+	decompress_rrr(rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits);
 	dstBf->save();
 
 	delete bf;
