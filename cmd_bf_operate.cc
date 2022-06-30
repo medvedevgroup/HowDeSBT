@@ -371,7 +371,7 @@ void BFOperateCommand::op_unrrr()
 	// TODO: what if the input bloom filter contains more than 1 bit vectors?
 	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
 	bf->load();
-	RrrBitVector* rrrBv = new RRRBitVector (bf->bvs[0]);
+	RrrBitVector* rrrBv = new RrrBitVector (bf->bvs[0]);
 
 	u64 numBits = rrrBv->num_bits();
 
