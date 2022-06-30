@@ -23,6 +23,8 @@ public:
 	virtual void op_xor (void);
 	virtual void op_eq (void);
 	virtual void op_complement (void);
+	virtual void op_rrr (void);
+	virtual void op_unrrr (void);
 
 	std::vector<std::string> bfFilenames;
 	std::string outputFilename;

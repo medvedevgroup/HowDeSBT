@@ -53,6 +53,8 @@ void BFOperateCommand::usage
 	s << "  --xor             output = a XOR b" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
+	s << "  --rrr             output = RRR a" << endl;
+	s << "  --unrrr           output = UNRRR a" << endl;
 	}
 
 void BFOperateCommand::debug_help
@@ -126,6 +128,12 @@ void BFOperateCommand::parse
 
 		if ((arg == "--not") || (arg == "--NOT") || (arg == "NOT") || (arg == "--complement"))
 			{ operation = "complement";  continue; }
+		
+		if ((arg == "--rrr") || (arg == "--RRR") || (arg == "RRR"))
+			{ operation = "rrr compress";  continue; }
+
+		if ((arg == "--unrrr") || (arg == "--UNRRR") || (arg == "UNRRR"))
+			{ operation = "rrr decompress";  continue; }
 
 		// (unadvertised) debug options
 
@@ -187,6 +195,16 @@ void BFOperateCommand::parse
 		if (bfFilenames.size() != 1)
 			chastise ("NOT requires one input bloom filter");
 		}
+	else if (operation == "rrr compress")
+		{
+		if (bfFilenames.size() != 1)
+			chastise ("RRR requires one input bit vector");
+		}
+	else if (operation == "rrr decompress")
+		{
+		if (bfFilenames.size() != 1)
+			chastise ("UNRRR requires one input bit vector");
+		}
 
 	return;
 	}
@@ -194,11 +212,13 @@ void BFOperateCommand::parse
 
 int BFOperateCommand::execute()
 	{
-	if      (operation == "and")          op_and();
-	else if (operation == "or")           op_or();
-	else if (operation == "xor")          op_xor();
-	else if (operation == "eq")           op_eq();
-	else if (operation == "complement")   op_complement();
+	if      (operation == "and")          	op_and();
+	else if (operation == "or")           	op_or();
+	else if (operation == "xor")          	op_xor();
+	else if (operation == "eq")           	op_eq();
+	else if (operation == "complement")   	op_complement();
+	else if (operation == "rrr compress")   op_rrr();
+	else if (operation == "rrr decompress") op_unrrr();
 
 	FileManager::close_file();	// make sure the last bloom filter file we
 								// .. opened for read gets closed
@@ -322,6 +342,43 @@ void BFOperateCommand::op_complement()
 	dstBf->new_bits(bv,bvcomp_uncompressed,0);
 
 	dstBf->complement();
+	dstBf->save();
+
+	delete bf;
+	delete dstBf;
+	}
+
+
+void BFOperateCommand::op_rrr()
+	{
+	// TODO: what if the input bloom filter contains more than 1 bit vectors?
+	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
+	bf->load();
+	BitVector* bv = bf->bvs[0];
+
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+	dstBf->bvs[0] = new RrrBitVector (bv);
+
+	dstBf->save();
+
+	delete bf;
+	delete dstBf;
+	}
+
+
+void BFOperateCommand::op_unrrr()
+	{
+	// TODO: what if the input bloom filter contains more than 1 bit vectors?
+	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
+	bf->load();
+	RrrBitVector* rrrBv = bf->bvs[0];
+
+	u64 numBits = rrrBv->num_bits();
+
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+	dstBf->bvs[0]->new_bits (numBits);
+
+	decompress_rrr (rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits);
 	dstBf->save();
 
 	delete bf;
