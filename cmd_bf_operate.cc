@@ -371,14 +371,15 @@ void BFOperateCommand::op_unrrr()
 	// TODO: what if the input bloom filter contains more than 1 bit vectors?
 	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
 	bf->load();
-	RrrBitVector* rrrBv = new RrrBitVector (bf->bvs[0]);
-
+	BitVector* bv = bf->bvs[0];
+	
+	RrrBitVector* rrrBv = (RrrBitVector*) bv;
 	u64 numBits = rrrBv->num_bits();
 
 	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
 	dstBf->bvs[0]->new_bits (numBits);
 
-	decompress_rrr (rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits);
+	decompress_rrr(rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits)
 	dstBf->save();
 
 	delete bf;
