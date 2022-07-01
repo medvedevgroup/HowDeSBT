@@ -374,7 +374,7 @@ void BFOperateCommand::op_unrrr()
 	BitVector* bv = bf->bvs[0];
 	
 	RrrBitVector* rrrBv = (RrrBitVector*) bv;
-	u64 numBits = rrrBv->num_bits();
+	u64 numBits = bf->num_bits();
 
 	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
 	dstBf->bvs[0]->new_bits (numBits);
