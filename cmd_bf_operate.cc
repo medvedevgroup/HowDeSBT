@@ -380,12 +380,10 @@ void BFOperateCommand::op_unrrr()
 
 	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
 	cout << "init new bloom filter \"" << outputFilename << "\"" << endl;
-	BitVector* dstBv = dstBf->bvs[0];
-
-	dstBv->new_bits (numBits);
+	dstBf->bvs[0] = BitVector::bit_vector(bvcomp_uncompressed,numBits);
 
 	cout << "decompressing RRR vector into the new bloom filter" << endl;
-	decompress_rrr(rrrBv->rrrBits, dstBv->bits->data(), numBits);
+	decompress_rrr(rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits);
 	dstBf->save();
 
 	delete bf;
