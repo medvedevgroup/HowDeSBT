@@ -351,7 +351,7 @@ void BFOperateCommand::op_complement()
 
 void BFOperateCommand::op_rrr()
 	{
-	// TODO: what if the input bloom filter contains more than 1 bit vectors?
+	// $$$ MULTI_VECTOR what if the filter contains more than one bit vector!
 	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
 	bf->load();
 	BitVector* bv = bf->bvs[0];
@@ -368,7 +368,7 @@ void BFOperateCommand::op_rrr()
 
 void BFOperateCommand::op_unrrr()
 	{
-	// TODO: what if the input bloom filter contains more than 1 bit vectors?
+	// $$$ MULTI_VECTOR what if the filter contains more than one bit vector!
 	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
 	bf->load();
 
