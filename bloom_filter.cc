@@ -1561,7 +1561,7 @@ BloomFilter* BloomFilter::bloom_filter
 	if (is_suffix_of(reducedName,".bf"))				// bfkind_simple
 		return new BloomFilter (filename);
 
-	fatal ("error: BloomFilter::bloom_filter(\"" + filename + "\""
+	fatal ("error: BloomFilter::bloom_filter(\"" + filename + ")\""
 	     + " is not implemented (file extension not recognized)");
 
 	return nullptr; // never reaches here

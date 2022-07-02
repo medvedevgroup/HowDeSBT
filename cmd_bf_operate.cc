@@ -44,15 +44,18 @@ void BFOperateCommand::usage
 	s << "usage: " << commandName << " <filename> [<filename>..] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
 	s << "  <filename>        (cumulative) a bloom filter file, extension .bf; only" << endl;
-	s << "                    simple uncompressed bloom filters are supported; there" << endl;
-	s << "                    should be as many bloom filter as the operation needs," << endl;
-	s << "                    usually 2." << endl;
+	s << "                    simple uncompressed bloom filters are supported (except for" << endl;
+	s << "                    --unrrr); there should be as many bloom filter as the" << endl;
+	s << "                     operation needs, 1 or 2." << endl;
 	s << "  --out=<filename>  name for the resulting bloom filter file" << endl;
 	s << "  --and             output = a AND b" << endl;
 	s << "  --or              output = a OR b" << endl;
 	s << "  --xor             output = a XOR b" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
+	s << "  --rrr             output = RRR a" << endl;
+	s << "  --unrrr           output = UNRRR a" << endl;
+	// $$$ consider adding ROAR and UNROAR
 	}
 
 void BFOperateCommand::debug_help
@@ -126,6 +129,14 @@ void BFOperateCommand::parse
 
 		if ((arg == "--not") || (arg == "--NOT") || (arg == "NOT") || (arg == "--complement"))
 			{ operation = "complement";  continue; }
+		
+		if ((arg == "--rrr") || (arg == "--RRR") || (arg == "RRR"))
+			{ operation = "rrr compress";  continue; }
+
+		if ((arg == "--unrrr") || (arg == "--UNRRR") || (arg == "UNRRR"))
+			{ operation = "rrr decompress";  continue; }
+
+		// $$$ consider adding ROAR and UNROAR
 
 		// (unadvertised) debug options
 
@@ -154,7 +165,8 @@ void BFOperateCommand::parse
 		chastise ("unrecognized argument: \"" + arg + "\"");
 		}
 
-	// sanity checks
+	// sanity checks; note that the operator functions (op_and, etc.) will
+	// perform additional validation of the filters
 
 	if (outputFilename.empty())
 		chastise ("an output bloom filter filename is required (--out)");
@@ -187,6 +199,16 @@ void BFOperateCommand::parse
 		if (bfFilenames.size() != 1)
 			chastise ("NOT requires one input bloom filter");
 		}
+	else if (operation == "rrr compress")
+		{
+		if (bfFilenames.size() != 1)
+			chastise ("RRR requires one input bloom filter");
+		}
+	else if (operation == "rrr decompress")
+		{
+		if (bfFilenames.size() != 1)
+			chastise ("UNRRR requires one input bloom filter, rrr-compressed");
+		}
 
 	return;
 	}
@@ -194,11 +216,13 @@ void BFOperateCommand::parse
 
 int BFOperateCommand::execute()
 	{
-	if      (operation == "and")          op_and();
-	else if (operation == "or")           op_or();
-	else if (operation == "xor")          op_xor();
-	else if (operation == "eq")           op_eq();
-	else if (operation == "complement")   op_complement();
+	if      (operation == "and")          	op_and();
+	else if (operation == "or")           	op_or();
+	else if (operation == "xor")          	op_xor();
+	else if (operation == "eq")           	op_eq();
+	else if (operation == "complement")   	op_complement();
+	else if (operation == "rrr compress")   op_rrr();
+	else if (operation == "rrr decompress") op_unrrr();
 
 	FileManager::close_file();	// make sure the last bloom filter file we
 								// .. opened for read gets closed
@@ -215,6 +239,15 @@ void BFOperateCommand::op_and()
 	bfB->load();
 	BitVector* bvA = bfA->bvs[0];
 	BitVector* bvB = bfB->bvs[0];
+
+	if (bfA->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bfB->numBitVectors > 2)
+		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
+	if (bvA->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+	if (bvB->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
 
 	u64 numBits = bfA->num_bits();
 	if (bfB->num_bits() != numBits)
@@ -242,6 +275,15 @@ void BFOperateCommand::op_or()
 	BitVector* bvA = bfA->bvs[0];
 	BitVector* bvB = bfB->bvs[0];
 
+	if (bfA->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bfB->numBitVectors > 2)
+		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
+	if (bvA->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+	if (bvB->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
+
 	u64 numBits = bfA->num_bits();
 	if (bfB->num_bits() != numBits)
 		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
@@ -267,6 +309,15 @@ void BFOperateCommand::op_xor()
 	bfB->load();
 	BitVector* bvA = bfA->bvs[0];
 	BitVector* bvB = bfB->bvs[0];
+
+	if (bfA->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bfB->numBitVectors > 2)
+		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
+	if (bvA->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+	if (bvB->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
 
 	u64 numBits = bfA->num_bits();
 	if (bfB->num_bits() != numBits)
@@ -294,6 +345,15 @@ void BFOperateCommand::op_eq()
 	BitVector* bvA = bfA->bvs[0];
 	BitVector* bvB = bfB->bvs[0];
 
+	if (bfA->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bfB->numBitVectors > 2)
+		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
+	if (bvA->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+	if (bvB->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
+
 	u64 numBits = bfA->num_bits();
 	if (bfB->num_bits() != numBits)
 		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
@@ -318,10 +378,61 @@ void BFOperateCommand::op_complement()
 	bf->load();
 	BitVector* bv = bf->bvs[0];
 
+	if (bf->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bv->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+
 	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
 	dstBf->new_bits(bv,bvcomp_uncompressed,0);
 
 	dstBf->complement();
+	dstBf->save();
+
+	delete bf;
+	delete dstBf;
+	}
+
+
+void BFOperateCommand::op_rrr()
+	{
+	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
+	bf->load();
+	BitVector* bv = bf->bvs[0];
+
+	if (bf->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bv->compressor() != bvcomp_uncompressed)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
+
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+	dstBf->bvs[0] = new RrrBitVector (bv);
+
+	dstBf->save();
+
+	delete bf;
+	delete dstBf;
+	}
+
+
+void BFOperateCommand::op_unrrr()
+	{
+	BloomFilter* bf = BloomFilter::bloom_filter(bfFilenames[0]);
+	bf->load();
+	BitVector* bv = bf->bvs[0];
+
+	if (bf->numBitVectors > 1)
+		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
+	if (bv->compressor() != bvcomp_rrr)
+		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an rrr bit vector");
+	RrrBitVector* rrrBv = (RrrBitVector*) bv;
+
+	u64 numBits = rrrBv->num_bits();
+
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+	dstBf->bvs[0] = BitVector::bit_vector(bvcomp_uncompressed,numBits);
+
+	decompress_rrr(rrrBv->rrrBits, dstBf->bvs[0]->bits->data(), numBits);
 	dstBf->save();
 
 	delete bf;

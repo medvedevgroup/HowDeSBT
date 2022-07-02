@@ -2227,3 +2227,8 @@ void decompress_rrr
 			*dstb = *scanb;
 		}
 	}
+
+// $$$ consider writing decompress_roar, possibly by (a) filling the
+//     .. uncompressed result with zeros and then (b) repeatedly calling
+//     .. roaring_bitmap_select with increasing rank and setting the bit
+//     .. corresponding to the returned element to 1
