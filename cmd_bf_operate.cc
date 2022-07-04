@@ -242,7 +242,7 @@ void BFOperateCommand::op_and()
 
 	if (bfA->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 2)
+	if (bfB->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
 	if (bvA->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
@@ -277,7 +277,7 @@ void BFOperateCommand::op_or()
 
 	if (bfA->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 2)
+	if (bfB->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
 	if (bvA->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
@@ -312,7 +312,7 @@ void BFOperateCommand::op_xor()
 
 	if (bfA->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 2)
+	if (bfB->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
 	if (bvA->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
@@ -347,7 +347,7 @@ void BFOperateCommand::op_eq()
 
 	if (bfA->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 2)
+	if (bfB->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
 	if (bvA->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
