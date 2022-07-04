@@ -43,10 +43,12 @@ void BFOperateCommand::usage
 	short_description(s);
 	s << "usage: " << commandName << " <filename> [<filename>..] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
-	s << "  <filename>        (cumulative) a bloom filter file, extension .bf; only" << endl;
-	s << "                    simple uncompressed bloom filters are supported (except for" << endl;
-	s << "                    --unrrr); there should be as many bloom filter as the" << endl;
-	s << "                     operation needs, 1 or 2." << endl;
+	s << "  <filename>        (cumulative) a bloom filter file, extension .bf or a text file with" << endl;
+	s << "                    a list of paths to the input bloom filter files with extension .bf; only" << endl;
+	s << "                    simple uncompressed bloom filters are supported (except for --unrrr);" << endl;
+	s << "                    there should be as many bloom filter as the operation needs." << endl;
+	s << "  --list=<filename> file containing a list of paths to the bloom filter files; only" << endl;
+	s << "                    filters with uncompressed bit vectors are allowed." << endl;
 	s << "  --out=<filename>  name for the resulting bloom filter file" << endl;
 	s << "  --and             output = a AND b" << endl;
 	s << "  --or              output = a OR b" << endl;
@@ -112,6 +114,26 @@ void BFOperateCommand::parse
 		if ((is_prefix_of (arg, "--out="))
 		 ||	(is_prefix_of (arg, "--output=")))
 			{ outputFilename = argVal;  continue; }
+		
+		// --list=<filename>
+
+		if (is_prefix_of (arg, "--list="))
+			{
+			// this is supposed to be a text file with a list of paths to the input bloom filter files
+
+			std::string bfFilelist = strip_blank_ends(argVal);
+			
+			std::ifstream in (bfFilelist);
+			
+			string bfFilename;
+			while (std::getline (in, bfFilename))
+				{
+				if (is_suffix_of (strip_blank_ends(bfFilename), ".bf"))
+					{ bfFilenames.emplace_back(strip_blank_ends(bfFilename)); }
+				}
+
+			continue;
+			}
 
 		// operations (some unadvertised)
 
@@ -176,23 +198,23 @@ void BFOperateCommand::parse
 
 	if (operation == "and")
 		{
-		if (bfFilenames.size() != 2)
-			chastise ("AND requires two input bloom filters");
+		if (bfFilenames.size() < 2)
+			chastise ("AND requires at least two input bloom filters");
 		}
 	else if (operation == "or")
 		{
-		if (bfFilenames.size() != 2)
-			chastise ("OR requires two input bloom filters");
+		if (bfFilenames.size() < 2)
+			chastise ("OR requires at least two input bloom filters");
 		}
 	else if (operation == "xor")
 		{
-		if (bfFilenames.size() != 2)
-			chastise ("XOR requires two input bloom filters");
+		if (bfFilenames.size() < 2)
+			chastise ("XOR requires at least two input bloom filters");
 		}
 	else if (operation == "eq")
 		{
-		if (bfFilenames.size() != 2)
-			chastise ("EQ requires two input bloom filters");
+		if (bfFilenames.size() < 2)
+			chastise ("EQ requires at least two input bloom filters");
 		}
 	else if (operation == "complement")
 		{
@@ -233,105 +255,129 @@ int BFOperateCommand::execute()
 
 void BFOperateCommand::op_and()
 	{
-	BloomFilter* bfA = BloomFilter::bloom_filter(bfFilenames[0]);
-	BloomFilter* bfB = BloomFilter::bloom_filter(bfFilenames[1]);
-	bfA->load();
-	bfB->load();
-	BitVector* bvA = bfA->bvs[0];
-	BitVector* bvB = bfB->bvs[0];
+	BloomFilter* dstBf = nullptr;
 
-	if (bfA->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
-	if (bvA->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
-	if (bvB->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
+	// process the input bloom filter files following the order for which they appear in the array
+	
+	int lineNum = 0;
+	for (const string &bfFilename : bfFilenames)
+		{
+		BloomFilter* bf = BloomFilter::bloom_filter(bfFilename);
+		bf->load();
+		BitVector* bv = bf->bvs[0];
 
-	u64 numBits = bfA->num_bits();
-	if (bfB->num_bits() != numBits)
-		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
-			 + ", but  \"" + bfFilenames[1] + "\" has " + std::to_string(bfB->num_bits()));
+		if (bf->numBitVectors > 1)
+			fatal ("error: \"" + bfFilename + "\" contains more than one bit vector");
+		if (bv->compressor() != bvcomp_uncompressed)
+			fatal ("error: \"" + bfFilename + "\" doesn't contain an uncompressed bit vector");
 
-	BloomFilter* dstBf = BloomFilter::bloom_filter(bfA,outputFilename);
-	dstBf->new_bits(bvA,bvcomp_uncompressed,0);
+		if (lineNum == 0)
+			{
+			// simply make a copy of the first bloom filter into the dstBf
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			dstBf->new_bits(bv,bvcomp_uncompressed,0);
+			}
+		else
+			{
+			u64 numBits = dstBf->num_bits();
+			if (bf->num_bits() != numBits)
+				fatal ("error: \"" + bfFilename + "\" has a different number of bits: " + std::to_string(bf->num_bits()));
 
-	dstBf->intersect_with(bvB);
+			dstBf->intersect_with(bv);
+			}
+
+		delete bf;
+		lineNum++;
+		}
+	
 	dstBf->save();
 
-	delete bfA;
-	delete bfB;
 	delete dstBf;
 	}
 
 
 void BFOperateCommand::op_or()
 	{
-	BloomFilter* bfA = BloomFilter::bloom_filter(bfFilenames[0]);
-	BloomFilter* bfB = BloomFilter::bloom_filter(bfFilenames[1]);
-	bfA->load();
-	bfB->load();
-	BitVector* bvA = bfA->bvs[0];
-	BitVector* bvB = bfB->bvs[0];
+	BloomFilter* dstBf = nullptr;
 
-	if (bfA->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
-	if (bvA->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
-	if (bvB->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
+	// process the input bloom filter files following the order for which they appear in the array
+	
+	int lineNum = 0;
+	for (const string &bfFilename : bfFilenames)
+		{
+		BloomFilter* bf = BloomFilter::bloom_filter(bfFilename);
+		bf->load();
+		BitVector* bv = bf->bvs[0];
 
-	u64 numBits = bfA->num_bits();
-	if (bfB->num_bits() != numBits)
-		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
-			 + ", but  \"" + bfFilenames[1] + "\" has " + std::to_string(bfB->num_bits()));
+		if (bf->numBitVectors > 1)
+			fatal ("error: \"" + bfFilename + "\" contains more than one bit vector");
+		if (bv->compressor() != bvcomp_uncompressed)
+			fatal ("error: \"" + bfFilename + "\" doesn't contain an uncompressed bit vector");
 
-	BloomFilter* dstBf = BloomFilter::bloom_filter(bfA,outputFilename);
-	dstBf->new_bits(bvA,bvcomp_uncompressed,0);
+		if (lineNum == 0)
+			{
+			// simply make a copy of the first bloom filter into the dstBf
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			dstBf->new_bits(bv,bvcomp_uncompressed,0);
+			}
+		else
+			{
+			u64 numBits = dstBf->num_bits();
+			if (bf->num_bits() != numBits)
+				fatal ("error: \"" + bfFilename + "\" has a different number of bits: " + std::to_string(bf->num_bits()));
 
-	dstBf->union_with(bvB);
+			dstBf->union_with(bv);
+			}
+
+		delete bf;
+		lineNum++;
+		}
+	
 	dstBf->save();
 
-	delete bfA;
-	delete bfB;
 	delete dstBf;
 	}
 
 
 void BFOperateCommand::op_xor()
 	{
-	BloomFilter* bfA = BloomFilter::bloom_filter(bfFilenames[0]);
-	BloomFilter* bfB = BloomFilter::bloom_filter(bfFilenames[1]);
-	bfA->load();
-	bfB->load();
-	BitVector* bvA = bfA->bvs[0];
-	BitVector* bvB = bfB->bvs[0];
+	BloomFilter* dstBf = nullptr;
 
-	if (bfA->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 1)
-		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
-	if (bvA->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
-	if (bvB->compressor() != bvcomp_uncompressed)
-		fatal ("error: \"" + bfFilenames[1] + "\" doesn't contain an uncompressed bit vector");
+	// process the input bloom filter files following the order for which they appear in the array
+	
+	int lineNum = 0;
+	for (const string &bfFilename : bfFilenames)
+		{
+		BloomFilter* bf = BloomFilter::bloom_filter(bfFilename);
+		bf->load();
+		BitVector* bv = bf->bvs[0];
 
-	u64 numBits = bfA->num_bits();
-	if (bfB->num_bits() != numBits)
-		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
-			 + ", but  \"" + bfFilenames[1] + "\" has " + std::to_string(bfB->num_bits()));
+		if (bf->numBitVectors > 1)
+			fatal ("error: \"" + bfFilename + "\" contains more than one bit vector");
+		if (bv->compressor() != bvcomp_uncompressed)
+			fatal ("error: \"" + bfFilename + "\" doesn't contain an uncompressed bit vector");
 
-	BloomFilter* dstBf = BloomFilter::bloom_filter(bfA,outputFilename);
-	dstBf->new_bits(bvA,bvcomp_uncompressed,0);
+		if (lineNum == 0)
+			{
+			// simply make a copy of the first bloom filter into the dstBf
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			dstBf->new_bits(bv,bvcomp_uncompressed,0);
+			}
+		else
+			{
+			u64 numBits = dstBf->num_bits();
+			if (bf->num_bits() != numBits)
+				fatal ("error: \"" + bfFilename + "\" has a different number of bits: " + std::to_string(bf->num_bits()));
 
-	dstBf->xor_with(bvB);
+			dstBf->xor_with(bv);
+			}
+
+		delete bf;
+		lineNum++;
+		}
+	
 	dstBf->save();
 
-	delete bfA;
-	delete bfB;
 	delete dstBf;
 	}
 
@@ -347,7 +393,7 @@ void BFOperateCommand::op_eq()
 
 	if (bfA->numBitVectors > 1)
 		fatal ("error: \"" + bfFilenames[0] + "\" contains more than one bit vector");
-	if (bfB->numBitVectors > 1)
+	if (bfB->numBitVectors > 2)
 		fatal ("error: \"" + bfFilenames[1] + "\" contains more than one bit vector");
 	if (bvA->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
