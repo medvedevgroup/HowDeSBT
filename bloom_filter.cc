@@ -233,8 +233,9 @@ BloomFilter::BloomFilter
 	// (see note in first constructor)
 	for (int bvIx=0 ; bvIx<maxBitVectors ; bvIx++) bvs[bvIx] = nullptr;
 
-	if (newFilename != "") filename = newFilename;
-	                  else filename = templateBf->filename;
+	//if (newFilename != "") filename = newFilename;
+	//                  else filename = templateBf->filename;
+	filename = newFilename;
 
 	setup_hashers();
 
@@ -381,119 +382,124 @@ void BloomFilter::load
 
 void BloomFilter::save()
 	{
-	for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
+
+	if (!filename.empty())
 		{
-		if (bvs[bvIx] == nullptr)
+		
+		for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
 			{
-			if (bvIx == 0)
-				fatal ("internal error for " + identity()
-				     + "; attempt to save null bloom filter");
-			else
-				fatal ("internal error for " + identity()
-				     + "; attempt to save partially null bloom filter");
-			}
-		}
-
-// $$$ this needs to make sure the file isn't currently opened for read!!!!
-
-	// allocate the header, with enough room for a bfvectorinfo record for each
-	// component
-	//
-	// note that we are assuming that the header size for the current file
-	// format version is at least as large as that for any earlier versions
-
-	u64 headerBytesNeeded = bffileheader_size(numBitVectors);
-	headerBytesNeeded = round_up_16(headerBytesNeeded);
-
-	u32 headerSize = (u32) headerBytesNeeded;
-	if (headerSize != headerBytesNeeded)
-		fatal ("error: header record for \"" + filename + "\""
-		       " would be too large (" + std::to_string(headerSize) + " bytes)");
-
-	bffileheader* header = (bffileheader*) new char[headerSize];
-	if (header == nullptr)
-		fatal ("error:"
-		       " failed to allocate " + std::to_string(headerSize) + " bytes"
-		     + " for header record for \"" + filename + "\"");
-
-	if (trackMemory)
-		cerr << "@+" << header << " allocating bf file header for BloomFilter(" << identity() << ")" << endl;
-
-	// write a fake header to the file; after we write the rest of the file
-	// we'll rewind and write the real header; we do this because we don't know
-	// the component offsets and sizes until after we've written them
-
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
-
-	memset (header, 0, headerSize);
-	header->magic      = bffileheaderMagicUn;
-	header->headerSize = (u32) sizeof(bffileprefix);
-
-	std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
-	out.write ((char*)header, headerSize);
-	size_t bytesWritten = headerSize; // (based on assumption of success)
-	if (not out)
-		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
-		     + " failed to open \"" + filename + "\"");
-
-	// start the real header
-
-	header->magic        = bffileheaderMagic;
-	header->headerSize   = headerSize;
-	header->version      = bffileheaderVersion;
-	header->bfKind       = kind();
-	header->padding1     = 0;
-	header->kmerSize     = kmerSize;
-	header->numHashes    = numHashes;
-	header->hashSeed1    = hashSeed1;
-	header->hashSeed2    = hashSeed2;
-	header->hashModulus  = hashModulus;
-	header->numBits      = numBits;
-	header->numVectors   = numBitVectors;
-	header->setSizeKnown = setSizeKnown;
-	header->setSize      = (setSizeKnown)? setSize : 0;
-
-	// write the component(s)
-
-	for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
-		{
-		BitVector* bv = bvs[bvIx];
-
-		header->info[bvIx].compressor = bv->compressor();
-		header->info[bvIx].name       = 0;
-		header->info[bvIx].offset     = bytesWritten;
-		if ((header->info[bvIx].compressor == bvcomp_rrr)
-		 || (header->info[bvIx].compressor == bvcomp_unc_rrr))
-			{
-			header->info[bvIx].compressor |= (RRR_BLOCK_SIZE  << 8);
-			header->info[bvIx].compressor |= (RRR_RANK_PERIOD << 16);
+			if (bvs[bvIx] == nullptr)
+				{
+				if (bvIx == 0)
+					fatal ("internal error for " + identity()
+						+ "; attempt to save null bloom filter");
+				else
+					fatal ("internal error for " + identity()
+						+ "; attempt to save partially null bloom filter");
+				}
 			}
 
-		size_t numBytes = bv->serialized_out (out, filename, header->info[bvIx].offset);
-		bytesWritten += numBytes;
+		// $$$ this needs to make sure the file isn't currently opened for read!!!!
 
-		header->info[bvIx].numBytes   = numBytes;
-		header->info[bvIx].filterInfo = bv->filterInfo;
+		// allocate the header, with enough room for a bfvectorinfo record for each
+		// component
+		//
+		// note that we are assuming that the header size for the current file
+		// format version is at least as large as that for any earlier versions
+
+		u64 headerBytesNeeded = bffileheader_size(numBitVectors);
+		headerBytesNeeded = round_up_16(headerBytesNeeded);
+
+		u32 headerSize = (u32) headerBytesNeeded;
+		if (headerSize != headerBytesNeeded)
+			fatal ("error: header record for \"" + filename + "\""
+				" would be too large (" + std::to_string(headerSize) + " bytes)");
+
+		bffileheader* header = (bffileheader*) new char[headerSize];
+		if (header == nullptr)
+			fatal ("error:"
+				" failed to allocate " + std::to_string(headerSize) + " bytes"
+				+ " for header record for \"" + filename + "\"");
+
+		if (trackMemory)
+			cerr << "@+" << header << " allocating bf file header for BloomFilter(" << identity() << ")" << endl;
+
+		// write a fake header to the file; after we write the rest of the file
+		// we'll rewind and write the real header; we do this because we don't know
+		// the component offsets and sizes until after we've written them
+
+		if (reportSave)
+			cerr << "Saving " << filename << endl;
+
+		memset (header, 0, headerSize);
+		header->magic      = bffileheaderMagicUn;
+		header->headerSize = (u32) sizeof(bffileprefix);
+
+		std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
+		out.write ((char*)header, headerSize);
+		size_t bytesWritten = headerSize; // (based on assumption of success)
+		if (not out)
+			fatal ("error: " + class_identity() + "::save(" + identity() + ")"
+				+ " failed to open \"" + filename + "\"");
+
+		// start the real header
+
+		header->magic        = bffileheaderMagic;
+		header->headerSize   = headerSize;
+		header->version      = bffileheaderVersion;
+		header->bfKind       = kind();
+		header->padding1     = 0;
+		header->kmerSize     = kmerSize;
+		header->numHashes    = numHashes;
+		header->hashSeed1    = hashSeed1;
+		header->hashSeed2    = hashSeed2;
+		header->hashModulus  = hashModulus;
+		header->numBits      = numBits;
+		header->numVectors   = numBitVectors;
+		header->setSizeKnown = setSizeKnown;
+		header->setSize      = (setSizeKnown)? setSize : 0;
+
+		// write the component(s)
+
+		for (int bvIx=0 ; bvIx<numBitVectors ; bvIx++)
+			{
+			BitVector* bv = bvs[bvIx];
+
+			header->info[bvIx].compressor = bv->compressor();
+			header->info[bvIx].name       = 0;
+			header->info[bvIx].offset     = bytesWritten;
+			if ((header->info[bvIx].compressor == bvcomp_rrr)
+			|| (header->info[bvIx].compressor == bvcomp_unc_rrr))
+				{
+				header->info[bvIx].compressor |= (RRR_BLOCK_SIZE  << 8);
+				header->info[bvIx].compressor |= (RRR_RANK_PERIOD << 16);
+				}
+
+			size_t numBytes = bv->serialized_out (out, filename, header->info[bvIx].offset);
+			bytesWritten += numBytes;
+
+			header->info[bvIx].numBytes   = numBytes;
+			header->info[bvIx].filterInfo = bv->filterInfo;
+			}
+
+		// rewind and overwrite header
+
+		out.seekp(std::ios::beg);
+		out.write ((char*)header, headerSize);
+		out.close();
+
+		// clean up
+
+		if ((trackMemory) && (header != nullptr))
+			cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;
+
+		if (header != nullptr) delete[] header;
+
+		// now we're in the equivalent of the "ready" state; actually we're beyond
+		// that state, in the same state as the result of load()
+
+		ready = true;
 		}
-
-	// rewind and overwrite header
-
-	out.seekp(std::ios::beg);
-	out.write ((char*)header, headerSize);
-	out.close();
-
-	// clean up
-
-	if ((trackMemory) && (header != nullptr))
-		cerr << "@-" << header << " discarding bf file header for BloomFilter(" << identity() << ")" << endl;
-
-	if (header != nullptr) delete[] header;
-
-	// now we're in the equivalent of the "ready" state; actually we're beyond
-	// that state, in the same state as the result of load()
-
-	ready = true;
 	}
 
 void BloomFilter::copy_properties

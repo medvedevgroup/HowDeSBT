@@ -57,6 +57,8 @@ void BVOperateCommand::usage
 	s << "  --xor             output = a XOR b" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
+	s << "  --count           count the number of active bits in the resulting bit vector;" << endl;
+	s << "                    used in conjunction with --and, --mask, --or, --ornot, --xor, --eq, or --not" << endl;
 	s << "  --squeeze         output = a SQUEEZE b" << endl;
 	s << "  --unsqueeze       output = a UNSQUEEZE b" << endl;
 	s << "  --rrr             output = RRR a" << endl;
@@ -119,6 +121,7 @@ void BVOperateCommand::parse
 
 		// --out=<filename>
 
+		outputFilename = "";
 		if ((is_prefix_of (arg, "--out="))
 		 ||	(is_prefix_of (arg, "--output=")))
 			{ outputFilename = argVal;  continue; }
@@ -162,6 +165,14 @@ void BVOperateCommand::parse
 		if ((arg == "--unrrr") || (arg == "--UNRRR") || (arg == "UNRRR"))
 			{ operation = "rrr decompress";  continue; }
 
+		// --count shouldn't be considered as an "operation"
+		// it must be run in conjunction with --and, --mask, --or, --ornot, --xor, --eq, or --not
+
+		suboperation = "";
+		if (((arg == "--count") || (arg == "--COUNT") || (arg == "COUNT")) 
+			&& ((operation == "and") || (operation == "mask") || (operation == "or") || (operation == "or not") || (operation == "xor") || (operation == "eq") || (operation == "complement")))
+			{ suboperation = "count";  continue; }
+
 		// --quiet
 
 		if (arg == "--quiet")
@@ -201,8 +212,11 @@ void BVOperateCommand::parse
 
 	// sanity checks
 
-	if (outputFilename.empty())
-		chastise ("an output bit vector filename is required (--out)");
+	// make --out argument optional because the subcommand --count does not necessarily requires
+	// to save the output bloom filter
+
+	//if (outputFilename.empty())
+	//	chastise ("an output bit vector filename is required (--out)");
 
 	if (operation.empty())
 		chastise ("an operation is required (e.g. --AND)");
@@ -281,6 +295,38 @@ int BVOperateCommand::execute()
 	}
 
 
+void BVOperateCommand::count(const BitVector* bv)
+	{
+	// count the number of active bits in the input bv
+	u64 numBits = bv->num_bits();
+
+	u32 compressor = bv->compressor();
+	u64 numOnes = 0;
+
+	if ((compressor == bvcomp_uncompressed)
+		|| (compressor == bvcomp_unc_rrr)
+		|| (compressor == bvcomp_unc_roar))
+			{
+			sdslrank1 bvRanker1(bv->bits);
+			numOnes = bvRanker1(bv->numBits);
+			}
+	else if (compressor == bvcomp_rrr)
+			{
+			RrrBitVector* rrrBv = (RrrBitVector*) bv;
+			rrrrank1 bvRanker1(rrrBv->rrrBits);
+			numOnes = bvRanker1(rrrBv->numBits);
+			}
+	else
+			{
+			for (u64 pos=0 ; pos<numBits ; pos++)
+				{ if ((*bv)[pos] == 1) numOnes++; }
+			}
+	
+	// print the number of active bits on the stdout
+	cout << "result has " << numOnes << " active bits" << endl;
+	}
+
+
 void BVOperateCommand::op_and()
 	{
 	BitVector* bvA = BitVector::bit_vector (bvFilenames[0]);
@@ -294,10 +340,17 @@ void BVOperateCommand::op_and()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_and (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -319,10 +372,17 @@ void BVOperateCommand::op_mask()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_mask (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -344,10 +404,17 @@ void BVOperateCommand::op_or()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_or (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -369,10 +436,17 @@ void BVOperateCommand::op_or_not()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_or_not (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -394,10 +468,17 @@ void BVOperateCommand::op_xor()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -419,11 +500,18 @@ void BVOperateCommand::op_eq()
 		fatal ("error: \"" + bvFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bvFilenames[1] + "\" has " + std::to_string(bvB->num_bits()));
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	bitwise_complement (dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bvA;
@@ -440,10 +528,17 @@ void BVOperateCommand::op_complement()
 
 	u64 numBits = bv->num_bits();
 
+	// in case of empty outputFilename, the Bv should be maintained in memory only
 	BitVector* dstBv = BitVector::bit_vector (outputFilename);
 	dstBv->new_bits (numBits);
 
 	bitwise_complement (bv->bits->data(), dstBv->bits->data(), numBits);
+
+	// count the number of active bits in dstBv
+	if (suboperation == "count")
+		{ count(dstBv); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBv->save();
 
 	delete bv;

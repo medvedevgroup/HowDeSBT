@@ -242,33 +242,36 @@ void BitVector::serialized_in
 
 void BitVector::save()
 	{
-	wall_time_ty startTime;
-
-	if (reportSave)
-		cerr << "Saving " << filename << endl;
-
-	if (bits == nullptr)
-		fatal ("internal error for " + identity()
-		     + "; attempt to save null bit vector");
-
-	if (offset != 0)
-		fatal ("internal error for " + identity()
-		     + "; attempt to save bit vector to non-zero file offset");
-
-	if (reportSaveTime || reportTotalSaveTime) startTime = get_wall_time();
-	std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
-	if (not out)
-		fatal ("error: " + class_identity() + "::save(" + identity() + ")"
-		     + " failed to open \"" + filename + "\"");
-	serialized_out (out);
-	out.close();
-	if (reportSaveTime || reportTotalSaveTime)
+	if (!filename.empty())
 		{
-		double elapsedTime = elapsed_wall_time(startTime);
-		if (reportSaveTime)
-			cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
-		if (reportTotalSaveTime)
-			totalSaveTime += elapsedTime;  // $$$ danger of precision error?
+		wall_time_ty startTime;
+
+		if (reportSave)
+			cerr << "Saving " << filename << endl;
+
+		if (bits == nullptr)
+			fatal ("internal error for " + identity()
+				+ "; attempt to save null bit vector");
+
+		if (offset != 0)
+			fatal ("internal error for " + identity()
+				+ "; attempt to save bit vector to non-zero file offset");
+
+		if (reportSaveTime || reportTotalSaveTime) startTime = get_wall_time();
+		std::ofstream out (filename, std::ios::binary | std::ios::trunc | std::ios::out);
+		if (not out)
+			fatal ("error: " + class_identity() + "::save(" + identity() + ")"
+				+ " failed to open \"" + filename + "\"");
+		serialized_out (out);
+		out.close();
+		if (reportSaveTime || reportTotalSaveTime)
+			{
+			double elapsedTime = elapsed_wall_time(startTime);
+			if (reportSaveTime)
+				cerr << "[" + class_identity() + " save] " << std::setprecision(6) << std::fixed << elapsedTime << " secs " << filename << "@" << offset << endl;
+			if (reportTotalSaveTime)
+				totalSaveTime += elapsedTime;  // $$$ danger of precision error?
+			}
 		}
 	}
 

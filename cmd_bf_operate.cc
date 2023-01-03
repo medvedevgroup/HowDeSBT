@@ -55,6 +55,8 @@ void BFOperateCommand::usage
 	s << "  --xor             output = a XOR b [XOR c ..]" << endl;
 	s << "  --eq              output = a EQ b" << endl;
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
+	s << "  --count           count the number of active bits in the bit vector of the resulting bloom filter;" << endl;
+	s << "                    used in conjunction with --and, --or, --xor, --eq, or --not" << endl;
 	s << "  --rrr             output = RRR a" << endl;
 	s << "  --unrrr           output = UNRRR a" << endl;
 	// $$$ consider adding ROAR and UNROAR
@@ -111,6 +113,7 @@ void BFOperateCommand::parse
 
 		// --out=<filename>
 
+		outputFilename = "";
 		if ((is_prefix_of (arg, "--out="))
 		 ||	(is_prefix_of (arg, "--output=")))
 			{ outputFilename = argVal;  continue; }
@@ -163,6 +166,14 @@ void BFOperateCommand::parse
 
 		// $$$ consider adding ROAR and UNROAR
 
+		// --count shouldn't be considered as an "operation"
+		// it must be run in conjunction with --and, --or, --xor, --eq, or --not
+
+		suboperation = "";
+		if (((arg == "--count") || (arg == "--COUNT") || (arg == "COUNT")) 
+			&& ((operation == "and") || (operation == "or") || (operation == "xor") || (operation == "eq") || (operation == "complement")))
+			{ suboperation = "count";  continue; }
+
 		// (unadvertised) debug options
 
 		if (arg == "--debug")
@@ -193,8 +204,11 @@ void BFOperateCommand::parse
 	// sanity checks; note that the operator functions (op_and, etc.) will
 	// perform additional validation of the filters
 
-	if (outputFilename.empty())
-		chastise ("an output bloom filter filename is required (--out)");
+	// make --out argument optional because the subcommand --count does not necessarily requires
+	// to save the output bloom filter
+
+	//if (outputFilename.empty())
+	//	chastise ("an output bloom filter filename is required (--out)");
 
 	if (operation.empty())
 		chastise ("an operation is required (e.g. --AND)");
@@ -256,6 +270,31 @@ int BFOperateCommand::execute()
 	}
 
 
+void BFOperateCommand::count(const BloomFilter* bf)
+	{
+	// count the number of active bits in the input bf
+	BitVector* bv = bf->bvs[0];
+	u64 numBits = bv->num_bits();
+
+	u32 compressor = bv->compressor();
+	u64 numOnes = 0;
+	// only simple uncompressed bloom filters are supported
+	if (compressor == bvcomp_uncompressed)
+		{
+		sdslrank1 bvRanker1(bv->bits);
+		numOnes = bvRanker1(bv->numBits);
+		}
+	else
+		{
+		for (u64 pos=0 ; pos<numBits ; pos++)
+			{ if ((*bv)[pos] == 1) numOnes++; }
+		}
+	
+	// print the number of active bits on the stdout
+	cout << "result has " << numOnes << " active bits" << endl;
+	}
+
+
 void BFOperateCommand::op_and()
 	{
 	BloomFilter* dstBf = nullptr;
@@ -281,7 +320,8 @@ void BFOperateCommand::op_and()
 		if (bfNum == 0)
 			{
 			// simply make a copy of the first bloom filter into the dstBf
-			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			// in case of empty outputFilename, the Bf should be maintained in memory only
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename); // variant 3
 			dstBf->new_bits(bv,bvcomp_uncompressed,0);
 			}
 		else
@@ -298,6 +338,12 @@ void BFOperateCommand::op_and()
 		}
 
 	assert (dstBf != nullptr);
+
+	// count the number of active bits in dstBf
+	if (suboperation == "count")
+		{ count(dstBf); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBf->save();
 
 	delete dstBf;
@@ -329,7 +375,8 @@ void BFOperateCommand::op_or()
 		if (bfNum == 0)
 			{
 			// simply make a copy of the first bloom filter into the dstBf
-			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			// in case of empty outputFilename, the Bf should be maintained in memory only
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename); // variant 3
 			dstBf->new_bits(bv,bvcomp_uncompressed,0);
 			}
 		else
@@ -346,6 +393,12 @@ void BFOperateCommand::op_or()
 		}
 
 	assert (dstBf != nullptr);
+
+	// count the number of active bits in dstBf
+	if (suboperation == "count")
+		{ count(dstBf); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBf->save();
 
 	delete dstBf;
@@ -377,7 +430,8 @@ void BFOperateCommand::op_xor()
 		if (bfNum == 0)
 			{
 			// simply make a copy of the first bloom filter into the dstBf
-			dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+			// in case of empty outputFilename, the Bf should be maintained in memory only
+			dstBf = BloomFilter::bloom_filter(bf,outputFilename); // variant 3
 			dstBf->new_bits(bv,bvcomp_uncompressed,0);
 			}
 		else
@@ -394,6 +448,12 @@ void BFOperateCommand::op_xor()
 		}
 
 	assert (dstBf != nullptr);
+
+	// count the number of active bits in dstBf
+	if (suboperation == "count")
+		{ count(dstBf); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBf->save();
 
 	delete dstBf;
@@ -423,11 +483,18 @@ void BFOperateCommand::op_eq()
 		fatal ("error: \"" + bfFilenames[0] + "\" has " + std::to_string(numBits) + " bits"
 			 + ", but  \"" + bfFilenames[1] + "\" has " + std::to_string(bfB->num_bits()));
 
-	BloomFilter* dstBf = BloomFilter::bloom_filter(bfA,outputFilename);
+	// in case of empty outputFilename, the Bf should be maintained in memory only
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename); // variant 3
 	dstBf->new_bits(bvA,bvcomp_uncompressed,0);
 
 	dstBf->xor_with(bvB);
 	dstBf->complement();
+
+	// count the number of active bits in dstBf
+	if (suboperation == "count")
+		{ count(dstBf); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBf->save();
 
 	delete bfA;
@@ -447,10 +514,17 @@ void BFOperateCommand::op_complement()
 	if (bv->compressor() != bvcomp_uncompressed)
 		fatal ("error: \"" + bfFilenames[0] + "\" doesn't contain an uncompressed bit vector");
 
-	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename);
+	// in case of empty outputFilename, the Bf should be maintained in memory only
+	BloomFilter* dstBf = BloomFilter::bloom_filter(bf,outputFilename); // variant 3
 	dstBf->new_bits(bv,bvcomp_uncompressed,0);
 
 	dstBf->complement();
+
+	// count the number of active bits in dstBf
+	if (suboperation == "count")
+		{ count(dstBf); }
+
+	// save doesn't have any effect in case of empty outputFilename
 	dstBf->save();
 
 	delete bf;
