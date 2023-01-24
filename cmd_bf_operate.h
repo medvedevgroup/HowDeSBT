@@ -29,6 +29,8 @@ public:
 	std::vector<std::string> bfFilenames;
 	std::string outputFilename;
 	std::string operation;
+	bool saveToFile;
+	bool reportCount;
 	};
 
 #endif // cmd_bf_operate_H

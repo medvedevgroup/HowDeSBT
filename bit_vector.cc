@@ -2032,6 +2032,7 @@ BitVector* BitVector::bit_vector
 		{
 		// nota bene: if more types are added to this list, be sure to also add
 		//            them to the error message
+		// $$$ this ought to make use of valid_filename()
 		if      (is_suffix_of (filename, ".bv"))    kind = "bv";
 		else if (is_suffix_of (filename, ".rrr"))   kind = "rrr";
 		else if (is_suffix_of (filename, ".roar"))  kind = "roar";

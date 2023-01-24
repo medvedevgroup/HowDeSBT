@@ -33,6 +33,8 @@ public:
 	std::vector<std::string> bvFilenames;
 	std::string outputFilename;
 	std::string operation;
+	bool saveToFile;
+	bool reportCount;
 	bool beQuiet;
 	};
 

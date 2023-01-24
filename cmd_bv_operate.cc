@@ -50,6 +50,7 @@ void BVOperateCommand::usage
 	s << "  <filename>:<type>[:<offset>] bit vector is embedded in another file; <type>" << endl;
 	s << "                    is bv, rrr or roar; <offset> is location within the file" << endl;
 	s << "  --out=<filename>  name for the resulting bit vector file" << endl;
+	s << "  --noout           don't write the resulting bit vector to a file" << endl;
 	s << "  --and             output = a AND b" << endl;
 	s << "  --mask            output = a MASK b  (i.e. a AND NOT b)" << endl;
 	s << "  --or              output = a OR b" << endl;
@@ -62,6 +63,9 @@ void BVOperateCommand::usage
 	s << "  --rrr             output = RRR a" << endl;
 	s << "  --unrrr           output = UNRRR a" << endl;
 	s << "  --quiet           don't report information about the result" << endl;
+	s << "  --report:count    report the number of active bits in the resulting bit" << endl;
+	s << "                    vector; only applicable for --and, --mask, --or, --ornot," << endl;
+	s << "                    --xor, --eq, or --not" << endl;
 	}
 
 void BVOperateCommand::debug_help
@@ -80,7 +84,9 @@ void BVOperateCommand::parse
 
 	// defaults
 
-	beQuiet = false;
+	saveToFile  = true;
+	reportCount = false;
+	beQuiet     = false;
 
 	// skip command name
 
@@ -123,6 +129,11 @@ void BVOperateCommand::parse
 		 ||	(is_prefix_of (arg, "--output=")))
 			{ outputFilename = argVal;  continue; }
 
+		// --noout
+
+		if ((arg == "--noout") || (arg == "--nooutput"))
+			{ saveToFile = false;  continue; }
+
 		// operations (some unadvertised)
 
 		if ((arg == "--and") || (arg == "--AND") || (arg == "AND"))
@@ -161,6 +172,11 @@ void BVOperateCommand::parse
 
 		if ((arg == "--unrrr") || (arg == "--UNRRR") || (arg == "UNRRR"))
 			{ operation = "rrr decompress";  continue; }
+
+		// --report:count
+
+		if ((arg == "--report:count") || (arg == "--report=count") || (arg == "--count"))
+			{ reportCount = true;  continue; }
 
 		// --quiet
 
@@ -201,8 +217,11 @@ void BVOperateCommand::parse
 
 	// sanity checks
 
-	if (outputFilename.empty())
+	if ((saveToFile) && (outputFilename.empty()))
 		chastise ("an output bit vector filename is required (--out)");
+
+	if ((not saveToFile) && (not outputFilename.empty()))
+		chastise ("an output bit vector filename was given, inconsistent with --noout");
 
 	if (operation.empty())
 		chastise ("an operation is required (e.g. --AND)");
@@ -241,21 +260,50 @@ void BVOperateCommand::parse
 		{
 		if (bvFilenames.size() != 2)
 			chastise ("SQUEEZE requires two input bit vectors");
+		if (reportCount)
+			chastise ("--report:count is not implemented for --squeeze");
 		}
 	else if (operation == "unsqueeze")
 		{
 		if (bvFilenames.size() != 2)
 			chastise ("UNSQUEEZE requires two input bit vectors");
+		if (reportCount)
+			chastise ("--report:count is not implemented for --unsqueeze");
 		}
 	else if (operation == "rrr compress")
 		{
 		if (bvFilenames.size() != 1)
 			chastise ("RRR requires one input bit vector");
+		if (reportCount)
+			chastise ("--report:count is not implemented for --rrr");
 		}
 	else if (operation == "rrr decompress")
 		{
 		if (bvFilenames.size() != 1)
 			chastise ("UNRRR requires one input bit vector");
+		if (reportCount)
+			chastise ("--report:count is not implemented for --unrrr");
+		}
+
+	// for the no output case, we need to provide a name for the bit vector,
+	// matching the type of the input bit vector(s); this is necessary because
+	// BitVector::bit_vector() derives the bit vector type from the file
+	// extension
+
+	if (not saveToFile)
+		{
+		string::size_type dotIx = bvFilenames[0].find_last_of(".");
+		if (dotIx != string::npos)
+			{
+			// e.g. outputFilename = ".bv" or ".rrr" or ".roar";
+			outputFilename = bvFilenames[0].substr(dotIx);
+			}
+		else
+			{
+			// this case will fail later, in BitVector::bit_vector(), but
+			// there's not much we can do about it
+			;
+			}
 		}
 
 	return;
@@ -298,7 +346,12 @@ void BVOperateCommand::op_and()
 	dstBv->new_bits (numBits);
 
 	bitwise_and (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -323,7 +376,12 @@ void BVOperateCommand::op_mask()
 	dstBv->new_bits (numBits);
 
 	bitwise_mask (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -348,7 +406,12 @@ void BVOperateCommand::op_or()
 	dstBv->new_bits (numBits);
 
 	bitwise_or (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -373,7 +436,12 @@ void BVOperateCommand::op_or_not()
 	dstBv->new_bits (numBits);
 
 	bitwise_or_not (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -398,7 +466,12 @@ void BVOperateCommand::op_xor()
 	dstBv->new_bits (numBits);
 
 	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -424,7 +497,12 @@ void BVOperateCommand::op_eq()
 
 	bitwise_xor (bvA->bits->data(), bvB->bits->data(), dstBv->bits->data(), numBits);
 	bitwise_complement (dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bvA;
 	delete bvB;
@@ -444,7 +522,12 @@ void BVOperateCommand::op_complement()
 	dstBv->new_bits (numBits);
 
 	bitwise_complement (bv->bits->data(), dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (reportCount)
+		{
+		u64 numOnes = dstBv->rank1(dstBv->num_bits());
+		cout << "result has " << numOnes << " 'active' bits" << endl;
+		}
+	if (saveToFile) dstBv->save();
 
 	delete bv;
 	delete dstBv;
@@ -474,7 +557,7 @@ void BVOperateCommand::op_squeeze
 	u64 numCopied = bitwise_squeeze (srcBv->bits->data(), specBv->bits->data(), numBits,
 	                                 dstBv->bits->data(), dstNumBits);
 	if (not beQuiet) cout << "result has " << numCopied << " bits" << endl;
-	dstBv->save();
+	if (saveToFile) dstBv->save();
 
 	delete srcBv;
 	delete specBv;
@@ -505,7 +588,7 @@ void BVOperateCommand::op_unsqueeze()
 	                                       specBv->bits->data(), specNumBits,
 	                                       dstBv->bits->data(),  dstNumBits);
 	if (not beQuiet) cout << "result has " << resultNumBits << " bits" << endl;
-	dstBv->save();
+	if (saveToFile) dstBv->save();
 
 	delete srcBv;
 	delete specBv;
@@ -521,7 +604,8 @@ void BVOperateCommand::op_rrr()
 
 	RrrBitVector* rrrBv = new RrrBitVector (bv);
 	rrrBv->filename = outputFilename;
-	rrrBv->save();
+	if (saveToFile)
+		rrrBv->save();
 
 	delete bv;
 	delete rrrBv;
@@ -540,7 +624,7 @@ void BVOperateCommand::op_unrrr()
 	dstBv->new_bits (numBits);
 
 	decompress_rrr (rrrBv->rrrBits, dstBv->bits->data(), numBits);
-	dstBv->save();
+	if (saveToFile) dstBv->save();
 
 	delete rrrBv;
 	delete dstBv;
