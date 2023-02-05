@@ -30,7 +30,7 @@ public:
 	std::string outputFilename;
 	std::string operation;
 	bool saveToFile;
-	bool reportCount;
+	bool reportCounts;
 	};
 
 #endif // cmd_bf_operate_H

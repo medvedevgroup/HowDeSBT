@@ -61,9 +61,9 @@ void BFOperateCommand::usage
 	s << "  --not             output = NOT a  (i.e. 1s complement)" << endl;
 	s << "  --rrr             output = RRR a" << endl;
 	s << "  --unrrr           output = UNRRR a" << endl;
-	s << "  --report:count    report the number of active bits in the resulting bloom" << endl;
-	s << "                    filter; only applicable for --and, --or, --xor, --eq, or" << endl;
-	s << "                    --not" << endl;
+	s << "  --report:counts   report the number of active bits in the bloom filters" << endl;
+	s << "                    (inputs and result); only applicable for --and, --or," << endl;
+	s << "                    --xor, --eq, or --not" << endl;
 	// $$$ consider adding ROAR and UNROAR
 	}
 
@@ -83,8 +83,8 @@ void BFOperateCommand::parse
 
 	// defaults
 
-	saveToFile  = true;
-	reportCount = false;
+	saveToFile   = true;
+	reportCounts = false;
 
 	// skip command name
 
@@ -180,10 +180,12 @@ void BFOperateCommand::parse
 
 		// $$$ consider adding ROAR and UNROAR
 
-		// --report:count
+		// --report:counts
 
-		if ((arg == "--report:count") || (arg == "--report=count") || (arg == "--count"))
-			{ reportCount = true;  continue; }
+		if ((arg == "--report:counts") || (arg == "--report=counts")
+		  || (arg == "--report:count") || (arg == "--report=count")
+		  || (arg == "--counts") || (arg == "--count"))
+			{ reportCounts = true;  continue; }
 
 		// (unadvertised) debug options
 
@@ -253,14 +255,14 @@ void BFOperateCommand::parse
 		{
 		if (bfFilenames.size() != 1)
 			chastise ("RRR requires exactly one input bloom filter");
-		if (reportCount)
+		if (reportCounts)
 			chastise ("--report:count is not implemented for --rrr");
 		}
 	else if (operation == "rrr decompress")
 		{
 		if (bfFilenames.size() != 1)
 			chastise ("UNRRR requires exactly one input bloom filter, rrr-compressed");
-		if (reportCount)
+		if (reportCounts)
 			chastise ("--report:count is not implemented for --unrrr");
 		}
 
@@ -288,6 +290,7 @@ int BFOperateCommand::execute()
 void BFOperateCommand::op_and()
 	{
 	BloomFilter* dstBf = nullptr;
+	std::vector<u64> bfCounts;
 
 	// process the input bloom filter files in the order they appear in the array
 	//
@@ -322,12 +325,20 @@ void BFOperateCommand::op_and()
 			dstBf->intersect_with(bv);
 			}
 
+		if (reportCounts)
+			bfCounts.emplace_back(num_one_bits(bf));
+
 		delete bf;
 		bfNum++;
 		}
 
 	assert (dstBf != nullptr);
-	if (reportCount) cout << "result has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+	if (reportCounts)
+		{
+		for (int bfIx=0 ; bfIx<bfFilenames.size() ; bfIx++)
+			cout << bfFilenames[bfIx] << " has " << bfCounts[bfIx] << " 'active' bits" << endl;
+		cout << ((saveToFile)? outputFilename : "result") << " has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+		}
 	if (saveToFile) dstBf->save();
 
 	delete dstBf;
@@ -337,6 +348,7 @@ void BFOperateCommand::op_and()
 void BFOperateCommand::op_or()
 	{
 	BloomFilter* dstBf = nullptr;
+	std::vector<u64> bfCounts;
 
 	// process the input bloom filter files in the order they appear in the array
 	//
@@ -371,12 +383,20 @@ void BFOperateCommand::op_or()
 			dstBf->union_with(bv);
 			}
 
+		if (reportCounts)
+			bfCounts.emplace_back(num_one_bits(bf));
+
 		delete bf;
 		bfNum++;
 		}
 
 	assert (dstBf != nullptr);
-	if (reportCount) cout << "result has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+	if (reportCounts)
+		{
+		for (int bfIx=0 ; bfIx<bfFilenames.size() ; bfIx++)
+			cout << bfFilenames[bfIx] << " has " << bfCounts[bfIx] << " 'active' bits" << endl;
+		cout << ((saveToFile)? outputFilename : "result") << " has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+		}
 	if (saveToFile) dstBf->save();
 
 	delete dstBf;
@@ -386,6 +406,7 @@ void BFOperateCommand::op_or()
 void BFOperateCommand::op_xor()
 	{
 	BloomFilter* dstBf = nullptr;
+	std::vector<u64> bfCounts;
 
 	// process the input bloom filter files in the order they appear in the array
 	//
@@ -420,12 +441,20 @@ void BFOperateCommand::op_xor()
 			dstBf->xor_with(bv);
 			}
 
+		if (reportCounts)
+			bfCounts.emplace_back(num_one_bits(bf));
+
 		delete bf;
 		bfNum++;
 		}
 
 	assert (dstBf != nullptr);
-	if (reportCount) cout << "result has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+	if (reportCounts)
+		{
+		for (int bfIx=0 ; bfIx<bfFilenames.size() ; bfIx++)
+			cout << bfFilenames[bfIx] << " has " << bfCounts[bfIx] << " 'active' bits" << endl;
+		cout << ((saveToFile)? outputFilename : "result") << " has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+		}
 	if (saveToFile) dstBf->save();
 
 	delete dstBf;
@@ -460,7 +489,12 @@ void BFOperateCommand::op_eq()
 
 	dstBf->xor_with(bvB);
 	dstBf->complement();
-	if (reportCount) cout << "result has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+	if (reportCounts)
+		{
+		cout << bfFilenames[0] << " has " << num_one_bits(bfA) << " 'active' bits" << endl;
+		cout << bfFilenames[1] << " has " << num_one_bits(bfB) << " 'active' bits" << endl;
+		cout << ((saveToFile)? outputFilename : "result") << " has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+		}
 	if (saveToFile) dstBf->save();
 
 	delete bfA;
@@ -484,7 +518,11 @@ void BFOperateCommand::op_complement()
 	dstBf->new_bits(bv,bvcomp_uncompressed,0);
 
 	dstBf->complement();
-	if (reportCount) cout << "result has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+	if (reportCounts)
+		{
+		cout << bfFilenames[0] << " has " << num_one_bits(bf) << " 'active' bits" << endl;
+		cout << ((saveToFile)? outputFilename : "result") << " has " << num_one_bits(dstBf) << " 'active' bits" << endl;
+		}
 	if (saveToFile) dstBf->save();
 
 	delete bf;

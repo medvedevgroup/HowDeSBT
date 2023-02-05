@@ -34,7 +34,7 @@ public:
 	std::string outputFilename;
 	std::string operation;
 	bool saveToFile;
-	bool reportCount;
+	bool reportCounts;
 	bool beQuiet;
 	};
 
