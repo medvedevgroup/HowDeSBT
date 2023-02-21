@@ -65,7 +65,7 @@ def main():
 	if (numHashFuncs == 1):
 		numBits = -distinctKmers/log(1-fpRate)
 	else:
-		numBits = -(numHashFuncs*distinctKmers) / log(1-(fpRate)**(1/numHashFuncs))
+		numBits = -(numHashFuncs*distinctKmers) / log(1-(fpRate)**(1/float(numHashFuncs)))
 	numBits = int(ceil(numBits))
 
 	print "#numItems\tbfFP\tnumHashes\tnumBits"
