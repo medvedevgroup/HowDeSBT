@@ -46,21 +46,31 @@ void BFDistanceCommand::usage
 	short_description(s);
 	s << "usage: " << commandName << " <filename> [<filename>..] [options]" << endl;
 	//    123456789-123456789-123456789-123456789-123456789-123456789-123456789-123456789
-	s << "  <filename>        (cumulative) a bloom filter file (usually .bf)" << endl;
-	s << "                    only filters with uncompressed bit vectors are allowed" << endl;
-	s << "  --list=<filename> file containing a list of bloom filters" << endl;
-	s << "  <start>..<end>    interval of bits to use from each filter; distance is" << endl;
-	s << "                    calculated only on this subset of each filter's bits" << endl;
-	s << "                    (by default we use all bits from each filter)" << endl;
-	s << "  --bits=<N>        number of bits to use from each filter; same as 0..<N>" << endl;
-	s << "  --show:hamming    show the distance as hamming distance" << endl;
-	s << "                    (this is the default)" << endl;
-	s << "  --show:intersect  show the 'distance' as the number of 1s in common" << endl;
-	s << "  --show:union      show the 'distance' as the number of 1s in either" << endl;
-	s << "  --show:theta      show the 'distance' from A to B as N/D, where D is the" << endl;
-	s << "                    number of 1s in A and N is the number of 1s A and B have" << endl;
-	s << "                    in common; when A is a query and B is a node, this metric" << endl;
-	s << "                    corresponds to the threshold setting in the query command" << endl;
+	s << "  <filename>         (cumulative) a bloom filter file (usually .bf)" << endl;
+	s << "                     only filters with uncompressed bit vectors are allowed" << endl;
+	s << "  --list=<filename>  file containing a list of bloom filters" << endl;
+	s << "  --focus=<filename> (cumulative) a bloom filter file (usually .bf)" << endl;
+	s << "                     (see description below)" << endl;
+	s << "  <start>..<end>     interval of bits to use from each filter; distance is" << endl;
+	s << "                     calculated only on this subset of each filter's bits" << endl;
+	s << "                     (by default we use all bits from each filter)" << endl;
+	s << "  --bits=<N>         number of bits to use from each filter; same as 0..<N>" << endl;
+	s << "  --show:hamming     show the distance as hamming distance" << endl;
+	s << "                     (this is the default)" << endl;
+	s << "  --show:intersect   show the 'distance' as the number of 1s in common" << endl;
+	s << "  --show:union       show the 'distance' as the number of 1s in either" << endl;
+	s << "  --show:theta       show the 'distance' from A to B as N/D, where D is the" << endl;
+	s << "                     number of 1s in A and N is the number of 1s A and B have" << endl;
+	s << "                     in common; when A is a query and B is a node, this metric" << endl;
+	s << "                     corresponds to the threshold setting in the query command" << endl;
+	s << "" << endl;
+	s << "  Compute all-vs-all distances between bloom filters. The <filename>s, plus any" << endl;
+	s << "  filenames listed in the list file, comprise a collection of bloom filters." << endl;
+	s << "  Normally, the distances between all pairs in this collection are reported." << endl;
+	s << "" << endl;
+	s << "  However, if --focus= is specified, the --focus=<filename>s comprise a second" << endl;
+	s << "  collection of bloom filters, and the distances between elements from each" << endl;
+	s << "  collection are reported." << endl;
 	}
 
 void BFDistanceCommand::debug_help
@@ -123,6 +133,11 @@ void BFDistanceCommand::parse
 
 		if (is_prefix_of (arg, "--list="))
 			{ listFilename = argVal;  continue; }
+
+		// --focus=<filename>
+
+		if (is_prefix_of (arg, "--focus="))
+			{ bfFocusFilenames.emplace_back(strip_blank_ends(argVal));  continue; }
 
 		// --bits=<N>
 
@@ -212,6 +227,8 @@ void BFDistanceCommand::parse
 
 int BFDistanceCommand::execute()
 	{
+	bool haveFocus = (not bfFocusFilenames.empty());
+
 	// load filenames from a list file (if necessary)
 
 	if (not listFilename.empty())
@@ -234,14 +251,25 @@ int BFDistanceCommand::execute()
 	// preload all the filters, adjusting the bit limits if necessary
 
 	vector<BitVector*> bvs;
+	vector<BitVector*> focusBvs;
+	u32 numFilters      = bfFilenames.size();
+	u32 numExtraFilters = bfFocusFilenames.size();
 
 	u64 startPos = startPosition;
 	u64 endPos   = endPosition;
 	bool lengthNotModified = true;
 	size_t nameWidth = 0;
 
-	for (const auto& bfFilename : bfFilenames)
+	for (u32 fIx=0 ; fIx<numFilters+numExtraFilters ; fIx++)
 		{
+		bool isFocus = (fIx >= numFilters);
+
+		string bfFilename;
+		if (not isFocus)
+			bfFilename = bfFilenames[fIx];
+		else
+			bfFilename = bfFocusFilenames[fIx-numFilters];
+
 		std::ifstream* in = FileManager::open_file(bfFilename,std::ios::binary|std::ios::in,
 		                                           /* positionAtStart*/ true);
 		if (not *in)
@@ -273,7 +301,10 @@ int BFDistanceCommand::execute()
 					{
 					string name = bv->filename + ":" + std::to_string(bv->offset);
 					nameWidth = std::max (nameWidth,name.length());
-					bvs.emplace_back(bv);
+					if (not isFocus)
+						bvs.emplace_back(bv);
+					else
+						focusBvs.emplace_back(bv);
 					}
 				}
 			delete bf;
@@ -284,6 +315,9 @@ int BFDistanceCommand::execute()
 
 	if (bvs.empty())
 		fatal ("error: found no uncompressed bit vectors");
+
+	if ((haveFocus) and (focusBvs.empty()))
+		fatal ("error: found no uncompressed bit vectors for focus");
 
 	if (endPos != endPosition)
 		{
@@ -314,9 +348,10 @@ int BFDistanceCommand::execute()
 	std::ios::fmtflags saveCoutFlags(cout.flags());
 	auto saveCoutPrecision = cout.precision();
 
+	u32 numComparisonVectors = (haveFocus)? focusBvs.size() : bvs.size();
+
 	bool isFirst = true;
-	u32 numVectors = bvs.size();
-	for (u32 uIx=0 ; uIx<numVectors ; uIx++)
+	for (u32 uIx=0 ; uIx<bvs.size() ; uIx++)
 		{
 		BitVector* u = bvs[uIx];
 		u->load();
@@ -328,12 +363,15 @@ int BFDistanceCommand::execute()
 		if (showDistanceAs == "theta")
 			denom = bitwise_count(uBits,numBits);
 
-		for (u32 vIx=0 ; vIx<numVectors ; vIx++)
+		for (u32 vIx=0 ; vIx<numComparisonVectors ; vIx++)
 			{
-			if (vIx == uIx) continue;
-			if ((distanceIsSymmetric) and (vIx < uIx)) continue;
+			if (not haveFocus)
+				{
+				if (vIx == uIx) continue;
+				if ((distanceIsSymmetric) and (vIx < uIx)) continue;
+				}
 
-			BitVector* v = bvs[vIx];
+			BitVector* v = (haveFocus)? focusBvs[vIx] : bvs[vIx];
 			v->load();
 			string vName = v->filename + ":" + std::to_string(v->offset);
 			const void*	vBits = ((u8*) v->bits->data()) + (startPosition/8);

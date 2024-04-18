@@ -21,6 +21,7 @@ public:
 
 	std::vector<std::string> bfFilenames;
 	std::string listFilename;
+	std::vector<std::string> bfFocusFilenames;
 	std::uint64_t startPosition;	// origin-zero, half-open
 	std::uint64_t endPosition;
 	std::string showDistanceAs;
