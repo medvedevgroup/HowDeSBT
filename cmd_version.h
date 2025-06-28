@@ -13,8 +13,8 @@ class VersionCommand: public Command
 public:
 	static const unsigned int  major    = 2;
 	static const unsigned int  minor    = 0;
-	static const unsigned int  subMinor = 16;
-	static const std::uint32_t date     = 0x20240419;
+	static const unsigned int  subMinor = 17;
+	static const std::uint32_t date     = 0x20250627;
 
 public:
 	VersionCommand(const std::string& name): Command(name) {}

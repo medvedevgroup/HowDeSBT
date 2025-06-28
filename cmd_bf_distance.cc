@@ -59,6 +59,7 @@ void BFDistanceCommand::usage
 	s << "                     (this is the default)" << endl;
 	s << "  --show:intersect   show the 'distance' as the number of 1s in common" << endl;
 	s << "  --show:union       show the 'distance' as the number of 1s in either" << endl;
+	s << "  --show:jaccard     show the 'distance' as the jaccard index (intersect/union)" << endl;
 	s << "  --show:theta       show the 'distance' from A to B as N/D, where D is the" << endl;
 	s << "                     number of 1s in A and N is the number of 1s A and B have" << endl;
 	s << "                     in common; when A is a query and B is a node, this metric" << endl;
@@ -174,6 +175,8 @@ void BFDistanceCommand::parse
 		 || (arg == "--either"))
 			{ showDistanceAs = "union";  continue; }
 
+		if (arg == "--show:jaccard")
+			{ showDistanceAs = "jaccard";  continue; }
 
 		if (arg == "--show:theta")
 			{ showDistanceAs = "theta";  continue; }
@@ -388,6 +391,20 @@ int BFDistanceCommand::execute()
 				{
 				u64 distance = bitwise_or_count(uBits,vBits,numBits);
 				cout << std::setw(distanceWidth) << std::right << distance;
+				}
+			else if (showDistanceAs == "jaccard")
+				{
+				double distance;
+				numer = bitwise_and_count(uBits,vBits,numBits);
+				denom = bitwise_or_count(uBits,vBits,numBits);
+				cout << std::setw(distanceWidth) << std::right << numer
+				     << "/" << std::setw(distanceWidth) << std::left << denom;
+				if (denom > 0)
+					{
+					distance = numer / float(denom);
+					cout.precision(4);
+					cout << " " << std::setw(6) << std::left << distance;
+					}
 				}
 			else if (showDistanceAs == "theta")
 				{
